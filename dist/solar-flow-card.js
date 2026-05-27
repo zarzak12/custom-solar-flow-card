@@ -37,9 +37,17 @@ const DEFAULTS = {
   router3_position:   'center',
 
   // Images personnalisées (chemin relatif à /local/ ou URL complète)
-  img_house:   '/local/solar-flow-card/img/house.png',
-  img_battery: '/local/solar-flow-card/img/battery.png',
-  img_grid:    '/local/solar-flow-card/img/grid.png',
+  img_house:   '/hacsfiles/solar-flow-card/img/house.png',
+  img_battery: '/hacsfiles/solar-flow-card/img/battery.png',
+  img_grid:    '/hacsfiles/solar-flow-card/img/grid.png',
+  img_scene_mode:    'separate',
+  img_scene_variant: 'esc_ev',
+  img_scene_day:     'hacsfiles/solar-flow-card/img/house-grid.png',
+  img_scene_night:   'hacsfiles/solar-flow-card/img/house-night.png',
+  img_scene_day_ev:  '',
+  img_scene_night_ev:'',
+  img_scene_day_spa: 'hacsfiles/solar-flow-card/img/house-spa.png',
+  img_scene_night_spa:'hacsfiles/solar-flow-card/img/house-spa-night.png',
   // Overlays optionnels (laisser vide pour masquer)
   img_overlay1: '',
   img_overlay1_label: '',
@@ -193,6 +201,18 @@ const I18N = {
     ed_img_house:          'Maison (house.png)',
     ed_img_battery:        'Batterie (battery.png)',
     ed_img_grid:           'Réseau (grid.png)',
+    ed_img_scene_mode:      'Mode scène',
+    ed_img_scene_mode_separate: 'Séparé (grid / house / battery)',
+    ed_img_scene_mode_single: 'Unique (jour/nuit)',
+    ed_img_scene_variant:   'Variante scène',
+    ed_img_scene_variant_ev:'ESC + EV',
+    ed_img_scene_variant_spa:'ESC + SPA',
+    ed_img_scene_day:       'Scène jour (générique)',
+    ed_img_scene_night:     'Scène nuit (générique)',
+    ed_img_scene_day_ev:    'Scène jour ESC + EV',
+    ed_img_scene_night_ev:  'Scène nuit ESC + EV',
+    ed_img_scene_day_spa:   'Scène jour ESC + SPA',
+    ed_img_scene_night_spa: 'Scène nuit ESC + SPA',
     ed_img_overlay1:       'Overlay 1 — chemin image',
     ed_img_overlay1_label: 'Overlay 1 — label',
     ed_img_overlay2:       'Overlay 2 — chemin image',
@@ -308,6 +328,18 @@ const I18N = {
     ed_img_house:          'House (house.png)',
     ed_img_battery:        'Battery (battery.png)',
     ed_img_grid:           'Grid (grid.png)',
+    ed_img_scene_mode:      'Scene mode',
+    ed_img_scene_mode_separate: 'Separate (grid / house / battery)',
+    ed_img_scene_mode_single: 'Single image (day/night)',
+    ed_img_scene_variant:   'Scene variant',
+    ed_img_scene_variant_ev:'ESC + EV',
+    ed_img_scene_variant_spa:'ESC + SPA',
+    ed_img_scene_day:       'Scene image - day (generic)',
+    ed_img_scene_night:     'Scene image - night (generic)',
+    ed_img_scene_day_ev:    'Scene image - day ESC + EV',
+    ed_img_scene_night_ev:  'Scene image - night ESC + EV',
+    ed_img_scene_day_spa:   'Scene image - day ESC + SPA',
+    ed_img_scene_night_spa: 'Scene image - night ESC + SPA',
     ed_img_overlay1:       'Overlay 1 — image path',
     ed_img_overlay1_label: 'Overlay 1 — label',
     ed_img_overlay2:       'Overlay 2 — image path',
@@ -695,6 +727,23 @@ const CARD_CSS = `
   }
   .sfc-energy-row .sfc-flow-svg {
     position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;
+  }
+  .sfc-scene-image-wrap {
+    position:absolute;
+    inset:0;
+    z-index:0;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  .sfc-scene-image-wrap .sfc-scene-image {
+    width:100%;
+    height:auto;
+    max-height:100%;
+    object-fit:contain;
+    opacity:.95;
   }
   /* Nœuds images */
   .sfc-img-node {
@@ -1386,6 +1435,13 @@ function buildCardHTML(cfg) {
           <path id="sfcLR3" class="sfc-router-line" d="M 210,48 L 340,48" marker-end="url(#arrowRouter)" style="display:none"/>
         </svg>
 
+        ${c.img_scene_mode === 'single' ? `
+        <div class="sfc-scene-image-wrap">
+          <img class="sfc-scene-image" id="sfcSceneImg"
+            src="${c['img_scene_day_' + (c.img_scene_variant || 'esc_ev')] || c.img_scene_day || c.img_scene_night || ''}" alt="scene"
+            onerror="this.style.display='none'"/>
+        </div>
+        ` : `
         <!-- ── RÉSEAU ── -->
         <div class="sfc-img-node node-grid" id="sfcNodeGrid">
           <img src="${c.img_grid || '/local/solar-flow-card/img/grid.png'}" alt="grid"
@@ -1404,8 +1460,9 @@ function buildCardHTML(cfg) {
           <div class="sfc-img-label">${t(c,"node_home")}</div>
           <div class="sfc-img-val c-home" id="sfcHome">0 W</div>
         </div>
+        `}
 
-        <!-- ── ROUTEURS (si activés, entre maison et batterie) ── -->
+        <!-- ── ROUTEURS (si activés, entre maison et batterie) -->
         ${c.router1_enabled ? `
         <div class="sfc-img-node" id="sfcRouterNode1" style="flex:0.85;">
           ${c.router1_img
@@ -1761,6 +1818,26 @@ function buildEditorHTML(cfg) {
       ${edEntity('img_house',   t(c,'ed_img_house'),   '/local/solar-flow-card/img/house.png', c)}
       ${edEntity('img_battery', t(c,'ed_img_battery'), '/local/solar-flow-card/img/battery.png', c)}
       ${edEntity('img_grid',    t(c,'ed_img_grid'),    '/local/solar-flow-card/img/grid.png', c)}
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_img_scene_mode')}</label>
+        <select class="sfc-ed-input" data-key="img_scene_mode">
+          <option value="separate"${(c.img_scene_mode==='separate'?' selected':'')}>${t(c,'ed_img_scene_mode_separate')}</option>
+          <option value="single"${(c.img_scene_mode==='single'?' selected':'')}>${t(c,'ed_img_scene_mode_single')}</option>
+        </select>
+      </div>
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_img_scene_variant')}</label>
+        <select class="sfc-ed-input" data-key="img_scene_variant">
+          <option value="esc_ev"${(c.img_scene_variant==='esc_ev'?' selected':'')}>${t(c,'ed_img_scene_variant_ev')}</option>
+          <option value="esc_spa"${(c.img_scene_variant==='esc_spa'?' selected':'')}>${t(c,'ed_img_scene_variant_spa')}</option>
+        </select>
+      </div>
+      ${edEntity('img_scene_day',    t(c,'ed_img_scene_day'),    '/local/solar-flow-card/img/scene-day.png', c)}
+      ${edEntity('img_scene_night',  t(c,'ed_img_scene_night'),  '/local/solar-flow-card/img/scene-night.png', c)}
+      ${edEntity('img_scene_day_ev',   t(c,'ed_img_scene_day_ev'),   '/local/solar-flow-card/img/scene-day-ev.png', c)}
+      ${edEntity('img_scene_night_ev', t(c,'ed_img_scene_night_ev'), '/local/solar-flow-card/img/scene-night-ev.png', c)}
+      ${edEntity('img_scene_day_spa',  t(c,'ed_img_scene_day_spa'),  '/local/solar-flow-card/img/scene-day-spa.png', c)}
+      ${edEntity('img_scene_night_spa',t(c,'ed_img_scene_night_spa'),'/local/solar-flow-card/img/scene-night-spa.png', c)}
       <div class="sfc-ed-label" style="margin-top:8px;color:var(--muted);font-size:10px;">— Overlays optionnels —</div>
       ${edEntity('img_overlay1',       t(c,'ed_img_overlay1'),       '', c)}
       ${edEntity('img_overlay1_label', t(c,'ed_img_overlay1_label'), '', c)}
@@ -2260,6 +2337,19 @@ class SolarFlowCard extends HTMLElement {
     const arcDone = this._el('sfcArcDone');
     if (arcDone) arcDone.style.strokeDashoffset = (1000*(1-progress)).toFixed(0);
 
+    const sceneImg = this._el('sfcSceneImg');
+    if (sceneImg) {
+      const variant = c.img_scene_variant || 'esc_ev';
+      const dayImg = c[`img_scene_day_${variant}`] || c.img_scene_day;
+      const nightImg = c[`img_scene_night_${variant}`] || c.img_scene_night;
+      const sceneSrc = isNight ? (nightImg || dayImg) : (dayImg || nightImg);
+      if (sceneSrc) {
+        sceneImg.src = sceneSrc;
+        sceneImg.style.display = '';
+      } else {
+        sceneImg.style.display = 'none';
+      }
+    }
     const sky = this._el('sfcSky');
     const wi  = getWeather(this._getState(c.weather) || '');
     const cloudy = cloudyOverride !== undefined ? cloudyOverride : wi.cloudy;
