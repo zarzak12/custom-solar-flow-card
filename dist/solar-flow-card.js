@@ -731,44 +731,35 @@ const CARD_CSS = `
   .sfc-scene-image-wrap {
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    height: 75%;        /* ← sur 520px ça fait ~390px, le toit arrive bien dans le ciel */
+    height: 82%;
     z-index: 2;
     pointer-events: none;
     overflow: hidden;
   }
+
   .sfc-scene-image-wrap .sfc-scene-image {
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    object-position:bottom center;
-    opacity:1;
-    display:block;
-    mix-blend-mode:normal;
-  }
-  /* Dégradé de fondu en haut de l'image pour intégration naturelle avec le ciel */
-  .sfc-scene-image-wrap::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 32%;
-    background: linear-gradient(180deg,
-      var(--sfc-bg,#060d1a) 0%,
-      var(--sfc-bg,#060d1a) 5%,
-      rgba(6,13,26,0.95) 20%,
-      rgba(6,13,26,0.7)  40%,
-      rgba(6,13,26,0.2)  65%,
-      transparent 100%);
-    z-index: 1;
-    pointer-events: none;
-  }
-  /* Fondu en bas vers le fond */
-  .sfc-scene-image-wrap {
-    position:absolute;
-    bottom:0; left:0; right:0;
-    height:78%;       /* ← plus haute pour chevaucher le ciel */
-    z-index:2;
-    pointer-events:none;
-    overflow:hidden;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: bottom center;
+    display: block;
+    /* Fondu haut via mask — fonctionne même avec overflow:hidden */
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(0,0,0,0.15) 12%,
+      rgba(0,0,0,0.55) 22%,
+      rgba(0,0,0,0.85) 32%,
+      black 42%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(0,0,0,0.15) 12%,
+      rgba(0,0,0,0.55) 22%,
+      rgba(0,0,0,0.85) 32%,
+      black 42%
+    );
   }
   /* Nœuds images */
   .sfc-img-node {
