@@ -601,7 +601,7 @@ const CARD_CSS = `
   .sfc-sun-orb {
     position:absolute; width:34px;height:34px; border-radius:50%;
     transform:translate(-50%,-50%); transition:left 20s ease,top 20s ease;
-    z-index:2; pointer-events:none;
+    z-index:4; pointer-events:none;
   }
   .sfc-sun-inner {
     width: 100%;
@@ -750,20 +750,23 @@ const CARD_CSS = `
     content:'';
     position:absolute;
     top:0; left:0; right:0;
-    height:35%;
-    background:linear-gradient(180deg, var(--sfc-bg,#060d1a) 0%, transparent 100%);
+    height:55%;
+    background:linear-gradient(180deg,
+      var(--sfc-bg,#060d1a) 0%,
+      rgba(6,13,26,0.85) 25%,
+      rgba(6,13,26,0.4) 55%,
+      transparent 100%);
     z-index:1;
     pointer-events:none;
   }
   /* Fondu en bas vers le fond */
-  .sfc-scene-image-wrap::after {
-    content:'';
+  .sfc-scene-image-wrap {
     position:absolute;
     bottom:0; left:0; right:0;
-    height:20%;
-    background:linear-gradient(180deg, transparent 0%, var(--sfc-bg,#060d1a) 100%);
-    z-index:1;
+    height:78%;       /* ← plus haute pour chevaucher le ciel */
+    z-index:2;
     pointer-events:none;
+    overflow:hidden;
   }
   /* Nœuds images */
   .sfc-img-node {
@@ -1335,7 +1338,7 @@ function buildCardHTML(cfg) {
 
       <!-- Arc de trajectoire solaire -->
       <svg class="sfc-sun-arc-svg" viewBox="0 0 520 200" preserveAspectRatio="xMidYMid meet"
-           style="height:55%;top:0;left:0;right:0;position:absolute;">
+           style="height:55%;top:0;left:0;right:0;position:absolute;z-index:3;">
         <path class="sfc-sun-arc-bg" d="M 40,175 Q 260,10 480,175" fill="none" stroke="rgba(255,215,0,0.22)" stroke-width="1.2" />
         <path id="sfcArcDone" class="sfc-sun-arc-active" d="M 40,175 Q 260,10 480,175" fill="none" stroke="rgba(255,215,0,0.78)" stroke-width="2.2"
           stroke-dasharray="1000" stroke-dashoffset="1000" style="transition:stroke-dashoffset 20s ease;"/>
@@ -2522,6 +2525,6 @@ customElements.define('solar-flow-card-editor', SolarFlowCardEditor);
 window.customCards = window.customCards || [];
 window.customCards.push({ type:'solar-flow-card', name:'Solar Flow Card', description:'Arc solaire animé, météo dynamique, flux énergie temps réel', preview:true });
 
-console.info('%c☀️ SOLAR FLOW CARD %c v1.0.2 ',
+console.info('%c☀️ SOLAR FLOW CARD %c v1.0.3 ',
   'background:#0d7377;color:#fff;padding:2px 6px;border-radius:4px 0 0 4px;font-weight:700',
   'background:#14a085;color:#fff;padding:2px 6px;border-radius:0 4px 4px 0;');
