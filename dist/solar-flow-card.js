@@ -729,12 +729,12 @@ const CARD_CSS = `
     position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;
   }
   .sfc-scene-image-wrap {
-    position:absolute;
-    bottom:0; left:0; right:0;
-    height:68%;
-    z-index:2;
-    pointer-events:none;
-    overflow:hidden;
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 75%;        /* ← sur 520px ça fait ~390px, le toit arrive bien dans le ciel */
+    z-index: 2;
+    pointer-events: none;
+    overflow: hidden;
   }
   .sfc-scene-image-wrap .sfc-scene-image {
     width:100%;
@@ -747,17 +747,19 @@ const CARD_CSS = `
   }
   /* Dégradé de fondu en haut de l'image pour intégration naturelle avec le ciel */
   .sfc-scene-image-wrap::before {
-    content:'';
-    position:absolute;
-    top:0; left:0; right:0;
-    height:55%;
-    background:linear-gradient(180deg,
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 32%;
+    background: linear-gradient(180deg,
       var(--sfc-bg,#060d1a) 0%,
-      rgba(6,13,26,0.85) 25%,
-      rgba(6,13,26,0.4) 55%,
+      var(--sfc-bg,#060d1a) 5%,
+      rgba(6,13,26,0.95) 20%,
+      rgba(6,13,26,0.7)  40%,
+      rgba(6,13,26,0.2)  65%,
       transparent 100%);
-    z-index:1;
-    pointer-events:none;
+    z-index: 1;
+    pointer-events: none;
   }
   /* Fondu en bas vers le fond */
   .sfc-scene-image-wrap {
@@ -1273,14 +1275,44 @@ const CARD_CSS = `
   }
   .sfc-ed-info strong { color: #14a085; }
   /* En mode single, les labels flottent au-dessus de l'image */
-.sfc-energy-row .sfc-img-node .sfc-img-label,
-.sfc-energy-row .sfc-img-node .sfc-img-val,
-.sfc-energy-row .sfc-img-node .sfc-img-sub {
-  text-shadow: 0 1px 6px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.8);
-  background: rgba(6,13,26,0.45);
-  border-radius: 4px;
-  padding: 1px 4px;
-}
+  .sfc-energy-row .sfc-img-node .sfc-img-label,
+  .sfc-energy-row .sfc-img-node .sfc-img-val,
+  .sfc-energy-row .sfc-img-node .sfc-img-sub {
+    text-shadow: 0 1px 6px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.8);
+    background: rgba(6,13,26,0.45);
+    border-radius: 4px;
+    padding: 1px 4px;
+  }
+
+  /* Mode single : cache les images des nœuds mais garde les flux et valeurs */
+  .sfc-scene-mode-single .sfc-img-node img,
+  .sfc-scene-mode-single .sfc-img-node > span,
+  .sfc-scene-mode-single .sfc-batt-wrapper {
+    display: none !important;
+  }
+
+  /* Valeurs restent lisibles en overlay sur l'image */
+  .sfc-scene-mode-single .sfc-img-node {
+    justify-content: flex-end;
+    padding-bottom: 4px;
+  }
+
+  .sfc-scene-mode-single .sfc-img-label,
+  .sfc-scene-mode-single .sfc-img-val,
+  .sfc-scene-mode-single .sfc-img-sub,
+  .sfc-scene-mode-single .sfc-router-label,
+  .sfc-scene-mode-single .sfc-router-val {
+    background: rgba(6,13,26,0.65);
+    backdrop-filter: blur(4px);
+    border-radius: 5px;
+    padding: 2px 6px;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+  }
+
+  .sfc-scene-mode-single ~ .sfc-sunrise,
+  .sfc-scene-mode-single ~ .sfc-sunset {
+    bottom: 310px;
+  }
 `;
 
 // ══════════════════════════════════════════════════════════
@@ -1321,7 +1353,7 @@ function buildCardHTML(cfg) {
          SCÈNE UNIFIÉE : ciel + soleil + énergie
     ════════════════════════════════════════════ -->
     <div class="sfc-unified-scene" id="sfcUnifiedScene"
-         style="height: ${c.show_images !== false ? '380px' : '200px'};">
+         style="height: ${c.show_images !== false ? (c.img_scene_mode === 'single' ? '520px' : '380px') : '200px'};">
 
       <!-- Fond ciel dynamique -->
       <div class="sfc-sky" id="sfcSky"></div>
@@ -1438,7 +1470,7 @@ function buildCardHTML(cfg) {
           alt="scene" onerror="this.style.display='none'"/>
       </div>
       ` : ''}
-      <div class="sfc-energy-row" id="sfcEnergyRow">
+      <div class="sfc-energy-row ${c.img_scene_mode === 'single' ? 'sfc-scene-mode-single' : ''}" id="sfcEnergyRow">
 
         <!-- Lignes de flux SVG (dynamiques via JS) -->
         <svg class="sfc-flow-svg" id="sfcFlowSvg" viewBox="0 0 420 100" preserveAspectRatio="none">
@@ -2308,8 +2340,17 @@ class SolarFlowCard extends HTMLElement {
 
     const ss = computeSunriseSunset(now, c.latitude || 44.35, c.longitude || 2.57);
     const sunrise = ss.sunrise, sunset = ss.sunset;
-    const srEl = this._el('sfcSunrise'); if (srEl) srEl.textContent = '🌅 ' + formatTime(sunrise);
-    const ssEl = this._el('sfcSunset');  if (ssEl) ssEl.textContent = '🌇 ' + formatTime(sunset);
+    const isSingle = c.img_scene_mode === 'single';
+    const srEl = this._el('sfcSunrise');
+    if (srEl) {
+      srEl.textContent = '🌅 ' + formatTime(sunrise);
+      srEl.style.bottom = isSingle ? '320px' : '190px';
+    }
+    const ssEl = this._el('sfcSunset');
+    if (ssEl) {
+      ssEl.textContent = '🌇 ' + formatTime(sunset);
+      ssEl.style.bottom = isSingle ? '320px' : '190px';
+    }
 
     let progress = 0.5;
     if (sunrise && sunset) {
