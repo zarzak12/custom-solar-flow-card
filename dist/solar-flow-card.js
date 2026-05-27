@@ -730,20 +730,40 @@ const CARD_CSS = `
   }
   .sfc-scene-image-wrap {
     position:absolute;
-    inset:0;
-    z-index:0;
-    display:flex;
-    align-items:flex-end;
-    justify-content:center;
+    bottom:0; left:0; right:0;
+    height:68%;
+    z-index:2;
     pointer-events:none;
     overflow:hidden;
   }
   .sfc-scene-image-wrap .sfc-scene-image {
     width:100%;
-    height:auto;
-    max-height:100%;
-    object-fit:contain;
-    opacity:.95;
+    height:100%;
+    object-fit:cover;
+    object-position:bottom center;
+    opacity:1;
+    display:block;
+    mix-blend-mode:normal;
+  }
+  /* Dégradé de fondu en haut de l'image pour intégration naturelle avec le ciel */
+  .sfc-scene-image-wrap::before {
+    content:'';
+    position:absolute;
+    top:0; left:0; right:0;
+    height:35%;
+    background:linear-gradient(180deg, var(--sfc-bg,#060d1a) 0%, transparent 100%);
+    z-index:1;
+    pointer-events:none;
+  }
+  /* Fondu en bas vers le fond */
+  .sfc-scene-image-wrap::after {
+    content:'';
+    position:absolute;
+    bottom:0; left:0; right:0;
+    height:20%;
+    background:linear-gradient(180deg, transparent 0%, var(--sfc-bg,#060d1a) 100%);
+    z-index:1;
+    pointer-events:none;
   }
   /* Nœuds images */
   .sfc-img-node {
@@ -1249,6 +1269,15 @@ const CARD_CSS = `
     line-height: 1.6;
   }
   .sfc-ed-info strong { color: #14a085; }
+  /* En mode single, les labels flottent au-dessus de l'image */
+.sfc-energy-row .sfc-img-node .sfc-img-label,
+.sfc-energy-row .sfc-img-node .sfc-img-val,
+.sfc-energy-row .sfc-img-node .sfc-img-sub {
+  text-shadow: 0 1px 6px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.8);
+  background: rgba(6,13,26,0.45);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
 `;
 
 // ══════════════════════════════════════════════════════════
@@ -1398,7 +1427,14 @@ function buildCardHTML(cfg) {
 
       <!-- ── ZONE ÉNERGIE (images ou émojis) ── -->
       ${c.show_images !== false ? `
-
+      <!-- Image scène unique (jour/nuit) — placée sous les flux -->
+      ${c.img_scene_mode === 'single' ? `
+      <div class="sfc-scene-image-wrap">
+        <img class="sfc-scene-image" id="sfcSceneImg"
+          src="${c['img_scene_day_' + (c.img_scene_variant || 'esc_ev')] || c.img_scene_day || ''}"
+          alt="scene" onerror="this.style.display='none'"/>
+      </div>
+      ` : ''}
       <div class="sfc-energy-row" id="sfcEnergyRow">
 
         <!-- Lignes de flux SVG (dynamiques via JS) -->
@@ -1435,13 +1471,7 @@ function buildCardHTML(cfg) {
           <path id="sfcLR3" class="sfc-router-line" d="M 210,48 L 340,48" marker-end="url(#arrowRouter)" style="display:none"/>
         </svg>
 
-        ${c.img_scene_mode === 'single' ? `
-        <div class="sfc-scene-image-wrap">
-          <img class="sfc-scene-image" id="sfcSceneImg"
-            src="${c['img_scene_day_' + (c.img_scene_variant || 'esc_ev')] || c.img_scene_day || c.img_scene_night || ''}" alt="scene"
-            onerror="this.style.display='none'"/>
-        </div>
-        ` : `
+        ${c.img_scene_mode === 'single' ? `` : `
         <!-- ── RÉSEAU ── -->
         <div class="sfc-img-node node-grid" id="sfcNodeGrid">
           <img src="${c.img_grid || '/local/solar-flow-card/img/grid.png'}" alt="grid"
