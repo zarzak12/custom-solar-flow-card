@@ -1,0 +1,6 @@
+{
+  "name": "Custom Solar Flow Card",
+  "filename": "solar-flow-card.js",
+  "type": "module",
+  "render_readme": true
+}
