@@ -2522,6 +2522,6 @@ customElements.define('solar-flow-card-editor', SolarFlowCardEditor);
 window.customCards = window.customCards || [];
 window.customCards.push({ type:'solar-flow-card', name:'Solar Flow Card', description:'Arc solaire animé, météo dynamique, flux énergie temps réel', preview:true });
 
-console.info('%c☀️ SOLAR FLOW CARD %c v1.0.0 ',
+console.info('%c☀️ SOLAR FLOW CARD %c v1.0.2 ',
   'background:#0d7377;color:#fff;padding:2px 6px;border-radius:4px 0 0 4px;font-weight:700',
   'background:#14a085;color:#fff;padding:2px 6px;border-radius:0 4px 4px 0;');
