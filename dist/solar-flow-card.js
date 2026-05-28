@@ -1384,7 +1384,6 @@ function buildCardHTML(cfg) {
             style="--flow-color:#FFD700"
             fill="none"/>
           <path id="sfcSunFlowGlow"
-            stroke="url(#sfcGradSun)"
             class="sfc-sun-flow-neon"
             d="M 260,140 L 260,320"
             stroke="#FFD700"
