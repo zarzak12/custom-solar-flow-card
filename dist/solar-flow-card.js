@@ -1285,13 +1285,13 @@ const CARD_CSS = `
   .sfc-scene-mode-single-scene .sfc-batt-wrapper {
     display: inline-flex !important;  /* override le display:none du mode single */
     position: absolute;
-    bottom: 18%;        /* ← à ajuster selon l'image */
-    right: 8%;          /* ← batterie murale droite du garage */
-    width: 60px;
-    height: 60px;
+    bottom: 70px;        /* ← à ajuster selon l'image */
+    right: -20px;          /* ← batterie murale droite du garage */
+    width: 66px;
+    height: 63px;
     top: auto;
     transform: none;
-    opacity: 0.12;      /* 10-12% de transparence */
+    opacity: 0.70;      /* 10-12% de transparence */
     z-index: 4;
   }
 `;
