@@ -1984,6 +1984,7 @@ class SolarFlowCard extends HTMLElement {
     this._lightningTimer = null;
     this._rainAnim = null;
     this._snowAnim = null;
+    this._resizeObserver = null;
   }
 
   set hass(hass) {
@@ -2017,7 +2018,20 @@ class SolarFlowCard extends HTMLElement {
       ${buildCardHTML(this._cfg)}
     `;
     this._createStars();
+    this._observeResize();
     this._loadGSAP();
+  }
+
+  _observeResize() {
+    if (this._resizeObserver || typeof ResizeObserver === 'undefined') return;
+    const host = this.shadowRoot.host;
+    if (!host) return;
+    this._resizeObserver = new ResizeObserver(() => {
+      if (this._hass) {
+        window.requestAnimationFrame(() => this._update());
+      }
+    });
+    this._resizeObserver.observe(host);
   }
 
   _loadGSAP() {
@@ -2123,6 +2137,10 @@ class SolarFlowCard extends HTMLElement {
       clearInterval(this._sunTimer);
       this._sunTimer = null;
     }
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
+      this._resizeObserver = null;
+    }
   }
 
   _getNum(entityId, fallback = 0) {
@@ -2159,6 +2177,27 @@ class SolarFlowCard extends HTMLElement {
   }
 
   _el(id) { return this.shadowRoot.getElementById(id); }
+
+  _getSvgPoint(svg, target, pos = { x: 0.5, y: 0.35 }) {
+    if (!svg || !target) return null;
+    const svgRect = svg.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    if (!svgRect.width || !svgRect.height) return null;
+    const x = targetRect.left + targetRect.width * pos.x - svgRect.left;
+    const y = targetRect.top + targetRect.height * pos.y - svgRect.top;
+    const vb = svg.viewBox.baseVal;
+    return {
+      x: Math.round((x / svgRect.width) * vb.width),
+      y: Math.round((y / svgRect.height) * vb.height),
+    };
+  }
+
+  _getLinePath(svg, start, end) {
+    const startPt = this._getSvgPoint(svg, start, { x: 0.55, y: 0.35 });
+    const endPt = this._getSvgPoint(svg, end, { x: 0.45, y: 0.35 });
+    if (!startPt || !endPt) return null;
+    return `M ${startPt.x},${startPt.y} L ${endPt.x},${endPt.y}`;
+  }
 
   _setFlowActive(ids, active) {
     ids.forEach(id => this._el(id)?.classList.toggle('inactive', !active));
@@ -2269,13 +2308,19 @@ class SolarFlowCard extends HTMLElement {
       const gridFlowIds = ['sfcLG','sfcLGTailLong','sfcLGTailMid','sfcLGGlow'];
       this._setFlowActive(gridFlowIds, gridActive);
       if (gridActive) {
-        const isSingle = c.img_scene_mode === 'single';
-        if (isSingle) {
-          const path = gridW < -50 ? 'M 175,18.5 L 60,42.5' : 'M 60,42.5 L 175,18.5';
+        const svg = this._el('sfcFlowSvg');
+        const gridNodeEl = this._el('sfcNodeGrid');
+        const homeNodeEl = this._el('sfcNodeHome');
+        const path = svg && gridNodeEl && homeNodeEl
+          ? (gridW < -50
+              ? this._getLinePath(svg, homeNodeEl, gridNodeEl)
+              : this._getLinePath(svg, gridNodeEl, homeNodeEl))
+          : null;
+        if (path) {
           this._setFlowPath(gridFlowIds, path);
         } else {
-          const path = gridW < -50 ? 'M 195,48 L 65,48' : 'M 65,48 L 195,48';
-          this._setFlowPath(gridFlowIds, path);
+          const fallback = gridW < -50 ? 'M 195,48 L 65,48' : 'M 65,48 L 195,48';
+          this._setFlowPath(gridFlowIds, fallback);
         }
       }
     }
@@ -2372,14 +2417,17 @@ class SolarFlowCard extends HTMLElement {
       const powerKey = 'router' + rn + '_power';
       const w = this._getNum(c2[powerKey]);
       const active = w > 10;
-      const path = isSingle
-        ? 'M 123,3 L 52.5,18.5'
-        : `M 210,48 Q ${(210+rx)/2},28 ${rx},48`;
+      const nodeEl = this._el('sfcRouterNode' + rn);
+      const homeEl = this._el('sfcNodeHome');
+      const svg = this._el('sfcRouterSvg');
+      const path = svg && nodeEl && homeEl
+        ? this._getLinePath(svg, homeEl, nodeEl)
+        : (isSingle ? 'M 123,3 L 52.5,18.5' : `M 210,48 Q ${(210+rx)/2},28 ${rx},48`);
 
       const line = this._el('sfcLR' + rn);
       if (line) {
         line.style.display = '';
-        line.setAttribute('d', path);
+        if (path) line.setAttribute('d', path);
         line.classList.toggle('active', active);
         line.classList.toggle('inactive', !active);
       }
@@ -2396,15 +2444,20 @@ class SolarFlowCard extends HTMLElement {
     const isDischarging = this._getNum(this._cfg.home_power) > this._getNum(this._cfg.pv_power) + 100;
     if (lineBatt && nRouters > 0) {
       const battFlowIds = ['sfcLB','sfcLBTailLong','sfcLBTailMid','sfcLBGlow'];
-      if (isDischarging) {
-        const path = `M 355,48 L ${lastX+14},48`;
+      const battEl = this._el('sfcNodeBatt');
+      const lastRouterEl = this._el('sfcRouterNode' + activeRouters[activeRouters.length - 1]);
+      const svg = this._el('sfcFlowSvg');
+      const path = svg && battEl && lastRouterEl
+        ? (isDischarging
+            ? this._getLinePath(svg, battEl, lastRouterEl)
+            : this._getLinePath(svg, lastRouterEl, battEl))
+        : (isDischarging
+            ? `M 355,48 L ${lastX+14},48`
+            : `M ${lastX+14},48 L 355,48`);
+      if (path) {
         this._setFlowPath(battFlowIds, path);
-        lineBatt.setAttribute('marker-end', 'url(#arrowDis)');
-      } else {
-        const path = `M ${lastX+14},48 L 355,48`;
-        this._setFlowPath(battFlowIds, path);
-        lineBatt.setAttribute('marker-end', 'url(#arrowBatt)');
       }
+      lineBatt.setAttribute('marker-end', isDischarging ? 'url(#arrowDis)' : 'url(#arrowBatt)');
     }
   }
 
