@@ -1279,18 +1279,9 @@ const CARD_CSS = `
     bottom: 310px;
   }
   
-  /* Mode single : batterie positionnée sur la batterie murale de l'image */
-  .sfc-scene-mode-single-scene .sfc-batt-wrapper {
-    display: inline-flex !important;  /* override le display:none du mode single */
-    position: absolute;
-    bottom: 70px;        /* ← à ajuster selon l'image */
-    right: -20px;          /* ← batterie murale droite du garage */
-    width: 66px;
-    height: 63px;
-    top: auto;
-    transform: none;
-    opacity: 0.70;      /* 10-12% de transparence */
-    z-index: 4;
+  /* Mode single : la batterie reste dans le flux flex normal */
+  .sfc-scene-mode-single .node-battery {
+    flex: 1;
   }
 `;
 
@@ -1505,7 +1496,6 @@ function buildCardHTML(cfg) {
           <path id="sfcLR3" class="sfc-router-line" d="M 210,48 L 340,48" marker-end="url(#arrowRouter)" style="display:none"/>
         </svg>
 
-        ${c.img_scene_mode === 'single' ? `` : `
         <!-- ── RÉSEAU ── -->
         <div class="sfc-img-node node-grid" id="sfcNodeGrid">
           <img src="${c.img_grid || '/local/solar-flow-card/img/grid.png'}" alt="grid"
@@ -1524,7 +1514,6 @@ function buildCardHTML(cfg) {
           <div class="sfc-img-label">${t(c,"node_home")}</div>
           <div class="sfc-img-val c-home" id="sfcHome">0 W</div>
         </div>
-        `}
 
         <!-- ── ROUTEURS (si activés, entre maison et batterie) -->
         ${c.router1_enabled ? `
@@ -2262,21 +2251,14 @@ class SolarFlowCard extends HTMLElement {
     if (gridNode) gridNode.style.filter = gridW > 50 ? 'drop-shadow(0 0 10px rgba(79,195,247,0.5))' : '';
 
     // Flux lines + arrows
-    const isSingle = c.img_scene_mode === 'single';
     const lg = this._el('sfcLG');
     if (lg) {
       const gridActive = Math.abs(gridW) >= 50;
       const gridFlowIds = ['sfcLG','sfcLGTailLong','sfcLGTailMid','sfcLGGlow'];
       this._setFlowActive(gridFlowIds, gridActive);
       if (gridActive) {
-        const isSingle = c.img_scene_mode === 'single';
-        if (isSingle) {
-          const path = gridW < -50 ? 'M 175,13.5 L 48,47.5' : 'M 48,47.5 L 175,13.5';
-          this._setFlowPath(gridFlowIds, path);
-        } else {
-          const path = gridW < -50 ? 'M 195,48 L 65,48' : 'M 65,48 L 195,48';
-          this._setFlowPath(gridFlowIds, path);
-        }
+        const path = gridW < -50 ? 'M 195,48 L 65,48' : 'M 65,48 L 195,48';
+        this._setFlowPath(gridFlowIds, path);
       }
     }
 
@@ -2288,12 +2270,10 @@ class SolarFlowCard extends HTMLElement {
       const battActive = (battPowerAbs !== null ? battPowerAbs > 10 : (battDis >= 0.01 || battChg >= 0.01 || pvW >= 50 || isDischarging));
       this._setFlowActive(battFlowIds, battActive);
       if (isDischarging) {
-        const path = isSingle ? 'M 400,10.5 L 213,10.5' : 'M 355,48 L 225,48';
-        this._setFlowPath(battFlowIds, path);
+        this._setFlowPath(battFlowIds, 'M 355,48 L 225,48');
         lb.setAttribute('marker-end', 'url(#arrowDis)');
       } else {
-        const path = isSingle ? 'M 213,10.5 H 400' : 'M 225,48 L 355,48';
-        this._setFlowPath(battFlowIds, path);
+        this._setFlowPath(battFlowIds, 'M 225,48 L 355,48');
         lb.setAttribute('marker-end', 'url(#arrowBatt)');
       }
     }
@@ -2364,7 +2344,6 @@ class SolarFlowCard extends HTMLElement {
     const nRouters = activeRouters.length;
     const gap = nRouters > 0 ? (355 - 210) / (nRouters + 1) : 0;
     const routerXs = activeRouters.map((_, i) => Math.round(210 + gap * (i+1)));
-    const isSingle = this._cfg.img_scene_mode === 'single';
 
     activeRouters.forEach((rn, i) => {
       const c2 = this._cfg;
@@ -2372,9 +2351,7 @@ class SolarFlowCard extends HTMLElement {
       const powerKey = 'router' + rn + '_power';
       const w = this._getNum(c2[powerKey]);
       const active = w > 10;
-      const path = isSingle
-        ? 'M 123,3 L 52.5,18.5'
-        : `M 210,48 Q ${(210+rx)/2},28 ${rx},48`;
+      const path = `M 210,48 Q ${(210+rx)/2},28 ${rx},48`;
 
       const line = this._el('sfcLR' + rn);
       if (line) {
