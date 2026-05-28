@@ -1384,6 +1384,7 @@ function buildCardHTML(cfg) {
             style="--flow-color:#FFD700"
             fill="none"/>
           <path id="sfcSunFlowGlow"
+            stroke="url(#sfcGradSun)"
             class="sfc-sun-flow-neon"
             d="M 260,140 L 260,320"
             stroke="#FFD700"
@@ -1469,17 +1470,37 @@ function buildCardHTML(cfg) {
             <marker id="arrowRouter" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto">
               <path d="M0,0 L0,6 L8,3 z" fill="#FFA040"/>
             </marker>
+            <!-- Gradient flux grid (bleu cyan) -->
+            <linearGradient id="sfcGradGrid" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#00FFFF" stop-opacity="0"/>
+              <stop offset="40%"  stop-color="#4FC3F7"/>
+              <stop offset="100%" stop-color="#4FC3F7" stop-opacity="0"/>
+            </linearGradient>
+
+            <!-- Gradient flux batterie (vert néon) -->
+            <linearGradient id="sfcGradBatt" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#69FF47" stop-opacity="0"/>
+              <stop offset="40%"  stop-color="#00FF88"/>
+              <stop offset="100%" stop-color="#69FF47" stop-opacity="0"/>
+            </linearGradient>
+
+            <!-- Gradient flux soleil (or→blanc) -->
+            <linearGradient id="sfcGradSun" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%"   stop-color="#FFD700"/>
+              <stop offset="60%"  stop-color="#FFAA00"/>
+              <stop offset="100%" stop-color="#FFD700" stop-opacity="0"/>
+            </linearGradient>
           </defs>
           <!-- Tube réseau↔maison : base pleine + traînée néon -->
           <path id="sfcLG" class="sfc-flow-core" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,48 L 195,48"/>
           <path id="sfcLGTailLong" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,48 L 195,48"/>
           <path id="sfcLGTailMid" class="sfc-flow-tail-mid" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,48 L 195,48"/>
-          <path id="sfcLGGlow" class="sfc-flow-neon" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,48 L 195,48"/>
+          <path id="sfcLGGlow" class="sfc-flow-neon" stroke="url(#sfcGradGrid)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,48 L 195,48"/>
 
           <path id="sfcLB" class="sfc-flow-core" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,48 L 355,48" marker-end="url(#arrowBatt)"/>
           <path id="sfcLBTailLong" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,48 L 355,48"/>
           <path id="sfcLBTailMid" class="sfc-flow-tail-mid" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,48 L 355,48"/>
-          <path id="sfcLBGlow" class="sfc-flow-neon" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,48 L 355,48"/>
+          <path id="sfcLBGlow" class="sfc-flow-neon" stroke="url(#sfcGradBatt)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,48 L 355,48"/>
           <path id="sfcLR1" class="sfc-router-line" d="M 210,48 L 280,48" marker-end="url(#arrowRouter)" style="display:none"/>
           <path id="sfcLR2" class="sfc-router-line" d="M 210,48 L 310,48" marker-end="url(#arrowRouter)" style="display:none"/>
           <path id="sfcLR3" class="sfc-router-line" d="M 210,48 L 340,48" marker-end="url(#arrowRouter)" style="display:none"/>
