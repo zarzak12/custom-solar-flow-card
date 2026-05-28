@@ -2161,8 +2161,14 @@ class SolarFlowCard extends HTMLElement {
       const gridFlowIds = ['sfcLG','sfcLGTailLong','sfcLGTailMid','sfcLGGlow'];
       this._setFlowActive(gridFlowIds, gridActive);
       if (gridActive) {
-        const path = gridW < -50 ? 'M 195,48 L 65,48' : 'M 65,48 L 195,48';
-        this._setFlowPath(gridFlowIds, path);
+        const isSingle = c.img_scene_mode === 'single';
+        if (isSingle) {
+          const path = gridW < -50 ? 'M 175,13.5 L 48,47.5' : 'M 48,47.5 L 175,13.5';
+          this._setFlowPath(gridFlowIds, path);
+        } else {
+          const path = gridW < -50 ? 'M 195,48 L 65,48' : 'M 65,48 L 195,48';
+          this._setFlowPath(gridFlowIds, path);
+        }
       }
     }
 
@@ -2174,11 +2180,11 @@ class SolarFlowCard extends HTMLElement {
       const battActive = (battPowerAbs !== null ? battPowerAbs > 10 : (battDis >= 0.01 || battChg >= 0.01 || pvW >= 50 || isDischarging));
       this._setFlowActive(battFlowIds, battActive);
       if (isDischarging) {
-        const path = 'M 355,48 L 225,48';
+        const path = isSingle ? 'M 414.5,10.5 L 213,10.5' : 'M 355,48 L 225,48';
         this._setFlowPath(battFlowIds, path);
         lb.setAttribute('marker-end', 'url(#arrowDis)');
       } else {
-        const path = 'M 225,48 L 355,48';
+        const path = isSingle ? 'M 213,10.5 H 414.5' : 'M 225,48 L 355,48';
         this._setFlowPath(battFlowIds, path);
         lb.setAttribute('marker-end', 'url(#arrowBatt)');
       }
@@ -2257,7 +2263,9 @@ class SolarFlowCard extends HTMLElement {
       const powerKey = 'router' + rn + '_power';
       const w = this._getNum(c2[powerKey]);
       const active = w > 10;
-      const path = `M 210,48 Q ${(210+rx)/2},28 ${rx},48`;
+      const path = isSingle
+        ? 'M 123,3 L 52.5,18.5'
+        : `M 210,48 Q ${(210+rx)/2},28 ${rx},48`;
 
       const line = this._el('sfcLR' + rn);
       if (line) {
