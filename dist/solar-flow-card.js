@@ -742,7 +742,7 @@ const CARD_CSS = `
     z-index:3;
   }
   .sfc-energy-row .sfc-flow-svg {
-    position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;top:80px;
+    position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;
   }
   .sfc-scene-image-wrap {
     position: absolute;
@@ -1540,10 +1540,10 @@ function buildCardHTML(cfg) {
           <path id="sfcLGGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3.6" d="M 175,870 L 640,580"/>
 
           <!-- ── FLUX Maison → Batterie ── -->
-          <path id="sfcLB_s"         class="sfc-flow-core"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3"   d="M 778,580 L 1516,580"/>
-          <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:6.5" d="M 778,580 L 1516,580"/>
-          <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:4.8" d="M 778,580 L 1516,580"/>
-          <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3.6" d="M 778,580 L 1516,580"/>
+          <path id="sfcLB_s"         class="sfc-flow-core"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3"   d="M 778,580 L 1410,580"/>
+          <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:6.5" d="M 778,580 L 1410,580"/>
+          <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:4.8" d="M 778,580 L 1410,580"/>
+          <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3.6" d="M 778,580 L 1410,580"/>
 
           <!-- ══════════════════════════════════════════════════════════
                BATTERIE LIQUIDE SVG — overlay sur la batterie murale de l'image.
@@ -2471,11 +2471,11 @@ class SolarFlowCard extends HTMLElement {
       this._setFlowActive([...battFlowIds, ...battFlowIds_s], battActive);
       if (isDischarging) {
         this._setFlowPath(battFlowIds,   'M 355,40 L 225,40');
-        this._setFlowPath(battFlowIds_s, 'M 1516,580 L 778,580');
+        this._setFlowPath(battFlowIds_s, 'M 1410,580 L 778,580');
         lb.setAttribute('marker-end', 'url(#arrowDis)');
       } else {
         this._setFlowPath(battFlowIds,   'M 225,40 L 355,40');
-        this._setFlowPath(battFlowIds_s, 'M 778,580 L 1516,580');
+        this._setFlowPath(battFlowIds_s, 'M 778,580 L 1410,580');
         lb.setAttribute('marker-end', 'url(#arrowBatt)');
       }
     }
