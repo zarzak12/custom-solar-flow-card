@@ -1434,7 +1434,7 @@ function buildCardHTML(cfg) {
       ${c.img_scene_mode === 'single' ? `
       <div class="sfc-scene-image-wrap">
         <img class="sfc-scene-image" id="sfcSceneImg"
-          src="${c['img_scene_day_' + (c.img_scene_variant || 'esc_ev')] || c.img_scene_day || ''}"
+          src="${(c[`img_scene_day_${(c.img_scene_variant||'esc_ev').replace(/^esc_/, '')}`] || c.img_scene_day || '')}"
           alt="scene" onerror="this.style.display='none'"/>
       </div>
       ` : ''}
@@ -2332,7 +2332,8 @@ class SolarFlowCard extends HTMLElement {
     const tt   = progress;
     const bx   = (1-tt)*(1-tt)*40  + 2*(1-tt)*tt*260 + tt*tt*480;
     const by   = (1-tt)*(1-tt)*175 + 2*(1-tt)*tt*30  + tt*tt*175;
-    const skyFraction = 0.55;
+    const isSingleMode = c.img_scene_mode === 'single';
+    const skyFraction = isSingleMode ? 0.35 : 0.55;
     const pctX = (bx / 520) * 100;
     // Décalage fixe pour que le soleil reste au-dessus de l'arc
     const pctY = Math.max(1, (by / 200) * skyFraction * 100 - 4);
@@ -2381,9 +2382,9 @@ class SolarFlowCard extends HTMLElement {
 
     const sceneImg = this._el('sfcSceneImg');
     if (sceneImg) {
-      const variant = c.img_scene_variant || 'esc_ev';
-      const dayImg = c[`img_scene_day_${variant}`] || c.img_scene_day;
-      const nightImg = c[`img_scene_night_${variant}`] || c.img_scene_night;
+      const variantKey = (c.img_scene_variant || 'esc_ev').replace(/^esc_/, '');
+      const dayImg = c[`img_scene_day_${variantKey}`] || c.img_scene_day;
+      const nightImg = c[`img_scene_night_${variantKey}`] || c.img_scene_night;
       const sceneSrc = isNight ? (nightImg || dayImg) : (dayImg || nightImg);
       if (sceneSrc) {
         sceneImg.src = sceneSrc;
@@ -2534,6 +2535,6 @@ customElements.define('solar-flow-card-editor', SolarFlowCardEditor);
 window.customCards = window.customCards || [];
 window.customCards.push({ type:'solar-flow-card', name:'Solar Flow Card', description:'Arc solaire animé, météo dynamique, flux énergie temps réel', preview:true });
 
-console.info('%c☀️ SOLAR FLOW CARD %c v1.0.10 ',
+console.info('%c☀️ SOLAR FLOW CARD %c v1.0.11 ',
   'background:#0d7377;color:#fff;padding:2px 6px;border-radius:4px 0 0 4px;font-weight:700',
   'background:#14a085;color:#fff;padding:2px 6px;border-radius:0 4px 4px 0;');
