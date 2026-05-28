@@ -731,7 +731,7 @@ const CARD_CSS = `
   .sfc-scene-image-wrap {
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    height: 82%;
+    height: 40%;
     z-index: 2;
     pointer-events: none;
     overflow: hidden;
