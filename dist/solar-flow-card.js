@@ -591,12 +591,6 @@ const CARD_CSS = `
 
   /* ── Sky scene ── */
   .sfc-scene { position:relative; overflow:hidden; isolation:isolate; }
-  .sfc-sky { position:absolute;inset:0;transition:background 20s linear;border-radius:0; z-index: 0;}
-  .sfc-stars { position:absolute;inset:0;pointer-events:none;transition:opacity 3s; z-index: 0;}
-  .sfc-star { position:absolute;border-radius:50%;background:#fff;animation:sfc-twinkle 2s infinite alternate; }
-  @keyframes sfc-twinkle { 0%{opacity:.1}100%{opacity:.95} }
-  .sfc-cloud { position:absolute;pointer-events:none;font-size:36px;animation:sfc-cloud linear infinite; z-index: 1;}
-  @keyframes sfc-cloud { from{left:-60px}to{left:calc(100% + 60px)} }
   .sfc-sun-arc-svg { position:absolute;inset:0;width:100%;height:100%; }
   .sfc-sun-orb {
     position:absolute; width:34px;height:34px; border-radius:50%;
@@ -730,36 +724,19 @@ const CARD_CSS = `
   }
   .sfc-scene-image-wrap {
     position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 40%;
-    z-index: 2;
+    inset: 0;                    /* couvre toute la scène */
+    z-index: 2;                  /* au-dessus du ciel z-index:0 */
     pointer-events: none;
-    overflow: hidden;
+    /* PAS de overflow:hidden — laisser le PNG transparent respirer */
   }
 
   .sfc-scene-image-wrap .sfc-scene-image {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;         /* respecte les proportions du PNG */
     object-position: bottom center;
     display: block;
-    /* Fondu haut via mask — fonctionne même avec overflow:hidden */
-    -webkit-mask-image: linear-gradient(
-      180deg,
-      transparent 0%,
-      rgba(0,0,0,0.4) 8%,
-      rgba(0,0,0,0.75) 16%,
-      rgba(0,0,0,0.95) 26%,
-      black 36%
-    );
-    mask-image: linear-gradient(
-      180deg,
-      transparent 0%,
-      rgba(0,0,0,0.4) 8%,
-      rgba(0,0,0,0.75) 16%,
-      rgba(0,0,0,0.95) 26%,
-      black 36%
-    );
+    /* PAS de mask-image — le PNG transparent fait le travail seul */
   }
   /* Nœuds images */
   .sfc-img-node {
