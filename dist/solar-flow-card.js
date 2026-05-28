@@ -1036,25 +1036,18 @@ const CARD_CSS = `
     stroke-linecap:round;
     transition:opacity .35s ease;
   }
-  /* Particule CSS — active si GSAP n'est pas disponible.
-     GSAP la remplace via el.style.animation='none' + DrawSVGPlugin.
-     stroke-dasharray: segment de 20 u + pause de 300 u = particule visible. */
+  /* DrawSVGPlugin gère l'animation — stroke-dasharray et animation sont
+     réinitialisés via el.style dans animateFlow() avant que GSAP prenne la main */
   .sfc-flow-neon,
   .sfc-sun-flow-neon {
-    stroke-dasharray: 20 300;
-    stroke-dashoffset: 0;
+    stroke-dasharray: none;
     opacity: 1;
-    animation: sfc-flow-particle 1.8s linear infinite;
+    animation: none;
     filter:
       drop-shadow(0 0 2px currentColor)
       drop-shadow(0 0 6px currentColor)
       drop-shadow(0 0 12px currentColor);
   }
-  @keyframes sfc-flow-particle {
-    from { stroke-dashoffset: 0; }
-    to   { stroke-dashoffset: -320; }
-  }
-  .sfc-sun-flow-neon { animation-duration: 1.4s; }
 
   .sfc-flow-tail-mid,
   .sfc-sun-flow-tail-mid {
@@ -1517,7 +1510,7 @@ function buildCardHTML(cfg) {
           <defs>
             <!-- Clip cylindre batterie -->
             <clipPath id="sfcSVBattClip">
-              <rect x="1422" y="532" width="56" height="165" rx="4"/>
+              <rect x="1422" y="532" width="56" height="110" rx="4"/>
             </clipPath>
             <!-- Gradients liquide selon état — même logique que le mode séparé HTML -->
             <linearGradient id="sfcSVGradNeutral"   x1="0" y1="0" x2="0" y2="1">
@@ -1561,7 +1554,7 @@ function buildCardHTML(cfg) {
           <!-- Fond cylindre — ajuster x/y pour aligner sur la batterie murale de l'image.
                Référence : image 1536×1024, batterie mur droit garage.
                Pour décaler : modifier x (gauche/droite) et y (haut/bas) sur tous les éléments. -->
-          <rect x="1420" y="530" width="60" height="170" rx="6"
+          <rect x="1420" y="530" width="60" height="115" rx="6"
             fill="rgba(6,13,26,0.78)" stroke="rgba(255,255,255,0.18)" stroke-width="2.5"/>
           <!-- Liquide (bottom-up) — y et height mis à jour par JS -->
           <rect id="sfcSVBattFill" x="1422" y="632" width="56" height="63"
@@ -1573,10 +1566,10 @@ function buildCardHTML(cfg) {
           <rect id="sfcSVBattWave2" x="1402" y="632" width="96" height="10" rx="5"
             fill="rgba(255,255,255,0.16)" clip-path="url(#sfcSVBattClip)"/>
           <!-- Brillance gauche -->
-          <rect x="1422" y="532" width="14" height="165" rx="2"
+          <rect x="1422" y="532" width="14" height="110" rx="2"
             fill="rgba(255,255,255,0.07)" clip-path="url(#sfcSVBattClip)" pointer-events="none"/>
-          <!-- SOC % centré (Y = top_clip + height/2 = 532 + 82 = 614) -->
-          <text id="sfcSVBattSoc" x="1450" y="614"
+          <!-- SOC % centré (Y = top_clip + height/2 = 532 + 55 = 587) -->
+          <text id="sfcSVBattSoc" x="1450" y="587"
             text-anchor="middle" dominant-baseline="middle"
             style="font-family:monospace;font-size:32px;font-weight:900;fill:#fff;
                    paint-order:stroke fill;stroke:rgba(0,0,0,0.9);stroke-width:6">—%</text>
@@ -2224,17 +2217,14 @@ class SolarFlowCard extends HTMLElement {
   }
 
   _loadGSAP() {
-    // Déjà chargé sur la page ?
     if (window.gsap && window.DrawSVGPlugin) {
       gsap.registerPlugin(DrawSVGPlugin);
       this._initFlowAnimations();
       return;
     }
-    // Charger GSAP core
     const s1 = document.createElement('script');
     s1.src = 'https://cdn.jsdelivr.net/npm/gsap@3.15/dist/gsap.min.js';
     s1.onload = () => {
-      // Puis DrawSVG plugin
       const s2 = document.createElement('script');
       s2.src = 'https://cdn.jsdelivr.net/npm/gsap@3.15/dist/DrawSVGPlugin.min.js';
       s2.onload = () => {
@@ -2250,32 +2240,23 @@ class SolarFlowCard extends HTMLElement {
     this._gsapReady = true;
     const sr = this.shadowRoot;
 
-    // Fonction helper : particule qui court sur un path en boucle
     const animateFlow = (id, duration, delay = 0, segmentSize = 25) => {
       const el = sr.getElementById(id);
       if (!el) return;
-      // Désactiver l'animation CSS fallback pour laisser GSAP prendre la main
+      // Réinitialiser le style avant que DrawSVGPlugin calcule la longueur du path
       el.style.animation = 'none';
-      // Ne pas forcer strokeDasharray ici — DrawSVGPlugin le gère lui-même
+      el.style.strokeDasharray = 'none';
 
       const tl = gsap.timeline({ repeat: -1, delay });
-
-      // Phase 1 : la particule entre (grandit de 0 à segmentSize%)
       tl.fromTo(el,
         { drawSVG: '0% 0%' },
-        {
-          drawSVG: `0% ${segmentSize}%`,
-          duration: duration * 0.15,
-          ease: 'power2.in'
-        }
+        { drawSVG: `0% ${segmentSize}%`, duration: duration * 0.15, ease: 'power2.in' }
       )
-      // Phase 2 : la particule court (segment de taille fixe qui avance)
       .to(el, {
         drawSVG: `${100 - segmentSize}% 100%`,
         duration: duration * 0.70,
         ease: 'none'
       })
-      // Phase 3 : la particule sort (rétrécit de segmentSize% à 0)
       .to(el, {
         drawSVG: '100% 100%',
         duration: duration * 0.15,
@@ -2283,15 +2264,13 @@ class SolarFlowCard extends HTMLElement {
       });
     };
 
-    // Flux grid ↔ maison (mode separate/emoji)
-    animateFlow('sfcLGGlow',   1.8, 0,   40);
-    // Flux grid ↔ maison (mode single — sfcSingleFlowSvg)
-    animateFlow('sfcLGGlow_s', 1.8, 0,   40);
+    // Flux grid ↔ maison
+    animateFlow('sfcLGGlow',   1.8, 0,40);
+    animateFlow('sfcLGGlow_s', 1.8, 0,40);
 
-    // Flux maison ↔ batterie (mode separate/emoji)
-    animateFlow('sfcLBGlow',   2.1, 0,   40);
-    // Flux maison ↔ batterie (mode single — sfcSingleFlowSvg)
-    animateFlow('sfcLBGlow_s', 2.1, 0,   40);
+    // Flux maison ↔ batterie
+    animateFlow('sfcLBGlow',   2.1, 0,40);
+    animateFlow('sfcLBGlow_s', 2.1, 0,40);
 
     // Flux soleil → maison (commun aux 3 modes)
     animateFlow('sfcSunFlowGlow', 1.4, 0, 40);
@@ -2579,9 +2558,9 @@ class SolarFlowCard extends HTMLElement {
     const svWave1 = this._el('sfcSVBattWave1');
     const svWave2 = this._el('sfcSVBattWave2');
     if (svFill) {
-      const maxH = 165;
+      const maxH = 110; // hauteur intérieure du clipPath (532 → 642)
       const fillH = Math.round(maxH * battSoc / 100);
-      const fillY = 532 + (maxH - fillH); // 532 = top intérieur du clipPath
+      const fillY = 532 + (maxH - fillH);
       svFill.setAttribute('y',      String(fillY));
       svFill.setAttribute('height', String(fillH));
 
