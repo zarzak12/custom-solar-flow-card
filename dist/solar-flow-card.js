@@ -720,7 +720,7 @@ const CARD_CSS = `
     z-index:3;
   }
   .sfc-energy-row .sfc-flow-svg {
-    position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;
+    position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;top:80px;
   }
   .sfc-scene-image-wrap {
     position: absolute;
@@ -1254,8 +1254,7 @@ const CARD_CSS = `
 
   /* Mode single : cache les images des nœuds mais garde les flux et valeurs */
   .sfc-scene-mode-single .sfc-img-node img,
-  .sfc-scene-mode-single .sfc-img-node > span,
-  .sfc-scene-mode-single .sfc-batt-wrapper {
+  .sfc-scene-mode-single .sfc-img-node > span {
     display: none !important;
   }
 
@@ -1280,6 +1279,20 @@ const CARD_CSS = `
   .sfc-scene-mode-single ~ .sfc-sunrise,
   .sfc-scene-mode-single ~ .sfc-sunset {
     bottom: 310px;
+  }
+  
+  /* Mode single : batterie positionnée sur la batterie murale de l'image */
+  .sfc-scene-mode-single-scene .sfc-batt-wrapper {
+    display: inline-flex !important;  /* override le display:none du mode single */
+    position: absolute;
+    bottom: 18%;        /* ← à ajuster selon l'image */
+    right: 8%;          /* ← batterie murale droite du garage */
+    width: 60px;
+    height: 60px;
+    top: auto;
+    transform: none;
+    opacity: 0.12;      /* 10-12% de transparence */
+    z-index: 4;
   }
 `;
 
@@ -1320,7 +1333,7 @@ function buildCardHTML(cfg) {
     <!-- ═══════════════════════════════════════
          SCÈNE UNIFIÉE : ciel + soleil + énergie
     ════════════════════════════════════════════ -->
-    <div class="sfc-unified-scene" id="sfcUnifiedScene"
+    <div class="sfc-unified-scene ${c.img_scene_mode === 'single' ? 'sfc-scene-mode-single-scene' : ''}" id="sfcUnifiedScene"
          style="height: ${c.show_images !== false ? (c.img_scene_mode === 'single' ? '520px' : '380px') : '200px'};">
 
       <!-- Fond ciel dynamique -->
@@ -2258,7 +2271,7 @@ class SolarFlowCard extends HTMLElement {
     const gap = nRouters > 0 ? (355 - 210) / (nRouters + 1) : 0;
     const routerXs = activeRouters.map((_, i) => Math.round(210 + gap * (i+1)));
     const isSingle = this._cfg.img_scene_mode === 'single';
-    
+
     activeRouters.forEach((rn, i) => {
       const c2 = this._cfg;
       const rx = routerXs[i];
