@@ -1665,12 +1665,12 @@ function buildCardHTML(cfg) {
           <path id="sfcLG" class="sfc-flow-core" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,48 L 195,48"/>
           <path id="sfcLGTailLong" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,48 L 195,48"/>
           <path id="sfcLGTailMid" class="sfc-flow-tail-mid" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,48 L 195,48"/>
-          <path id="sfcLGGlow" class="sfc-flow-neon" stroke="url(#sfcGradGrid)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,48 L 195,48"/>
+          <path id="sfcLGGlow" class="sfc-flow-neon" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,48 L 195,48"/>
 
           <path id="sfcLB" class="sfc-flow-core" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,48 L 355,48" marker-end="url(#arrowBatt)"/>
           <path id="sfcLBTailLong" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,48 L 355,48"/>
           <path id="sfcLBTailMid" class="sfc-flow-tail-mid" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,48 L 355,48"/>
-          <path id="sfcLBGlow" class="sfc-flow-neon" stroke="url(#sfcGradBatt)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,48 L 355,48"/>
+          <path id="sfcLBGlow" class="sfc-flow-neon" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,48 L 355,48"/>
           <path id="sfcLR1" class="sfc-router-line" d="M 210,48 L 280,48" marker-end="url(#arrowRouter)" style="display:none"/>
           <path id="sfcLR2" class="sfc-router-line" d="M 210,48 L 310,48" marker-end="url(#arrowRouter)" style="display:none"/>
           <path id="sfcLR3" class="sfc-router-line" d="M 210,48 L 340,48" marker-end="url(#arrowRouter)" style="display:none"/>
