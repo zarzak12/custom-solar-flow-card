@@ -1260,7 +1260,6 @@ const CARD_CSS = `
   .sfc-scene-mode-single .sfc-img-node {
     justify-content: flex-end;
     padding-bottom: 4px;
-    top: -50%;
   }
 
   .sfc-scene-mode-single .sfc-img-label,
@@ -1289,7 +1288,7 @@ const CARD_CSS = `
 
   /* Mode single : remonte les valeurs de la maison */
   .sfc-scene-mode-single #sfcNodeHome {
-    transform: translateY(-50%);
+    transform: translateY(-250%);
   }
 `;
 
