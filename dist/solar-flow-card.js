@@ -647,12 +647,12 @@ const CARD_CSS = `
     isolation: isolate;
   }
   /* Ciel */
-  .sfc-sky { position:absolute;inset:0;transition:background 20s linear; }
-  .sfc-stars { position:absolute;inset:0;pointer-events:none;transition:opacity 3s; }
+  .sfc-sky { position:absolute;inset:0;transition:background 20s linear; z-index: 0;}
+  .sfc-stars { position:absolute;inset:0;pointer-events:none;transition:opacity 3s; z-index: 0;}
   .sfc-star { position:absolute;border-radius:50%;background:#fff;animation:sfc-twinkle 2s infinite alternate; }
   @keyframes sfc-twinkle { 0%{opacity:.1}100%{opacity:.95} }
   /* Nuages */
-  .sfc-clouds { position:absolute;inset:0;pointer-events:none;overflow:hidden; }
+  .sfc-clouds { position:absolute;inset:0;pointer-events:none;overflow:hidden; z-index: 1;}
   .sfc-cloud-shape {
     position:absolute;
     background:rgba(255,255,255,0.55);
