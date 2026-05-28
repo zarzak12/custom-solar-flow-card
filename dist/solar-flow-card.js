@@ -1471,18 +1471,18 @@ function buildCardHTML(cfg) {
           preserveAspectRatio="none">
 
           <!-- Grid → Maison : diagonale bas-gauche (réseau) → milieu-droite (maison)
-               stroke-width en unités viewBox 0-100 : ~0.25 u = ~1.3 px à 540px de large,
-               soit la même épaisseur visuelle que le flux soleil (viewBox 520-large, sw=1.2) -->
-          <path id="sfcLG_s"         class="sfc-flow-core"      stroke-width="0.25" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,75"/>
-          <path id="sfcLGTailLong_s" class="sfc-flow-tail-long" stroke-width="0.55" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,75"/>
-          <path id="sfcLGTailMid_s"  class="sfc-flow-tail-mid"  stroke-width="0.40" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,75"/>
-          <path id="sfcLGGlow_s"     class="sfc-flow-neon"      stroke-width="0.30" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,75"/>
+               viewBox 0-100 vs 520-large : 1 unité ≈ 5.2 px → stroke-width via style= (priorité > classe CSS)
+               Équivalents : core=0.19, neon=0.23, tail-mid=0.31, tail-long=0.42 -->
+          <path id="sfcLG_s"         class="sfc-flow-core"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:0.19" d="M 11.4,85 L 41.7,75"/>
+          <path id="sfcLGTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:0.42" d="M 11.4,85 L 41.7,75"/>
+          <path id="sfcLGTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:0.31" d="M 11.4,85 L 41.7,75"/>
+          <path id="sfcLGGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:0.23" d="M 11.4,85 L 41.7,75"/>
 
           <!-- Maison → Batterie : ligne horizontale au niveau de la connexion murale -->
-          <path id="sfcLB_s"         class="sfc-flow-core"      stroke-width="0.25" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,75 L 98.7,75"/>
-          <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke-width="0.55" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,75 L 98.7,75"/>
-          <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke-width="0.40" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,75 L 98.7,75"/>
-          <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke-width="0.30" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,75 L 98.7,75"/>
+          <path id="sfcLB_s"         class="sfc-flow-core"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:0.19" d="M 50.7,75 L 98.7,75"/>
+          <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:0.42" d="M 50.7,75 L 98.7,75"/>
+          <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:0.31" d="M 50.7,75 L 98.7,75"/>
+          <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:0.23" d="M 50.7,75 L 98.7,75"/>
         </svg>
         ` : ''}
         <img class="sfc-scene-image" id="sfcSceneImg"
