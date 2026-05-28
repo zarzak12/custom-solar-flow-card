@@ -1001,7 +1001,7 @@ const CARD_CSS = `
     filter:drop-shadow(0 0 3px currentColor);
     transition:opacity .35s ease;
   }
-  .sfc-flow-core { stroke-width:1.45; }
+  .sfc-flow-core { stroke-width:1; }
   .sfc-sun-flow-core { stroke-width:2; }
   .sfc-flow-neon,
   .sfc-flow-tail-mid,
@@ -1041,12 +1041,12 @@ const CARD_CSS = `
     animation: none;
     filter: blur(1.6px) drop-shadow(0 0 18px currentColor);
   }
-  .sfc-flow-neon { stroke-width:1.8; }
-  .sfc-flow-tail-mid { stroke-width:2.4; }
-  .sfc-flow-tail-long { stroke-width:3.2; }
-  .sfc-sun-flow-neon { stroke-width:2.1; animation-duration:1.65s; }
-  .sfc-sun-flow-tail-mid { stroke-width:2.8; animation-duration:1.65s; }
-  .sfc-sun-flow-tail-long { stroke-width:3.6; animation-duration:1.65s; }
+  .sfc-flow-neon { stroke-width:1.2; }
+  .sfc-flow-tail-mid { stroke-width:1.6; }
+  .sfc-flow-tail-long { stroke-width:2.2; }
+  .sfc-sun-flow-neon { stroke-width:1.2; animation-duration:1.65s; }
+  .sfc-sun-flow-tail-mid { stroke-width:1.6; animation-duration:1.65s; }
+  .sfc-sun-flow-tail-long { stroke-width:2.2; animation-duration:1.65s; }
   .sfc-flow-core.inactive,
   .sfc-sun-flow-core.inactive { opacity:.08; }
   .sfc-flow-neon.inactive,
@@ -2060,17 +2060,17 @@ class SolarFlowCard extends HTMLElement {
     };
 
     // Flux grid ↔ maison
-    animateFlow('sfcLGGlow',      1.8, 0, 20);
+    animateFlow('sfcLGGlow',      1.8, 0, 40);
     //animateFlow('sfcLGTailMid',   1.8, 0.1, 35);
     //animateFlow('sfcLGTailLong',  1.8, 0.2, 55);
 
     // Flux maison ↔ batterie
-    animateFlow('sfcLBGlow',      2.1, 0, 20);
+    animateFlow('sfcLBGlow',      2.1, 0, 40);
     //animateFlow('sfcLBTailMid',   2.1, 0.1, 35);
     //animateFlow('sfcLBTailLong',  2.1, 0.2, 55);
 
     // Flux soleil
-    animateFlow('sfcSunFlowGlow',    1.4, 0, 20);
+    animateFlow('sfcSunFlowGlow',    1.4, 0, 40);
     //animateFlow('sfcSunFlowTailMid', 1.4, 0.1, 35);
     //animateFlow('sfcSunFlowTailLong',1.4, 0.2, 55);
   }
