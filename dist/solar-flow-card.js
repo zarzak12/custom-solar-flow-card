@@ -1301,6 +1301,11 @@ const CARD_CSS = `
     bottom: 310px;
   }
   
+  /* Mode single : masquer le SVG de flux standard (remplacé par sfcSingleFlowSvg) */
+  .sfc-scene-mode-single #sfcFlowSvg {
+    display: none;
+  }
+
   /* Mode single : la batterie reste dans le flux flex normal */
   .sfc-scene-mode-single .node-battery {
     flex: 1;
