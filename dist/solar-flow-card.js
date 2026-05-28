@@ -1036,17 +1036,25 @@ const CARD_CSS = `
     stroke-linecap:round;
     transition:opacity .35s ease;
   }
-  /* GSAP gère l'animation — garder seulement le style visuel */
+  /* Particule CSS — active si GSAP n'est pas disponible.
+     GSAP la remplace via el.style.animation='none' + DrawSVGPlugin.
+     stroke-dasharray: segment de 20 u + pause de 300 u = particule visible. */
   .sfc-flow-neon,
   .sfc-sun-flow-neon {
-    stroke-dasharray: none;
+    stroke-dasharray: 20 300;
+    stroke-dashoffset: 0;
     opacity: 1;
-    animation: none;   /* ← GSAP remplace */
+    animation: sfc-flow-particle 1.8s linear infinite;
     filter:
       drop-shadow(0 0 2px currentColor)
       drop-shadow(0 0 6px currentColor)
       drop-shadow(0 0 12px currentColor);
   }
+  @keyframes sfc-flow-particle {
+    from { stroke-dashoffset: 0; }
+    to   { stroke-dashoffset: -320; }
+  }
+  .sfc-sun-flow-neon { animation-duration: 1.4s; }
 
   .sfc-flow-tail-mid,
   .sfc-sun-flow-tail-mid {
@@ -1066,7 +1074,7 @@ const CARD_CSS = `
   .sfc-flow-neon { stroke-width:1.2; }
   .sfc-flow-tail-mid { stroke-width:1.6; }
   .sfc-flow-tail-long { stroke-width:2.2; }
-  .sfc-sun-flow-neon { stroke-width:1.2; animation-duration:1.65s; }
+  .sfc-sun-flow-neon { stroke-width:1.2; }
   .sfc-sun-flow-tail-mid { stroke-width:1.6; animation-duration:1.65s; }
   .sfc-sun-flow-tail-long { stroke-width:2.2; animation-duration:1.65s; }
   .sfc-flow-core.inactive,
@@ -1509,7 +1517,7 @@ function buildCardHTML(cfg) {
           <defs>
             <!-- Clip cylindre batterie -->
             <clipPath id="sfcSVBattClip">
-              <rect x="1462" y="502" width="56" height="165" rx="4"/>
+              <rect x="1422" y="532" width="56" height="165" rx="4"/>
             </clipPath>
             <!-- Gradients liquide selon état — même logique que le mode séparé HTML -->
             <linearGradient id="sfcSVGradNeutral"   x1="0" y1="0" x2="0" y2="1">
@@ -1550,23 +1558,25 @@ function buildCardHTML(cfg) {
                La hauteur du liquide (sfcSVBattFill) est mise à jour via JS.
                clipPath sfcSVBattClip découpe proprement dans le cylindre.
           ══════════════════════════════════════════════════════════ -->
-          <!-- Fond cylindre -->
-          <rect x="1460" y="500" width="60" height="170" rx="6"
+          <!-- Fond cylindre — ajuster x/y pour aligner sur la batterie murale de l'image.
+               Référence : image 1536×1024, batterie mur droit garage.
+               Pour décaler : modifier x (gauche/droite) et y (haut/bas) sur tous les éléments. -->
+          <rect x="1420" y="530" width="60" height="170" rx="6"
             fill="rgba(6,13,26,0.78)" stroke="rgba(255,255,255,0.18)" stroke-width="2.5"/>
-          <!-- Liquide (bottom-up) — y, height et fill mis à jour par JS selon l'état -->
-          <rect id="sfcSVBattFill" x="1462" y="602" width="56" height="63"
+          <!-- Liquide (bottom-up) — y et height mis à jour par JS -->
+          <rect id="sfcSVBattFill" x="1422" y="632" width="56" height="63"
             fill="url(#sfcSVGradNeutral)" clip-path="url(#sfcSVBattClip)"/>
-          <!-- Vague 1 (lente) — Y mis à jour par JS au niveau du liquide -->
-          <rect id="sfcSVBattWave1" x="1432" y="597" width="116" height="14" rx="7"
+          <!-- Vague 1 (lente) -->
+          <rect id="sfcSVBattWave1" x="1392" y="627" width="116" height="14" rx="7"
             fill="rgba(255,255,255,0.28)" clip-path="url(#sfcSVBattClip)"/>
           <!-- Vague 2 (rapide, sens inverse) -->
-          <rect id="sfcSVBattWave2" x="1442" y="602" width="96" height="10" rx="5"
+          <rect id="sfcSVBattWave2" x="1402" y="632" width="96" height="10" rx="5"
             fill="rgba(255,255,255,0.16)" clip-path="url(#sfcSVBattClip)"/>
           <!-- Brillance gauche -->
-          <rect x="1462" y="502" width="14" height="165" rx="2"
+          <rect x="1422" y="532" width="14" height="165" rx="2"
             fill="rgba(255,255,255,0.07)" clip-path="url(#sfcSVBattClip)" pointer-events="none"/>
-          <!-- SOC % centré dans le cylindre -->
-          <text id="sfcSVBattSoc" x="1490" y="592"
+          <!-- SOC % centré (Y = top_clip + height/2 = 532 + 82 = 614) -->
+          <text id="sfcSVBattSoc" x="1450" y="614"
             text-anchor="middle" dominant-baseline="middle"
             style="font-family:monospace;font-size:32px;font-weight:900;fill:#fff;
                    paint-order:stroke fill;stroke:rgba(0,0,0,0.9);stroke-width:6">—%</text>
@@ -2244,8 +2254,9 @@ class SolarFlowCard extends HTMLElement {
     const animateFlow = (id, duration, delay = 0, segmentSize = 25) => {
       const el = sr.getElementById(id);
       if (!el) return;
+      // Désactiver l'animation CSS fallback pour laisser GSAP prendre la main
       el.style.animation = 'none';
-      el.style.strokeDasharray = 'none';
+      // Ne pas forcer strokeDasharray ici — DrawSVGPlugin le gère lui-même
 
       const tl = gsap.timeline({ repeat: -1, delay });
 
@@ -2570,7 +2581,7 @@ class SolarFlowCard extends HTMLElement {
     if (svFill) {
       const maxH = 165;
       const fillH = Math.round(maxH * battSoc / 100);
-      const fillY = 502 + (maxH - fillH);
+      const fillY = 532 + (maxH - fillH); // 532 = top intérieur du clipPath
       svFill.setAttribute('y',      String(fillY));
       svFill.setAttribute('height', String(fillH));
 
