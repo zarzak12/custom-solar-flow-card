@@ -12,10 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Upload solar-flow-card.js to release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload "${{ github.ref_name }}" \
-            dist/solar-flow-card.js \
-            --clobber
+      - name: Attach solar-flow-card.js to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/solar-flow-card.js
