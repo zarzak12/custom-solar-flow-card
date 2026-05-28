@@ -1304,6 +1304,11 @@ const CARD_CSS = `
     display: none;
   }
 
+  /* Mode single : masquer le widget batterie HTML (remplacé par la batterie SVG) */
+  .sfc-scene-mode-single-scene #sfcBattWrapper {
+    display: none !important;
+  }
+
   /* Mode single : la batterie reste dans le flux flex normal */
   .sfc-scene-mode-single .node-battery {
     flex: 1;
@@ -1480,63 +1485,86 @@ function buildCardHTML(cfg) {
           viewBox="0 0 1536 1024"
           preserveAspectRatio="xMidYMax meet">
 
-          <!-- Grid → Maison : diagonale depuis le poteau réseau (bas-gauche)
-               jusqu'au niveau de la batterie sur la façade (point d'arrivée = même Y que batterie) -->
+          <defs>
+            <!-- clipPath pour le cylindre de la batterie SVG -->
+            <clipPath id="sfcSVBattClip">
+              <rect x="1462" y="502" width="56" height="165" rx="4"/>
+            </clipPath>
+          </defs>
+
+          <!-- ── FLUX Grid → Maison ── -->
           <path id="sfcLG_s"         class="sfc-flow-core"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3"   d="M 175,870 L 640,580"/>
           <path id="sfcLGTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:6.5" d="M 175,870 L 640,580"/>
           <path id="sfcLGTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:4.8" d="M 175,870 L 640,580"/>
           <path id="sfcLGGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3.6" d="M 175,870 L 640,580"/>
 
-          <!-- Maison → Batterie : ligne horizontale au niveau de la batterie murale -->
+          <!-- ── FLUX Maison → Batterie ── -->
           <path id="sfcLB_s"         class="sfc-flow-core"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3"   d="M 778,580 L 1516,580"/>
           <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:6.5" d="M 778,580 L 1516,580"/>
           <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:4.8" d="M 778,580 L 1516,580"/>
           <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3.6" d="M 778,580 L 1516,580"/>
 
-          <!-- ═══════════════════════════════════════════════════════════
-               Labels de puissance calés sur l'image (coordonnées 1536×1024).
-               font-size en unités SVG : à ~516px de card, 1 unité ≈ 0.34 px
-               → label 24 u ≈ 8 px, valeur 44 u ≈ 15 px, sous-valeur 28 u ≈ 9.5 px
-               paint-order:stroke fill crée un halo sombre pour lisibilité sur image.
-          ═══════════════════════════════════════════════════════════ -->
+          <!-- ══════════════════════════════════════════════════════════
+               BATTERIE LIQUIDE SVG — overlay sur la batterie murale de l'image.
+               Coords 1536×1024 : batterie mur droit garage ~X=1462, Y=500.
+               La hauteur du liquide (sfcSVBattFill) est mise à jour via JS.
+               clipPath sfcSVBattClip découpe proprement dans le cylindre.
+          ══════════════════════════════════════════════════════════ -->
+          <!-- Fond cylindre -->
+          <rect x="1460" y="500" width="60" height="170" rx="6"
+            fill="rgba(6,13,26,0.78)" stroke="rgba(255,255,255,0.18)" stroke-width="2.5"/>
+          <!-- Liquide (bottom-up) — y et height mis à jour par JS -->
+          <rect id="sfcSVBattFill" x="1462" y="602" width="56" height="63"
+            fill="rgba(0,200,255,0.88)" clip-path="url(#sfcSVBattClip)"/>
+          <!-- Brillance gauche -->
+          <rect x="1462" y="502" width="14" height="165" rx="2"
+            fill="rgba(255,255,255,0.07)" clip-path="url(#sfcSVBattClip)" pointer-events="none"/>
+          <!-- SOC % centré dans le cylindre -->
+          <text id="sfcSVBattSoc" x="1490" y="592"
+            text-anchor="middle" dominant-baseline="middle"
+            style="font-family:monospace;font-size:32px;font-weight:900;fill:#fff;
+                   paint-order:stroke fill;stroke:rgba(0,0,0,0.9);stroke-width:6">—%</text>
 
-          <!-- Réseau : près du poteau, bas-gauche -->
-          <text id="sfcSGGridLbl" text-anchor="middle" x="280" y="846"
-            style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:2px;
-                   fill:var(--sfc-grid,#4FC3F7);paint-order:stroke fill;
-                   stroke:rgba(0,0,0,0.85);stroke-width:5;text-transform:uppercase">RÉSEAU</text>
-          <text id="sfcSGGridVal" text-anchor="middle" x="280" y="896"
-            style="font-family:monospace;font-size:44px;font-weight:900;
-                   fill:var(--sfc-grid,#4FC3F7);paint-order:stroke fill;
-                   stroke:rgba(0,0,0,0.85);stroke-width:8">0 W</text>
-          <text id="sfcSGGridSub" text-anchor="middle" x="280" y="934"
-            style="font-family:monospace;font-size:28px;
-                   fill:rgba(232,244,253,0.85);paint-order:stroke fill;
-                   stroke:rgba(0,0,0,0.85);stroke-width:5">—</text>
+          <!-- ══════════════════════════════════════════════════════════
+               LABELS DE PUISSANCE — style identique au mode séparé :
+               fond sombre arrondi + label 8px uppercase + valeur 12px monospace.
+               font-size en unités SVG : 1 u ≈ 0.34 px à ~516px de card
+               → label=24 u≈8px, valeur=36 u≈12px, sous-val=27 u≈9px
+          ══════════════════════════════════════════════════════════ -->
 
-          <!-- Maison : façade centrale -->
-          <text id="sfcSGHomeLbl" text-anchor="middle" x="510" y="606"
-            style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:2px;
-                   fill:var(--sfc-home,#FF6B6B);paint-order:stroke fill;
-                   stroke:rgba(0,0,0,0.85);stroke-width:5;text-transform:uppercase">MAISON</text>
-          <text id="sfcSGHomeVal" text-anchor="middle" x="510" y="656"
-            style="font-family:monospace;font-size:44px;font-weight:900;
-                   fill:var(--sfc-home,#FF6B6B);paint-order:stroke fill;
-                   stroke:rgba(0,0,0,0.85);stroke-width:8">0 W</text>
+          <!-- Réseau : chip près du poteau bas-gauche -->
+          <rect x="146" y="836" width="268" height="116" rx="8"
+            fill="rgba(6,13,26,0.68)" stroke="rgba(79,195,247,0.18)" stroke-width="1.5"/>
+          <text text-anchor="middle" x="280" y="862"
+            style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:3px;
+                   fill:rgba(232,244,253,0.55)">RÉSEAU</text>
+          <text id="sfcSGGridVal" text-anchor="middle" x="280" y="902"
+            style="font-family:monospace;font-size:36px;font-weight:700;
+                   fill:var(--sfc-grid,#4FC3F7);filter:drop-shadow(0 0 4px var(--sfc-grid,#4FC3F7))">0 W</text>
+          <text id="sfcSGGridSub" text-anchor="middle" x="280" y="936"
+            style="font-family:monospace;font-size:27px;fill:rgba(232,244,253,0.6)">—</text>
 
-          <!-- Batterie : mur droit du garage -->
-          <text id="sfcSGBattLbl" text-anchor="middle" x="1410" y="486"
-            style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:2px;
-                   fill:var(--sfc-batt,#69FF47);paint-order:stroke fill;
-                   stroke:rgba(0,0,0,0.85);stroke-width:5;text-transform:uppercase">BATTERIE</text>
-          <text id="sfcSGBattVal" text-anchor="middle" x="1410" y="536"
-            style="font-family:monospace;font-size:44px;font-weight:900;
-                   fill:var(--sfc-batt,#69FF47);paint-order:stroke fill;
-                   stroke:rgba(0,0,0,0.85);stroke-width:8">—</text>
-          <text id="sfcSGBattSub" text-anchor="middle" x="1410" y="572"
-            style="font-family:monospace;font-size:28px;
-                   fill:rgba(232,244,253,0.85);paint-order:stroke fill;
-                   stroke:rgba(0,0,0,0.85);stroke-width:5">—</text>
+          <!-- Maison : chip façade centrale -->
+          <rect x="384" y="596" width="252" height="88" rx="8"
+            fill="rgba(6,13,26,0.68)" stroke="rgba(255,107,107,0.18)" stroke-width="1.5"/>
+          <text text-anchor="middle" x="510" y="622"
+            style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:3px;
+                   fill:rgba(232,244,253,0.55)">MAISON</text>
+          <text id="sfcSGHomeVal" text-anchor="middle" x="510" y="668"
+            style="font-family:monospace;font-size:36px;font-weight:700;
+                   fill:var(--sfc-home,#FF6B6B);filter:drop-shadow(0 0 4px var(--sfc-home,#FF6B6B))">0 W</text>
+
+          <!-- Batterie : chip sous le cylindre -->
+          <rect x="1280" y="686" width="268" height="116" rx="8"
+            fill="rgba(6,13,26,0.68)" stroke="rgba(105,255,71,0.18)" stroke-width="1.5"/>
+          <text text-anchor="middle" x="1414" y="712"
+            style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:3px;
+                   fill:rgba(232,244,253,0.55)">BATTERIE</text>
+          <text id="sfcSGBattVal" text-anchor="middle" x="1414" y="752"
+            style="font-family:monospace;font-size:36px;font-weight:700;
+                   fill:var(--sfc-batt,#69FF47);filter:drop-shadow(0 0 4px var(--sfc-batt,#69FF47))">—</text>
+          <text id="sfcSGBattSub" text-anchor="middle" x="1414" y="786"
+            style="font-family:monospace;font-size:27px;fill:rgba(232,244,253,0.6)">—</text>
         </svg>
         <img class="sfc-scene-image" id="sfcSceneImg"
           src="${(c[`img_scene_day_${(c.img_scene_variant||'esc_ev').replace(/^esc_/, '')}`] || c.img_scene_day || '')}"
@@ -2462,14 +2490,20 @@ class SolarFlowCard extends HTMLElement {
     const re  = this._el('sfcRemaining');  if (re)  re.textContent  = rem      ? rem.toFixed(2)+' kWh'      : '— kWh';
     const tl  = this._el('sfcTodayLoad'); if (tl)  tl.textContent  = todayLoad? todayLoad.toFixed(2)+' kWh': '— kWh';
 
-    // Labels SVG mode single (sfcSingleFlowSvg, coords 1536×1024)
-    // Ces éléments n'existent que si img_scene_mode === 'single' → les guards ?. évitent les erreurs
+    // ── Labels et batterie SVG mode single (sfcSingleFlowSvg, coords 1536×1024) ──
+    // Ces éléments n'existent qu'en mode single → les guards évitent les erreurs en mode séparé
+
+    // Chip réseau
     const sgGridVal = this._el('sfcSGGridVal');
     if (sgGridVal) sgGridVal.textContent = this._fmt(Math.abs(gridW));
     const sgGridSub = this._el('sfcSGGridSub');
     if (sgGridSub) sgGridSub.textContent = gridW > 50 ? t(c,'dir_import') : gridW < -50 ? t(c,'dir_export') : '—';
+
+    // Chip maison
     const sgHomeVal = this._el('sfcSGHomeVal');
     if (sgHomeVal) sgHomeVal.textContent = this._fmt(homeW);
+
+    // Chip batterie
     const sgBattVal = this._el('sfcSGBattVal');
     if (sgBattVal) {
       if (battPower !== null) {
@@ -2481,6 +2515,26 @@ class SolarFlowCard extends HTMLElement {
     }
     const sgBattSub = this._el('sfcSGBattSub');
     if (sgBattSub) sgBattSub.textContent = battV ? battV.toFixed(1) + ' V' : '—';
+
+    // Batterie liquide SVG — rect bottom-up, hauteur = SOC%
+    // Cylindre : y=502, height=165 → fill : y=502+(165-fillH), height=fillH
+    const svFill = this._el('sfcSVBattFill');
+    if (svFill) {
+      const maxH = 165, fillH = Math.round(maxH * battSoc / 100);
+      svFill.setAttribute('y',      String(502 + (maxH - fillH)));
+      svFill.setAttribute('height', String(fillH));
+      // Couleur selon l'état : rouge critique, vert charge, orange décharge, bleu neutre
+      const fc = battSoc < 15
+        ? 'rgba(255,50,50,0.9)'
+        : (battSoc < 99.5 && pvW > 100)
+          ? 'rgba(105,255,71,0.9)'
+          : (homeW > pvW + 100)
+            ? 'rgba(255,140,0,0.9)'
+            : 'rgba(0,200,255,0.88)';
+      svFill.setAttribute('fill', fc);
+    }
+    const svSoc = this._el('sfcSVBattSoc');
+    if (svSoc) svSoc.textContent = Math.round(battSoc) + '%';
 
     // Sun
     this._updateSun(wi.cloudy);
