@@ -2155,6 +2155,7 @@ class SolarFlowCard extends HTMLElement {
     if (gridNode) gridNode.style.filter = gridW > 50 ? 'drop-shadow(0 0 10px rgba(79,195,247,0.5))' : '';
 
     // Flux lines + arrows
+    const isSingle = c.img_scene_mode === 'single';
     const lg = this._el('sfcLG');
     if (lg) {
       const gridActive = Math.abs(gridW) >= 50;
@@ -2256,7 +2257,8 @@ class SolarFlowCard extends HTMLElement {
     const nRouters = activeRouters.length;
     const gap = nRouters > 0 ? (355 - 210) / (nRouters + 1) : 0;
     const routerXs = activeRouters.map((_, i) => Math.round(210 + gap * (i+1)));
-
+    const isSingle = this._cfg.img_scene_mode === 'single';
+    
     activeRouters.forEach((rn, i) => {
       const c2 = this._cfg;
       const rx = routerXs[i];
