@@ -1510,7 +1510,7 @@ function buildCardHTML(cfg) {
           <defs>
             <!-- Clip cylindre batterie -->
             <clipPath id="sfcSVBattClip">
-              <rect x="1422" y="532" width="56" height="110" rx="4"/>
+              <rect x="1422" y="502" width="71" height="110" rx="4"/>
             </clipPath>
             <!-- Gradients liquide selon état — même logique que le mode séparé HTML -->
             <linearGradient id="sfcSVGradNeutral"   x1="0" y1="0" x2="0" y2="1">
@@ -1554,22 +1554,22 @@ function buildCardHTML(cfg) {
           <!-- Fond cylindre — ajuster x/y pour aligner sur la batterie murale de l'image.
                Référence : image 1536×1024, batterie mur droit garage.
                Pour décaler : modifier x (gauche/droite) et y (haut/bas) sur tous les éléments. -->
-          <rect x="1420" y="530" width="60" height="115" rx="6"
+          <rect x="1420" y="500" width="75" height="115" rx="6"
             fill="rgba(6,13,26,0.78)" stroke="rgba(255,255,255,0.18)" stroke-width="2.5"/>
           <!-- Liquide (bottom-up) — y et height mis à jour par JS -->
-          <rect id="sfcSVBattFill" x="1422" y="632" width="56" height="63"
+          <rect id="sfcSVBattFill" x="1422" y="562" width="71" height="63"
             fill="url(#sfcSVGradNeutral)" clip-path="url(#sfcSVBattClip)"/>
           <!-- Vague 1 (lente) -->
-          <rect id="sfcSVBattWave1" x="1392" y="627" width="116" height="14" rx="7"
+          <rect id="sfcSVBattWave1" x="1392" y="557" width="131" height="14" rx="7"
             fill="rgba(255,255,255,0.28)" clip-path="url(#sfcSVBattClip)"/>
           <!-- Vague 2 (rapide, sens inverse) -->
-          <rect id="sfcSVBattWave2" x="1402" y="632" width="96" height="10" rx="5"
+          <rect id="sfcSVBattWave2" x="1402" y="562" width="111" height="10" rx="5"
             fill="rgba(255,255,255,0.16)" clip-path="url(#sfcSVBattClip)"/>
           <!-- Brillance gauche -->
-          <rect x="1422" y="532" width="14" height="110" rx="2"
+          <rect x="1422" y="502" width="14" height="110" rx="2"
             fill="rgba(255,255,255,0.07)" clip-path="url(#sfcSVBattClip)" pointer-events="none"/>
-          <!-- SOC % centré (Y = top_clip + height/2 = 532 + 55 = 587) -->
-          <text id="sfcSVBattSoc" x="1450" y="587"
+          <!-- SOC % centré (Y = top_clip + height/2 = 502 + 55 = 557) -->
+          <text id="sfcSVBattSoc" x="1458" y="557"
             text-anchor="middle" dominant-baseline="middle"
             style="font-family:monospace;font-size:32px;font-weight:900;fill:#fff;
                    paint-order:stroke fill;stroke:rgba(0,0,0,0.9);stroke-width:6">—%</text>
@@ -1593,13 +1593,13 @@ function buildCardHTML(cfg) {
           <text id="sfcSGGridSub" text-anchor="middle" x="280" y="936"
             style="font-family:monospace;font-size:27px;fill:rgba(232,244,253,0.6)">—</text>
 
-          <!-- Maison : chip centré sur la façade de la maison (X≈720 = 47% de 1536) -->
-          <rect x="594" y="596" width="252" height="88" rx="8"
+          <!-- Maison : chip centré sur la façade (remonté de 50px visuels = 149 SVG units) -->
+          <rect x="594" y="447" width="252" height="88" rx="8"
             fill="rgba(6,13,26,0.68)" stroke="rgba(255,107,107,0.18)" stroke-width="1.5"/>
-          <text text-anchor="middle" x="720" y="622"
+          <text text-anchor="middle" x="720" y="473"
             style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">MAISON</text>
-          <text id="sfcSGHomeVal" text-anchor="middle" x="720" y="668"
+          <text id="sfcSGHomeVal" text-anchor="middle" x="720" y="519"
             style="font-family:monospace;font-size:36px;font-weight:700;
                    fill:var(--sfc-home,#FF6B6B);filter:drop-shadow(0 0 4px var(--sfc-home,#FF6B6B))">0 W</text>
 
@@ -1662,18 +1662,18 @@ function buildCardHTML(cfg) {
             </linearGradient>
           </defs>
           <!-- Tube réseau↔maison : base pleine + traînée néon -->
-          <path id="sfcLG" class="sfc-flow-core" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,48 L 195,48"/>
-          <path id="sfcLGTailLong" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,48 L 195,48"/>
-          <path id="sfcLGTailMid" class="sfc-flow-tail-mid" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,48 L 195,48"/>
-          <path id="sfcLGGlow" class="sfc-flow-neon" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,48 L 195,48"/>
+          <path id="sfcLG" class="sfc-flow-core" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,40 L 195,40"/>
+          <path id="sfcLGTailLong" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,40 L 195,40"/>
+          <path id="sfcLGTailMid" class="sfc-flow-tail-mid" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,40 L 195,40"/>
+          <path id="sfcLGGlow" class="sfc-flow-neon" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 65,40 L 195,40"/>
 
-          <path id="sfcLB" class="sfc-flow-core" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,48 L 355,48" marker-end="url(#arrowBatt)"/>
-          <path id="sfcLBTailLong" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,48 L 355,48"/>
-          <path id="sfcLBTailMid" class="sfc-flow-tail-mid" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,48 L 355,48"/>
-          <path id="sfcLBGlow" class="sfc-flow-neon" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,48 L 355,48"/>
-          <path id="sfcLR1" class="sfc-router-line" d="M 210,48 L 280,48" marker-end="url(#arrowRouter)" style="display:none"/>
-          <path id="sfcLR2" class="sfc-router-line" d="M 210,48 L 310,48" marker-end="url(#arrowRouter)" style="display:none"/>
-          <path id="sfcLR3" class="sfc-router-line" d="M 210,48 L 340,48" marker-end="url(#arrowRouter)" style="display:none"/>
+          <path id="sfcLB" class="sfc-flow-core" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,40 L 355,40" marker-end="url(#arrowBatt)"/>
+          <path id="sfcLBTailLong" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,40 L 355,40"/>
+          <path id="sfcLBTailMid" class="sfc-flow-tail-mid" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,40 L 355,40"/>
+          <path id="sfcLBGlow" class="sfc-flow-neon" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 225,40 L 355,40"/>
+          <path id="sfcLR1" class="sfc-router-line" d="M 210,40 L 280,40" marker-end="url(#arrowRouter)" style="display:none"/>
+          <path id="sfcLR2" class="sfc-router-line" d="M 210,40 L 310,40" marker-end="url(#arrowRouter)" style="display:none"/>
+          <path id="sfcLR3" class="sfc-router-line" d="M 210,40 L 340,40" marker-end="url(#arrowRouter)" style="display:none"/>
         </svg>
 
         <!-- ── RÉSEAU ── -->
@@ -2453,7 +2453,7 @@ class SolarFlowCard extends HTMLElement {
       this._setFlowActive([...gridFlowIds, ...gridFlowIds_s], gridActive);
       if (gridActive) {
         // Chemin mode separate/emoji (viewBox 420×100)
-        const path   = gridW < -50 ? 'M 195,48 L 65,48'    : 'M 65,48 L 195,48';
+        const path   = gridW < -50 ? 'M 195,40 L 65,40'    : 'M 65,40 L 195,40';
         // Chemin mode single (viewBox 1536×1024) — Y=580 = niveau batterie
         const path_s = gridW < -50 ? 'M 640,580 L 175,870' : 'M 175,870 L 640,580';
         this._setFlowPath(gridFlowIds,   path);
@@ -2470,11 +2470,11 @@ class SolarFlowCard extends HTMLElement {
       const battActive = (battPowerAbs !== null ? battPowerAbs > 10 : (battDis >= 0.01 || battChg >= 0.01 || pvW >= 50 || isDischarging));
       this._setFlowActive([...battFlowIds, ...battFlowIds_s], battActive);
       if (isDischarging) {
-        this._setFlowPath(battFlowIds,   'M 355,48 L 225,48');
+        this._setFlowPath(battFlowIds,   'M 355,40 L 225,40');
         this._setFlowPath(battFlowIds_s, 'M 1516,580 L 778,580');
         lb.setAttribute('marker-end', 'url(#arrowDis)');
       } else {
-        this._setFlowPath(battFlowIds,   'M 225,48 L 355,48');
+        this._setFlowPath(battFlowIds,   'M 225,40 L 355,40');
         this._setFlowPath(battFlowIds_s, 'M 778,580 L 1516,580');
         lb.setAttribute('marker-end', 'url(#arrowBatt)');
       }
@@ -2558,9 +2558,9 @@ class SolarFlowCard extends HTMLElement {
     const svWave1 = this._el('sfcSVBattWave1');
     const svWave2 = this._el('sfcSVBattWave2');
     if (svFill) {
-      const maxH = 110; // hauteur intérieure du clipPath (532 → 642)
+      const maxH = 110; // hauteur intérieure du clipPath (502 → 612)
       const fillH = Math.round(maxH * battSoc / 100);
-      const fillY = 532 + (maxH - fillH);
+      const fillY = 502 + (maxH - fillH);
       svFill.setAttribute('y',      String(fillY));
       svFill.setAttribute('height', String(fillH));
 
@@ -2622,7 +2622,7 @@ class SolarFlowCard extends HTMLElement {
       }
 
       const active = w > 10;
-      const path = `M 210,48 Q ${(210+rx)/2},28 ${rx},48`;
+      const path = `M 210,40 Q ${(210+rx)/2},20 ${rx},40`;
 
       const line = this._el('sfcLR' + rn);
       if (line) {
@@ -2645,11 +2645,11 @@ class SolarFlowCard extends HTMLElement {
     if (lineBatt && nRouters > 0) {
       const battFlowIds = ['sfcLB','sfcLBTailLong','sfcLBTailMid','sfcLBGlow'];
       if (isDischarging) {
-        const path = `M 355,48 L ${lastX+14},48`;
+        const path = `M 355,40 L ${lastX+14},40`;
         this._setFlowPath(battFlowIds, path);
         lineBatt.setAttribute('marker-end', 'url(#arrowDis)');
       } else {
-        const path = `M ${lastX+14},48 L 355,48`;
+        const path = `M ${lastX+14},40 L 355,40`;
         this._setFlowPath(battFlowIds, path);
         lineBatt.setAttribute('marker-end', 'url(#arrowBatt)');
       }
