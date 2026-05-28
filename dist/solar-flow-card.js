@@ -2271,7 +2271,7 @@ class SolarFlowCard extends HTMLElement {
       if (gridActive) {
         const isSingle = c.img_scene_mode === 'single';
         if (isSingle) {
-          const path = gridW < -50 ? 'M 175,13.5 L 48,30' : 'M 48,30 L 175,13.5';
+          const path = gridW < -50 ? 'M 175,13 L 50,30' : 'M 50,30 L 175,13';
           this._setFlowPath(gridFlowIds, path);
         } else {
           const path = gridW < -50 ? 'M 195,48 L 65,48' : 'M 65,48 L 195,48';
@@ -2288,11 +2288,11 @@ class SolarFlowCard extends HTMLElement {
       const battActive = (battPowerAbs !== null ? battPowerAbs > 10 : (battDis >= 0.01 || battChg >= 0.01 || pvW >= 50 || isDischarging));
       this._setFlowActive(battFlowIds, battActive);
       if (isDischarging) {
-        const path = isSingle ? 'M 414.5,10.5 L 213,10.5' : 'M 355,48 L 225,48';
+        const path = isSingle ? 'M 400,10.5 L 213,10.5' : 'M 355,48 L 225,48';
         this._setFlowPath(battFlowIds, path);
         lb.setAttribute('marker-end', 'url(#arrowDis)');
       } else {
-        const path = isSingle ? 'M 213,10.5 H 414.5' : 'M 225,48 L 355,48';
+        const path = isSingle ? 'M 213,10.5 H 400' : 'M 225,48 L 355,48';
         this._setFlowPath(battFlowIds, path);
         lb.setAttribute('marker-end', 'url(#arrowBatt)');
       }
