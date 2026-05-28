@@ -1469,27 +1469,31 @@ function buildCardHTML(cfg) {
       <!-- Image scène unique (jour/nuit) — placée sous les flux -->
       ${c.img_scene_mode === 'single' ? `
       <div class="sfc-scene-image-wrap">
-      ${c.img_scene_mode === 'single' ? `
+        <!--
+          SVG overlay calé sur l'image de scène (1536×1024 px).
+          preserveAspectRatio="xMidYMax meet" est identique au transform appliqué par
+          object-fit:contain + object-position:bottom center → les deux scalent ensemble
+          pixel par pixel quelle que soit la largeur de la card.
+          stroke-width en unités 1536 : à ~516px de card, 1 unité ≈ 0.34 px
+          → core≈3, neon≈3.6, tail-mid≈4.8, tail-long≈6.5
+        -->
         <svg id="sfcSingleFlowSvg"
           style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5;"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none">
+          viewBox="0 0 1536 1024"
+          preserveAspectRatio="xMidYMax meet">
 
-          <!-- Grid → Maison : diagonale bas-gauche (réseau) → milieu-droite (maison)
-               viewBox 0-100 vs 520-large : 1 unité ≈ 5.2 px → stroke-width via style= (priorité > classe CSS)
-               Équivalents : core=0.19, neon=0.23, tail-mid=0.31, tail-long=0.42 -->
-          <path id="sfcLG_s"         class="sfc-flow-core"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:0.19" d="M 11.4,85 L 41.7,75"/>
-          <path id="sfcLGTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:0.42" d="M 11.4,85 L 41.7,75"/>
-          <path id="sfcLGTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:0.31" d="M 11.4,85 L 41.7,75"/>
-          <path id="sfcLGGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:0.23" d="M 11.4,85 L 41.7,75"/>
+          <!-- Grid → Maison : diagonale bas-gauche → milieu de la façade -->
+          <path id="sfcLG_s"         class="sfc-flow-core"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3"   d="M 175,870 L 640,768"/>
+          <path id="sfcLGTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:6.5" d="M 175,870 L 640,768"/>
+          <path id="sfcLGTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:4.8" d="M 175,870 L 640,768"/>
+          <path id="sfcLGGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3.6" d="M 175,870 L 640,768"/>
 
-          <!-- Maison → Batterie : ligne horizontale au niveau de la connexion murale -->
-          <path id="sfcLB_s"         class="sfc-flow-core"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:0.19" d="M 50.7,75 L 98.7,75"/>
-          <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:0.42" d="M 50.7,75 L 98.7,75"/>
-          <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:0.31" d="M 50.7,75 L 98.7,75"/>
-          <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:0.23" d="M 50.7,75 L 98.7,75"/>
+          <!-- Maison → Batterie : ligne horizontale au niveau du mur droit -->
+          <path id="sfcLB_s"         class="sfc-flow-core"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3"   d="M 778,768 L 1516,768"/>
+          <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:6.5" d="M 778,768 L 1516,768"/>
+          <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:4.8" d="M 778,768 L 1516,768"/>
+          <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3.6" d="M 778,768 L 1516,768"/>
         </svg>
-        ` : ''}
         <img class="sfc-scene-image" id="sfcSceneImg"
           src="${(c[`img_scene_day_${(c.img_scene_variant||'esc_ev').replace(/^esc_/, '')}`] || c.img_scene_day || '')}"
           alt="scene" onerror="this.style.display='none'"/>
@@ -2341,9 +2345,10 @@ class SolarFlowCard extends HTMLElement {
       this._setFlowActive([...gridFlowIds, ...gridFlowIds_s], gridActive);
       if (gridActive) {
         // Chemin mode separate/emoji (viewBox 420×100)
-        const path   = gridW < -50 ? 'M 195,48 L 65,48'    : 'M 65,48 L 195,48';
-        // Chemin mode single (viewBox 100×100, diagonale réseau→maison)
-        const path_s = gridW < -50 ? 'M 41.7,75 L 11.4,85' : 'M 11.4,85 L 41.7,75';
+        const path   = gridW < -50 ? 'M 195,48 L 65,48'      : 'M 65,48 L 195,48';
+        // Chemin mode single (viewBox 1536×1024, calé sur l'image réelle)
+        // export : maison → réseau (flux inversé)
+        const path_s = gridW < -50 ? 'M 640,768 L 175,870'   : 'M 175,870 L 640,768';
         this._setFlowPath(gridFlowIds,   path);
         this._setFlowPath(gridFlowIds_s, path_s);
       }
@@ -2360,12 +2365,12 @@ class SolarFlowCard extends HTMLElement {
       if (isDischarging) {
         // Décharge : batterie → maison (flux inversé)
         this._setFlowPath(battFlowIds,   'M 355,48 L 225,48');
-        this._setFlowPath(battFlowIds_s, 'M 98.7,75 L 50.7,75');
+        this._setFlowPath(battFlowIds_s, 'M 1516,768 L 778,768');
         lb.setAttribute('marker-end', 'url(#arrowDis)');
       } else {
         // Charge : maison → batterie
         this._setFlowPath(battFlowIds,   'M 225,48 L 355,48');
-        this._setFlowPath(battFlowIds_s, 'M 50.7,75 L 98.7,75');
+        this._setFlowPath(battFlowIds_s, 'M 778,768 L 1516,768');
         lb.setAttribute('marker-end', 'url(#arrowBatt)');
       }
     }
