@@ -1272,21 +1272,19 @@ const CARD_CSS = `
     padding: 1px 4px;
   }
 
-  /* Mode single : cache les images des nœuds mais garde les flux et valeurs */
+  /* Mode single : cache images, spans et labels HTML (remplacés par les SVG text sur l'image) */
   .sfc-scene-mode-single .sfc-img-node img,
   .sfc-scene-mode-single .sfc-img-node > span {
     display: none !important;
   }
 
-  /* Valeurs restent lisibles en overlay sur l'image */
-  .sfc-scene-mode-single .sfc-img-node {
-    justify-content: flex-end;
-    padding-bottom: 4px;
-  }
-
   .sfc-scene-mode-single .sfc-img-label,
   .sfc-scene-mode-single .sfc-img-val,
-  .sfc-scene-mode-single .sfc-img-sub,
+  .sfc-scene-mode-single .sfc-img-sub {
+    display: none !important;
+  }
+
+  /* Routeurs : conserver leur style overlay (pas de SVG text pour eux) */
   .sfc-scene-mode-single .sfc-router-label,
   .sfc-scene-mode-single .sfc-router-val {
     background: rgba(6,13,26,0.65);
@@ -1482,17 +1480,63 @@ function buildCardHTML(cfg) {
           viewBox="0 0 1536 1024"
           preserveAspectRatio="xMidYMax meet">
 
-          <!-- Grid → Maison : diagonale bas-gauche → milieu de la façade -->
-          <path id="sfcLG_s"         class="sfc-flow-core"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3"   d="M 175,870 L 640,768"/>
-          <path id="sfcLGTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:6.5" d="M 175,870 L 640,768"/>
-          <path id="sfcLGTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:4.8" d="M 175,870 L 640,768"/>
-          <path id="sfcLGGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3.6" d="M 175,870 L 640,768"/>
+          <!-- Grid → Maison : diagonale depuis le poteau réseau (bas-gauche)
+               jusqu'au niveau de la batterie sur la façade (point d'arrivée = même Y que batterie) -->
+          <path id="sfcLG_s"         class="sfc-flow-core"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3"   d="M 175,870 L 640,580"/>
+          <path id="sfcLGTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:6.5" d="M 175,870 L 640,580"/>
+          <path id="sfcLGTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:4.8" d="M 175,870 L 640,580"/>
+          <path id="sfcLGGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3.6" d="M 175,870 L 640,580"/>
 
-          <!-- Maison → Batterie : ligne horizontale au niveau du mur droit -->
-          <path id="sfcLB_s"         class="sfc-flow-core"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3"   d="M 778,768 L 1516,768"/>
-          <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:6.5" d="M 778,768 L 1516,768"/>
-          <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:4.8" d="M 778,768 L 1516,768"/>
-          <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3.6" d="M 778,768 L 1516,768"/>
+          <!-- Maison → Batterie : ligne horizontale au niveau de la batterie murale -->
+          <path id="sfcLB_s"         class="sfc-flow-core"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3"   d="M 778,580 L 1516,580"/>
+          <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:6.5" d="M 778,580 L 1516,580"/>
+          <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:4.8" d="M 778,580 L 1516,580"/>
+          <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3.6" d="M 778,580 L 1516,580"/>
+
+          <!-- ═══════════════════════════════════════════════════════════
+               Labels de puissance calés sur l'image (coordonnées 1536×1024).
+               font-size en unités SVG : à ~516px de card, 1 unité ≈ 0.34 px
+               → label 24 u ≈ 8 px, valeur 44 u ≈ 15 px, sous-valeur 28 u ≈ 9.5 px
+               paint-order:stroke fill crée un halo sombre pour lisibilité sur image.
+          ═══════════════════════════════════════════════════════════ -->
+
+          <!-- Réseau : près du poteau, bas-gauche -->
+          <text id="sfcSGGridLbl" text-anchor="middle" x="280" y="846"
+            style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:2px;
+                   fill:var(--sfc-grid,#4FC3F7);paint-order:stroke fill;
+                   stroke:rgba(0,0,0,0.85);stroke-width:5;text-transform:uppercase">RÉSEAU</text>
+          <text id="sfcSGGridVal" text-anchor="middle" x="280" y="896"
+            style="font-family:monospace;font-size:44px;font-weight:900;
+                   fill:var(--sfc-grid,#4FC3F7);paint-order:stroke fill;
+                   stroke:rgba(0,0,0,0.85);stroke-width:8">0 W</text>
+          <text id="sfcSGGridSub" text-anchor="middle" x="280" y="934"
+            style="font-family:monospace;font-size:28px;
+                   fill:rgba(232,244,253,0.85);paint-order:stroke fill;
+                   stroke:rgba(0,0,0,0.85);stroke-width:5">—</text>
+
+          <!-- Maison : façade centrale -->
+          <text id="sfcSGHomeLbl" text-anchor="middle" x="510" y="606"
+            style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:2px;
+                   fill:var(--sfc-home,#FF6B6B);paint-order:stroke fill;
+                   stroke:rgba(0,0,0,0.85);stroke-width:5;text-transform:uppercase">MAISON</text>
+          <text id="sfcSGHomeVal" text-anchor="middle" x="510" y="656"
+            style="font-family:monospace;font-size:44px;font-weight:900;
+                   fill:var(--sfc-home,#FF6B6B);paint-order:stroke fill;
+                   stroke:rgba(0,0,0,0.85);stroke-width:8">0 W</text>
+
+          <!-- Batterie : mur droit du garage -->
+          <text id="sfcSGBattLbl" text-anchor="middle" x="1410" y="486"
+            style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:2px;
+                   fill:var(--sfc-batt,#69FF47);paint-order:stroke fill;
+                   stroke:rgba(0,0,0,0.85);stroke-width:5;text-transform:uppercase">BATTERIE</text>
+          <text id="sfcSGBattVal" text-anchor="middle" x="1410" y="536"
+            style="font-family:monospace;font-size:44px;font-weight:900;
+                   fill:var(--sfc-batt,#69FF47);paint-order:stroke fill;
+                   stroke:rgba(0,0,0,0.85);stroke-width:8">—</text>
+          <text id="sfcSGBattSub" text-anchor="middle" x="1410" y="572"
+            style="font-family:monospace;font-size:28px;
+                   fill:rgba(232,244,253,0.85);paint-order:stroke fill;
+                   stroke:rgba(0,0,0,0.85);stroke-width:5">—</text>
         </svg>
         <img class="sfc-scene-image" id="sfcSceneImg"
           src="${(c[`img_scene_day_${(c.img_scene_variant||'esc_ev').replace(/^esc_/, '')}`] || c.img_scene_day || '')}"
@@ -2345,10 +2389,9 @@ class SolarFlowCard extends HTMLElement {
       this._setFlowActive([...gridFlowIds, ...gridFlowIds_s], gridActive);
       if (gridActive) {
         // Chemin mode separate/emoji (viewBox 420×100)
-        const path   = gridW < -50 ? 'M 195,48 L 65,48'      : 'M 65,48 L 195,48';
-        // Chemin mode single (viewBox 1536×1024, calé sur l'image réelle)
-        // export : maison → réseau (flux inversé)
-        const path_s = gridW < -50 ? 'M 640,768 L 175,870'   : 'M 175,870 L 640,768';
+        const path   = gridW < -50 ? 'M 195,48 L 65,48'    : 'M 65,48 L 195,48';
+        // Chemin mode single (viewBox 1536×1024) — Y=580 = niveau batterie
+        const path_s = gridW < -50 ? 'M 640,580 L 175,870' : 'M 175,870 L 640,580';
         this._setFlowPath(gridFlowIds,   path);
         this._setFlowPath(gridFlowIds_s, path_s);
       }
@@ -2363,14 +2406,12 @@ class SolarFlowCard extends HTMLElement {
       const battActive = (battPowerAbs !== null ? battPowerAbs > 10 : (battDis >= 0.01 || battChg >= 0.01 || pvW >= 50 || isDischarging));
       this._setFlowActive([...battFlowIds, ...battFlowIds_s], battActive);
       if (isDischarging) {
-        // Décharge : batterie → maison (flux inversé)
         this._setFlowPath(battFlowIds,   'M 355,48 L 225,48');
-        this._setFlowPath(battFlowIds_s, 'M 1516,768 L 778,768');
+        this._setFlowPath(battFlowIds_s, 'M 1516,580 L 778,580');
         lb.setAttribute('marker-end', 'url(#arrowDis)');
       } else {
-        // Charge : maison → batterie
         this._setFlowPath(battFlowIds,   'M 225,48 L 355,48');
-        this._setFlowPath(battFlowIds_s, 'M 778,768 L 1516,768');
+        this._setFlowPath(battFlowIds_s, 'M 778,580 L 1516,580');
         lb.setAttribute('marker-end', 'url(#arrowBatt)');
       }
     }
@@ -2420,6 +2461,26 @@ class SolarFlowCard extends HTMLElement {
     const cds = this._el('sfcChgDisSub');  if (cds) cds.textContent = battDis  ? battDis.toFixed(2)+' kWh'  : '';
     const re  = this._el('sfcRemaining');  if (re)  re.textContent  = rem      ? rem.toFixed(2)+' kWh'      : '— kWh';
     const tl  = this._el('sfcTodayLoad'); if (tl)  tl.textContent  = todayLoad? todayLoad.toFixed(2)+' kWh': '— kWh';
+
+    // Labels SVG mode single (sfcSingleFlowSvg, coords 1536×1024)
+    // Ces éléments n'existent que si img_scene_mode === 'single' → les guards ?. évitent les erreurs
+    const sgGridVal = this._el('sfcSGGridVal');
+    if (sgGridVal) sgGridVal.textContent = this._fmt(Math.abs(gridW));
+    const sgGridSub = this._el('sfcSGGridSub');
+    if (sgGridSub) sgGridSub.textContent = gridW > 50 ? t(c,'dir_import') : gridW < -50 ? t(c,'dir_export') : '—';
+    const sgHomeVal = this._el('sfcSGHomeVal');
+    if (sgHomeVal) sgHomeVal.textContent = this._fmt(homeW);
+    const sgBattVal = this._el('sfcSGBattVal');
+    if (sgBattVal) {
+      if (battPower !== null) {
+        const sign = battPower > 50 ? '+' : battPower < -50 ? '-' : '';
+        sgBattVal.textContent = sign + this._fmt(Math.abs(battPower));
+      } else {
+        sgBattVal.textContent = Math.round(battSoc) + '%';
+      }
+    }
+    const sgBattSub = this._el('sfcSGBattSub');
+    if (sgBattSub) sgBattSub.textContent = battV ? battV.toFixed(1) + ' V' : '—';
 
     // Sun
     this._updateSun(wi.cloudy);
