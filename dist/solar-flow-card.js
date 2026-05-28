@@ -591,11 +591,11 @@ const CARD_CSS = `
 
   /* ── Sky scene ── */
   .sfc-scene { position:relative; overflow:hidden; isolation:isolate; }
-  .sfc-sky { position:absolute;inset:0;transition:background 20s linear;border-radius:0; }
-  .sfc-stars { position:absolute;inset:0;pointer-events:none;transition:opacity 3s; }
+  .sfc-sky { position:absolute;inset:0;transition:background 20s linear;border-radius:0; z-index: 0;}
+  .sfc-stars { position:absolute;inset:0;pointer-events:none;transition:opacity 3s; z-index: 0;}
   .sfc-star { position:absolute;border-radius:50%;background:#fff;animation:sfc-twinkle 2s infinite alternate; }
   @keyframes sfc-twinkle { 0%{opacity:.1}100%{opacity:.95} }
-  .sfc-cloud { position:absolute;pointer-events:none;font-size:36px;animation:sfc-cloud linear infinite; }
+  .sfc-cloud { position:absolute;pointer-events:none;font-size:36px;animation:sfc-cloud linear infinite; z-index: 1;}
   @keyframes sfc-cloud { from{left:-60px}to{left:calc(100% + 60px)} }
   .sfc-sun-arc-svg { position:absolute;inset:0;width:100%;height:100%; }
   .sfc-sun-orb {
@@ -2557,6 +2557,6 @@ customElements.define('solar-flow-card-editor', SolarFlowCardEditor);
 window.customCards = window.customCards || [];
 window.customCards.push({ type:'solar-flow-card', name:'Solar Flow Card', description:'Arc solaire animé, météo dynamique, flux énergie temps réel', preview:true });
 
-console.info('%c☀️ SOLAR FLOW CARD %c v1.0.6 ',
+console.info('%c☀️ SOLAR FLOW CARD %c v1.0.8 ',
   'background:#0d7377;color:#fff;padding:2px 6px;border-radius:4px 0 0 4px;font-weight:700',
   'background:#14a085;color:#fff;padding:2px 6px;border-radius:0 4px 4px 0;');
