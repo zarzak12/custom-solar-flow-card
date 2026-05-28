@@ -1470,17 +1470,19 @@ function buildCardHTML(cfg) {
           viewBox="0 0 100 100"
           preserveAspectRatio="none">
 
-          <!-- Grid → Maison : bas-gauche vers haut-droite -->
-          <path id="sfcLG_s"         class="sfc-flow-core"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,68"/>
-          <path id="sfcLGTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,68"/>
-          <path id="sfcLGTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,68"/>
-          <path id="sfcLGGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,68"/>
+          <!-- Grid → Maison : diagonale bas-gauche (réseau) → milieu-droite (maison)
+               stroke-width en unités viewBox 0-100 : ~0.25 u = ~1.3 px à 540px de large,
+               soit la même épaisseur visuelle que le flux soleil (viewBox 520-large, sw=1.2) -->
+          <path id="sfcLG_s"         class="sfc-flow-core"      stroke-width="0.25" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,75"/>
+          <path id="sfcLGTailLong_s" class="sfc-flow-tail-long" stroke-width="0.55" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,75"/>
+          <path id="sfcLGTailMid_s"  class="sfc-flow-tail-mid"  stroke-width="0.40" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,75"/>
+          <path id="sfcLGGlow_s"     class="sfc-flow-neon"      stroke-width="0.30" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,75"/>
 
-          <!-- Maison → Batterie : horizontal haut -->
-          <path id="sfcLB_s"         class="sfc-flow-core"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,65 L 98.7,65"/>
-          <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,65 L 98.7,65"/>
-          <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,65 L 98.7,65"/>
-          <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,65 L 98.7,65"/>
+          <!-- Maison → Batterie : ligne horizontale au niveau de la connexion murale -->
+          <path id="sfcLB_s"         class="sfc-flow-core"      stroke-width="0.25" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,75 L 98.7,75"/>
+          <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke-width="0.55" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,75 L 98.7,75"/>
+          <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke-width="0.40" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,75 L 98.7,75"/>
+          <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke-width="0.30" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,75 L 98.7,75"/>
         </svg>
         ` : ''}
         <img class="sfc-scene-image" id="sfcSceneImg"
@@ -2143,20 +2145,18 @@ class SolarFlowCard extends HTMLElement {
       });
     };
 
-    // Flux grid ↔ maison
-    animateFlow('sfcLGGlow',      1.8, 0, 40);
-    //animateFlow('sfcLGTailMid',   1.8, 0.1, 35);
-    //animateFlow('sfcLGTailLong',  1.8, 0.2, 55);
+    // Flux grid ↔ maison (mode separate/emoji)
+    animateFlow('sfcLGGlow',   1.8, 0,   40);
+    // Flux grid ↔ maison (mode single — sfcSingleFlowSvg)
+    animateFlow('sfcLGGlow_s', 1.8, 0,   40);
 
-    // Flux maison ↔ batterie
-    animateFlow('sfcLBGlow',      2.1, 0, 40);
-    //animateFlow('sfcLBTailMid',   2.1, 0.1, 35);
-    //animateFlow('sfcLBTailLong',  2.1, 0.2, 55);
+    // Flux maison ↔ batterie (mode separate/emoji)
+    animateFlow('sfcLBGlow',   2.1, 0,   40);
+    // Flux maison ↔ batterie (mode single — sfcSingleFlowSvg)
+    animateFlow('sfcLBGlow_s', 2.1, 0,   40);
 
-    // Flux soleil
-    animateFlow('sfcSunFlowGlow',    1.4, 0, 40);
-    //animateFlow('sfcSunFlowTailMid', 1.4, 0.1, 35);
-    //animateFlow('sfcSunFlowTailLong',1.4, 0.2, 55);
+    // Flux soleil → maison (commun aux 3 modes)
+    animateFlow('sfcSunFlowGlow', 1.4, 0, 40);
   }
 
   _createStars() {
@@ -2326,29 +2326,41 @@ class SolarFlowCard extends HTMLElement {
     if (gridNode) gridNode.style.filter = gridW > 50 ? 'drop-shadow(0 0 10px rgba(79,195,247,0.5))' : '';
 
     // Flux lines + arrows
+    // Les IDs _s correspondent au SVG single-mode (sfcSingleFlowSvg, viewBox 0 0 100 100)
+    // _setFlowActive/_setFlowPath ignorent silencieusement les IDs absents du DOM
     const lg = this._el('sfcLG');
     if (lg) {
-      const gridActive = Math.abs(gridW) >= 50;
-      const gridFlowIds = ['sfcLG','sfcLGTailLong','sfcLGTailMid','sfcLGGlow'];
-      this._setFlowActive(gridFlowIds, gridActive);
+      const gridActive   = Math.abs(gridW) >= 50;
+      const gridFlowIds  = ['sfcLG','sfcLGTailLong','sfcLGTailMid','sfcLGGlow'];
+      const gridFlowIds_s= ['sfcLG_s','sfcLGTailLong_s','sfcLGTailMid_s','sfcLGGlow_s'];
+      this._setFlowActive([...gridFlowIds, ...gridFlowIds_s], gridActive);
       if (gridActive) {
-        const path = gridW < -50 ? 'M 195,48 L 65,48' : 'M 65,48 L 195,48';
-        this._setFlowPath(gridFlowIds, path);
+        // Chemin mode separate/emoji (viewBox 420×100)
+        const path   = gridW < -50 ? 'M 195,48 L 65,48'    : 'M 65,48 L 195,48';
+        // Chemin mode single (viewBox 100×100, diagonale réseau→maison)
+        const path_s = gridW < -50 ? 'M 41.7,75 L 11.4,85' : 'M 11.4,85 L 41.7,75';
+        this._setFlowPath(gridFlowIds,   path);
+        this._setFlowPath(gridFlowIds_s, path_s);
       }
     }
 
     const lb = this._el('sfcLB');
     const isDischarging = homeW > pvW + 100;
     if (lb) {
-      const battFlowIds = ['sfcLB','sfcLBTailLong','sfcLBTailMid','sfcLBGlow'];
+      const battFlowIds  = ['sfcLB','sfcLBTailLong','sfcLBTailMid','sfcLBGlow'];
+      const battFlowIds_s= ['sfcLB_s','sfcLBTailLong_s','sfcLBTailMid_s','sfcLBGlow_s'];
       const battPowerAbs = battPower !== null ? Math.abs(battPower) : null;
       const battActive = (battPowerAbs !== null ? battPowerAbs > 10 : (battDis >= 0.01 || battChg >= 0.01 || pvW >= 50 || isDischarging));
-      this._setFlowActive(battFlowIds, battActive);
+      this._setFlowActive([...battFlowIds, ...battFlowIds_s], battActive);
       if (isDischarging) {
-        this._setFlowPath(battFlowIds, 'M 355,48 L 225,48');
+        // Décharge : batterie → maison (flux inversé)
+        this._setFlowPath(battFlowIds,   'M 355,48 L 225,48');
+        this._setFlowPath(battFlowIds_s, 'M 98.7,75 L 50.7,75');
         lb.setAttribute('marker-end', 'url(#arrowDis)');
       } else {
-        this._setFlowPath(battFlowIds, 'M 225,48 L 355,48');
+        // Charge : maison → batterie
+        this._setFlowPath(battFlowIds,   'M 225,48 L 355,48');
+        this._setFlowPath(battFlowIds_s, 'M 50.7,75 L 98.7,75');
         lb.setAttribute('marker-end', 'url(#arrowBatt)');
       }
     }
