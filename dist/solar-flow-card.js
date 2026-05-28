@@ -2179,17 +2179,25 @@ class SolarFlowCard extends HTMLElement {
   _el(id) { return this.shadowRoot.getElementById(id); }
 
   _getSvgPoint(svg, target, pos = { x: 0.5, y: 0.35 }) {
-    if (!svg || !target) return null;
-    const svgRect = svg.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    if (!svgRect.width || !svgRect.height) return null;
-    const x = targetRect.left + targetRect.width * pos.x - svgRect.left;
-    const y = targetRect.top + targetRect.height * pos.y - svgRect.top;
-    const vb = svg.viewBox.baseVal;
-    return {
-      x: Math.round((x / svgRect.width) * vb.width),
-      y: Math.round((y / svgRect.height) * vb.height),
-    };
+    try {
+      if (!svg || !target) return null;
+      const svgRect = svg.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      if (!svgRect.width || !svgRect.height) return null;
+      const x = targetRect.left + targetRect.width * pos.x - svgRect.left;
+      const y = targetRect.top + targetRect.height * pos.y - svgRect.top;
+      // Determine viewBox dimensions safely. If not present, use pixel dims as fallback.
+      let vb = null;
+      try { vb = svg.viewBox.baseVal; } catch (e) { vb = null; }
+      const vbWidth = (vb && vb.width) ? vb.width : svgRect.width;
+      const vbHeight = (vb && vb.height) ? vb.height : svgRect.height;
+      return {
+        x: Math.round((x / svgRect.width) * vbWidth),
+        y: Math.round((y / svgRect.height) * vbHeight),
+      };
+    } catch (e) {
+      return null;
+    }
   }
 
   _getLinePath(svg, start, end) {
@@ -2209,6 +2217,12 @@ class SolarFlowCard extends HTMLElement {
 
   _update() {
     if (!this._hass) return;
+    try {
+      // keep updates protected from runtime errors so UI values still render
+      
+    } catch (err) {
+      console.error('SolarFlowCard _update preflight error', err);
+    }
     const c = this._cfg;
     const pvW      = this._getNum(c.pv_power);
     const gridW    = this._getNum(c.grid_power);
@@ -2246,15 +2260,23 @@ class SolarFlowCard extends HTMLElement {
     const wTemp = this._el('sfcWTemp'); if (wTemp) wTemp.textContent = extT ? extT + '°C' : '—°C';
 
     // PV badge
-    const pvb = this._el('sfcPvBig'); if (pvb) pvb.textContent = this._fmt(pvW);
+    try {
+      const pvb = this._el('sfcPvBig'); if (pvb) pvb.textContent = this._fmt(pvW);
+    } catch (err) {
+      console.error('SolarFlowCard set PV badge error', err);
+    }
     const sunActive = pvW > 50;
     this._setFlowActive(['sfcSunFlowLine','sfcSunFlowTailLong','sfcSunFlowTailMid','sfcSunFlowGlow'], sunActive);
 
     // Flow nodes
-    const gEl = this._el('sfcGrid');   if (gEl) gEl.textContent = this._fmt(Math.abs(gridW));
-    const hEl = this._el('sfcHome');   if (hEl) hEl.textContent = this._fmt(homeW);
-    const bEl = this._el('sfcBatt');   if (bEl) bEl.textContent = Math.round(battSoc) + '%';
-    const bvEl= this._el('sfcBattV'); if (bvEl) bvEl.textContent = battV ? battV.toFixed(1) + ' V' : '';
+    try {
+      const gEl = this._el('sfcGrid');   if (gEl) gEl.textContent = this._fmt(Math.abs(gridW));
+      const hEl = this._el('sfcHome');   if (hEl) hEl.textContent = this._fmt(homeW);
+      const bEl = this._el('sfcBatt');   if (bEl) bEl.textContent = Math.round(battSoc) + '%';
+      const bvEl= this._el('sfcBattV'); if (bvEl) bvEl.textContent = battV ? battV.toFixed(1) + ' V' : '';
+    } catch (err) {
+      console.error('SolarFlowCard set node text error', err);
+    }
 
     const gdEl= this._el('sfcGridDir');
     if (gdEl) gdEl.textContent = gridW > 50 ? t(c,'dir_import') : gridW < -50 ? t(c,'dir_export') : '—';
@@ -2308,17 +2330,22 @@ class SolarFlowCard extends HTMLElement {
       const gridFlowIds = ['sfcLG','sfcLGTailLong','sfcLGTailMid','sfcLGGlow'];
       this._setFlowActive(gridFlowIds, gridActive);
       if (gridActive) {
-        const svg = this._el('sfcFlowSvg');
-        const gridNodeEl = this._el('sfcNodeGrid');
-        const homeNodeEl = this._el('sfcNodeHome');
-        const path = svg && gridNodeEl && homeNodeEl
-          ? (gridW < -50
+        try {
+          const svg = this._el('sfcFlowSvg');
+          const gridNodeEl = this._el('sfcNodeGrid');
+          const homeNodeEl = this._el('sfcNodeHome');
+          let path = null;
+          if (svg && gridNodeEl && homeNodeEl) {
+            path = gridW < -50
               ? this._getLinePath(svg, homeNodeEl, gridNodeEl)
-              : this._getLinePath(svg, gridNodeEl, homeNodeEl))
-          : null;
-        if (path) {
-          this._setFlowPath(gridFlowIds, path);
-        } else {
+              : this._getLinePath(svg, gridNodeEl, homeNodeEl);
+          }
+          if (path) this._setFlowPath(gridFlowIds, path);
+          else {
+            const fallback = gridW < -50 ? 'M 195,48 L 65,48' : 'M 65,48 L 195,48';
+            this._setFlowPath(gridFlowIds, fallback);
+          }
+        } catch (e) {
           const fallback = gridW < -50 ? 'M 195,48 L 65,48' : 'M 65,48 L 195,48';
           this._setFlowPath(gridFlowIds, fallback);
         }
