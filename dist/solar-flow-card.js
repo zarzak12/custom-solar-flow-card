@@ -15,26 +15,38 @@ const DEFAULTS = {
   latitude: 44.35,
   // ── Routeurs solaires (jusqu'à 3) ──
   // Chaque routeur a : image, label, entité puissance, entité énergie journalière
-  router1_enabled:    false,
-  router1_img:        '',
-  router1_label:      'Spa',
-  router1_power:      '',   // sensor.xxx → watts en cours
-  router1_energy:     '',   // sensor.xxx → kWh aujourd'hui
-  router1_position:   'right', // 'left' | 'right' | 'center'
+  router1_enabled:      false,
+  router1_img:          '',
+  router1_label:        'Spa',
+  // Mode 'power' : entité HA retournant les watts directement
+  // Mode 'calc'  : puissance calculée = router1_resistance_w × (router1_opening / 100)
+  //                utile pour les routeurs F1ATB qui exposent une ouverture en %
+  router1_mode:         'power',
+  router1_power:        '',   // sensor.xxx → watts (mode 'power')
+  router1_resistance_w: 0,    // puissance nominale de la résistance en W (mode 'calc')
+  router1_opening:      '',   // sensor.xxx → % ouverture 0-100 (mode 'calc')
+  router1_energy:       '',   // sensor.xxx → kWh aujourd'hui
+  router1_position:     'right',
 
-  router2_enabled:    false,
-  router2_img:        '',
-  router2_label:      'Chauffe-eau',
-  router2_power:      '',
-  router2_energy:     '',
-  router2_position:   'left',
+  router2_enabled:      false,
+  router2_img:          '',
+  router2_label:        'Chauffe-eau',
+  router2_mode:         'power',
+  router2_power:        '',
+  router2_resistance_w: 0,
+  router2_opening:      '',
+  router2_energy:       '',
+  router2_position:     'left',
 
-  router3_enabled:    false,
-  router3_img:        '',
-  router3_label:      'Routeur 3',
-  router3_power:      '',
-  router3_energy:     '',
-  router3_position:   'center',
+  router3_enabled:      false,
+  router3_img:          '',
+  router3_label:        'Routeur 3',
+  router3_mode:         'power',
+  router3_power:        '',
+  router3_resistance_w: 0,
+  router3_opening:      '',
+  router3_energy:       '',
+  router3_position:     'center',
 
   // Images personnalisées (chemin relatif à /local/ ou URL complète)
   img_house:   '/hacsfiles/solar-flow-card/img/house.png',
@@ -226,10 +238,15 @@ const I18N = {
     ed_router_img:      'Image (chemin)',
     ed_router_power:    'Entité puissance (W)',
     ed_router_energy:   'Entité énergie jour (kWh)',
-    ed_router_pos:      'Position dans la scène',
-    ed_pos_left:        'Gauche',
-    ed_pos_center:      'Centre',
-    ed_pos_right:       'Droite',
+    ed_router_mode:       'Mode de mesure',
+    ed_router_mode_power: 'Puissance directe (entité W)',
+    ed_router_mode_calc:  'Calcul — résistance × ouverture %',
+    ed_router_resistance: 'Puissance résistance (W)',
+    ed_router_opening:    'Entité ouverture % (ex: sensor.f1atb_opening)',
+    ed_router_pos:        'Position dans la scène',
+    ed_pos_left:          'Gauche',
+    ed_pos_center:        'Centre',
+    ed_pos_right:         'Droite',
   },
   en: {
     // Header
@@ -353,10 +370,15 @@ const I18N = {
     ed_router_img:      'Image (path)',
     ed_router_power:    'Power entity (W)',
     ed_router_energy:   'Daily energy entity (kWh)',
-    ed_router_pos:      'Position in scene',
-    ed_pos_left:        'Left',
-    ed_pos_center:      'Center',
-    ed_pos_right:       'Right',
+    ed_router_mode:       'Measurement mode',
+    ed_router_mode_power: 'Direct power entity (W)',
+    ed_router_mode_calc:  'Calculated — resistance × opening %',
+    ed_router_resistance: 'Resistance power (W)',
+    ed_router_opening:    'Opening entity % (e.g. sensor.f1atb_opening)',
+    ed_router_pos:        'Position in scene',
+    ed_pos_left:          'Left',
+    ed_pos_center:        'Center',
+    ed_pos_right:         'Right',
   },
 };
 
@@ -1442,6 +1464,25 @@ function buildCardHTML(cfg) {
       <!-- Image scène unique (jour/nuit) — placée sous les flux -->
       ${c.img_scene_mode === 'single' ? `
       <div class="sfc-scene-image-wrap">
+      ${c.img_scene_mode === 'single' ? `
+        <svg id="sfcSingleFlowSvg"
+          style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5;"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none">
+
+          <!-- Grid → Maison : bas-gauche vers haut-droite -->
+          <path id="sfcLG_s"         class="sfc-flow-core"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,68"/>
+          <path id="sfcLGTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,68"/>
+          <path id="sfcLGTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,68"/>
+          <path id="sfcLGGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7)" d="M 11.4,85 L 41.7,68"/>
+
+          <!-- Maison → Batterie : horizontal haut -->
+          <path id="sfcLB_s"         class="sfc-flow-core"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,65 L 98.7,65"/>
+          <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,65 L 98.7,65"/>
+          <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,65 L 98.7,65"/>
+          <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 50.7,65 L 98.7,65"/>
+        </svg>
+        ` : ''}
         <img class="sfc-scene-image" id="sfcSceneImg"
           src="${(c[`img_scene_day_${(c.img_scene_variant||'esc_ev').replace(/^esc_/, '')}`] || c.img_scene_day || '')}"
           alt="scene" onerror="this.style.display='none'"/>
@@ -1825,8 +1866,17 @@ function buildEditorHTML(cfg) {
       ${edToggle('router1_enabled', t(c,'ed_router_enabled'), c)}
       ${edEntity('router1_label',    t(c,'ed_router_label'),   'Spa', c)}
       ${edEntity('router1_img',      t(c,'ed_router_img'),     '/local/solar-flow-card/img/spa.png', c)}
-      ${edEntity('router1_power',    t(c,'ed_router_power'),   'sensor.spa_power', c)}
-      ${edEntity('router1_energy',   t(c,'ed_router_energy'),  'sensor.spa_energy_today', c)}
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_router_mode')}</label>
+        <select class="sfc-ed-input" data-key="router1_mode" style="cursor:pointer;">
+          <option value="power" ${(c.router1_mode||'power')==='power'?'selected':''}>${t(c,'ed_router_mode_power')}</option>
+          <option value="calc"  ${(c.router1_mode||'power')==='calc' ?'selected':''}>${t(c,'ed_router_mode_calc')}</option>
+        </select>
+      </div>
+      ${edEntity('router1_power',        t(c,'ed_router_power'),      'sensor.spa_power', c)}
+      ${edEntity('router1_resistance_w', t(c,'ed_router_resistance'),  '2000', c)}
+      ${edEntity('router1_opening',      t(c,'ed_router_opening'),     'sensor.f1atb_opening', c)}
+      ${edEntity('router1_energy',       t(c,'ed_router_energy'),      'sensor.spa_energy_today', c)}
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,'ed_router_pos')}</label>
         <select class="sfc-ed-input" data-key="router1_position" style="cursor:pointer;">
@@ -1842,8 +1892,17 @@ function buildEditorHTML(cfg) {
       ${edToggle('router2_enabled', t(c,'ed_router_enabled'), c)}
       ${edEntity('router2_label',    t(c,'ed_router_label'),   'Chauffe-eau', c)}
       ${edEntity('router2_img',      t(c,'ed_router_img'),     '/local/solar-flow-card/img/water_tank.png', c)}
-      ${edEntity('router2_power',    t(c,'ed_router_power'),   'sensor.water_heater_power', c)}
-      ${edEntity('router2_energy',   t(c,'ed_router_energy'),  'sensor.water_heater_energy_today', c)}
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_router_mode')}</label>
+        <select class="sfc-ed-input" data-key="router2_mode" style="cursor:pointer;">
+          <option value="power" ${(c.router2_mode||'power')==='power'?'selected':''}>${t(c,'ed_router_mode_power')}</option>
+          <option value="calc"  ${(c.router2_mode||'power')==='calc' ?'selected':''}>${t(c,'ed_router_mode_calc')}</option>
+        </select>
+      </div>
+      ${edEntity('router2_power',        t(c,'ed_router_power'),      'sensor.water_heater_power', c)}
+      ${edEntity('router2_resistance_w', t(c,'ed_router_resistance'),  '2000', c)}
+      ${edEntity('router2_opening',      t(c,'ed_router_opening'),     'sensor.f1atb_opening', c)}
+      ${edEntity('router2_energy',       t(c,'ed_router_energy'),      'sensor.water_heater_energy_today', c)}
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,'ed_router_pos')}</label>
         <select class="sfc-ed-input" data-key="router2_position" style="cursor:pointer;">
@@ -1859,8 +1918,17 @@ function buildEditorHTML(cfg) {
       ${edToggle('router3_enabled', t(c,'ed_router_enabled'), c)}
       ${edEntity('router3_label',    t(c,'ed_router_label'),   'Routeur 3', c)}
       ${edEntity('router3_img',      t(c,'ed_router_img'),     '', c)}
-      ${edEntity('router3_power',    t(c,'ed_router_power'),   'sensor.router3_power', c)}
-      ${edEntity('router3_energy',   t(c,'ed_router_energy'),  'sensor.router3_energy_today', c)}
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_router_mode')}</label>
+        <select class="sfc-ed-input" data-key="router3_mode" style="cursor:pointer;">
+          <option value="power" ${(c.router3_mode||'power')==='power'?'selected':''}>${t(c,'ed_router_mode_power')}</option>
+          <option value="calc"  ${(c.router3_mode||'power')==='calc' ?'selected':''}>${t(c,'ed_router_mode_calc')}</option>
+        </select>
+      </div>
+      ${edEntity('router3_power',        t(c,'ed_router_power'),      'sensor.router3_power', c)}
+      ${edEntity('router3_resistance_w', t(c,'ed_router_resistance'),  '2000', c)}
+      ${edEntity('router3_opening',      t(c,'ed_router_opening'),     'sensor.f1atb_opening', c)}
+      ${edEntity('router3_energy',       t(c,'ed_router_energy'),      'sensor.router3_energy_today', c)}
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,'ed_router_pos')}</label>
         <select class="sfc-ed-input" data-key="router3_position" style="cursor:pointer;">
@@ -2355,8 +2423,20 @@ class SolarFlowCard extends HTMLElement {
     activeRouters.forEach((rn, i) => {
       const c2 = this._cfg;
       const rx = routerXs[i];
-      const powerKey = 'router' + rn + '_power';
-      const w = this._getNum(c2[powerKey]);
+
+      // ── Calcul de puissance selon le mode configuré ──
+      // Mode 'calc' : pour les routeurs F1ATB qui exposent une ouverture en %
+      //   puissance = résistance_nominale_W × (ouverture_% / 100)
+      // Mode 'power' (défaut) : lecture directe de l'entité puissance en W
+      let w;
+      if (c2['router' + rn + '_mode'] === 'calc') {
+        const resistW  = parseFloat(c2['router' + rn + '_resistance_w']) || 0;
+        const openPct  = this._getNum(c2['router' + rn + '_opening']);
+        w = Math.round(resistW * (openPct / 100));
+      } else {
+        w = this._getNum(c2['router' + rn + '_power']);
+      }
+
       const active = w > 10;
       const path = `M 210,48 Q ${(210+rx)/2},28 ${rx},48`;
 
@@ -2447,30 +2527,32 @@ class SolarFlowCard extends HTMLElement {
     orb.style.opacity = isNight ? '0' : elevation < 5 ? '0.7' : '1';
     }
 
-    // Lune
+    // Lune — visible dès que la nuit tombe, entité moon_phase optionnelle
     const moonEl = this._el('sfcMoonOrb');
     if (moonEl) {
-    if (isNight && c.moon_phase) {
-        const phase = this._getState(c.moon_phase) || '';
+      if (isNight) {
+        // Table de correspondance phase → emoji
         const MOON_PHASES = {
-        'new_moon':        '🌑', 'waxing_crescent': '🌒',
-        'first_quarter':   '🌓', 'waxing_gibbous':  '🌔',
-        'full_moon':       '🌕', 'waning_gibbous':  '🌖',
-        'last_quarter':    '🌗', 'waning_crescent': '🌘',
+          'new_moon':        '🌑', 'waxing_crescent': '🌒',
+          'first_quarter':   '🌓', 'waxing_gibbous':  '🌔',
+          'full_moon':       '🌕', 'waning_gibbous':  '🌖',
+          'last_quarter':    '🌗', 'waning_crescent': '🌘',
         };
-        const moonIcon = MOON_PHASES[phase] || '🌙';
-        moonEl.textContent = moonIcon;
+        // Si l'entité moon_phase est configurée, lire la phase ; sinon icône générique 🌙
+        const phase = c.moon_phase ? (this._getState(c.moon_phase) || '') : '';
+        moonEl.textContent = MOON_PHASES[phase] || '🌙';
         moonEl.style.display = '';
-        // Position : suit la même courbe que le soleil mais inversée (nuit = progress hors [0,1])
-        const nightProgress = progress < 0 ? 0.5 + progress * 0.5 : 1 - progress * 0.5;
+        // Position : courbe de Bézier inversée par rapport au soleil
+        // progress est dans [0,1] (clampé), on extrapole pour la nuit
+        const nightProgress = progress < 0.5 ? 1 - progress * 0.5 : 0.5 + (1 - progress) * 0.5;
         const mt = Math.max(0, Math.min(1, nightProgress));
         const mx = (1-mt)*(1-mt)*40 + 2*(1-mt)*mt*260 + mt*mt*480;
         const my = (1-mt)*(1-mt)*175 + 2*(1-mt)*mt*30 + mt*mt*175;
         moonEl.style.left = ((mx / 520) * 100) + '%';
         moonEl.style.top  = Math.max(1, (my / 200) * 0.55 * 100 - 4) + '%';
-    } else {
+      } else {
         moonEl.style.display = 'none';
-    }
+      }
     }
     const inner = this._el('sfcSunInner');
     if (inner) inner.style.background = elevation < 10
