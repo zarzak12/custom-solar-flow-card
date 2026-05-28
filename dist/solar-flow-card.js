@@ -1014,34 +1014,32 @@ const CARD_CSS = `
     stroke-linecap:round;
     transition:opacity .35s ease;
   }
+  /* GSAP gère l'animation — garder seulement le style visuel */
   .sfc-flow-neon,
   .sfc-sun-flow-neon {
-    stroke-dasharray:60 240;
-    opacity:1;
-    animation:sfc-neon-head-flow 2.15s linear infinite;
+    stroke-dasharray: none;
+    opacity: 1;
+    animation: none;   /* ← GSAP remplace */
     filter:
       drop-shadow(0 0 2px currentColor)
       drop-shadow(0 0 6px currentColor)
       drop-shadow(0 0 12px currentColor);
   }
+
   .sfc-flow-tail-mid,
   .sfc-sun-flow-tail-mid {
-    stroke-dasharray:172 128;
-    opacity:.20;
-    animation:sfc-neon-mid-flow 2.15s linear infinite;
-    filter:
-      blur(.7px)
-      drop-shadow(0 0 7px currentColor)
-      drop-shadow(0 0 14px currentColor);
+    stroke-dasharray: none;
+    opacity: .20;
+    animation: none;
+    filter: blur(.7px) drop-shadow(0 0 7px currentColor);
   }
+
   .sfc-flow-tail-long,
   .sfc-sun-flow-tail-long {
-    stroke-dasharray:264 36;
-    opacity:.08;
-    animation:sfc-neon-long-flow 2.15s linear infinite;
-    filter:
-      blur(1.6px)
-      drop-shadow(0 0 18px currentColor);
+    stroke-dasharray: none;
+    opacity: .08;
+    animation: none;
+    filter: blur(1.6px) drop-shadow(0 0 18px currentColor);
   }
   .sfc-flow-neon { stroke-width:1.8; }
   .sfc-flow-tail-mid { stroke-width:2.4; }
@@ -1999,6 +1997,71 @@ class SolarFlowCard extends HTMLElement {
       ${buildCardHTML(this._cfg)}
     `;
     this._createStars();
+    this._loadGSAP();
+  }
+
+  _loadGSAP() {
+    // Déjà chargé sur la page ?
+    if (window.gsap && window.DrawSVGPlugin) {
+      gsap.registerPlugin(DrawSVGPlugin);
+      this._initFlowAnimations();
+      return;
+    }
+    // Charger GSAP core
+    const s1 = document.createElement('script');
+    s1.src = 'https://cdn.jsdelivr.net/npm/gsap@3.15/dist/gsap.min.js';
+    s1.onload = () => {
+      // Puis DrawSVG plugin
+      const s2 = document.createElement('script');
+      s2.src = 'https://cdn.jsdelivr.net/npm/gsap@3.15/dist/DrawSVGPlugin.min.js';
+      s2.onload = () => {
+        gsap.registerPlugin(DrawSVGPlugin);
+        this._initFlowAnimations();
+      };
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(s1);
+  }
+
+  _initFlowAnimations() {
+    this._gsapReady = true;
+    const sr = this.shadowRoot;
+
+    // Fonction helper : particule qui court sur un path en boucle
+    const animateFlow = (id, duration, delay = 0) => {
+      const el = sr.getElementById(id);
+      if (!el) return;
+      // Réinitialise le dasharray CSS — GSAP prend le relais
+      el.style.animation = 'none';
+      el.style.strokeDasharray = 'none';
+
+      gsap.fromTo(el,
+        { drawSVG: '0% 0%' },
+        {
+          drawSVG: '100% 100%',
+          duration: duration,
+          delay: delay,
+          ease: 'none',
+          repeat: -1,
+          onRepeat: () => gsap.set(el, { drawSVG: '0% 0%' })
+        }
+      );
+    };
+
+    // Flux grid ↔ maison
+    animateFlow('sfcLGGlow',      1.8, 0);
+    animateFlow('sfcLGTailMid',   1.8, 0.1);
+    animateFlow('sfcLGTailLong',  1.8, 0.2);
+
+    // Flux maison ↔ batterie
+    animateFlow('sfcLBGlow',      2.1, 0);
+    animateFlow('sfcLBTailMid',   2.1, 0.1);
+    animateFlow('sfcLBTailLong',  2.1, 0.2);
+
+    // Flux soleil
+    animateFlow('sfcSunFlowGlow',    1.4, 0);
+    animateFlow('sfcSunFlowTailMid', 1.4, 0.1);
+    animateFlow('sfcSunFlowTailLong',1.4, 0.2);
   }
 
   _createStars() {
