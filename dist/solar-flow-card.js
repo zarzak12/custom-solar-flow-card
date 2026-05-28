@@ -2271,7 +2271,7 @@ class SolarFlowCard extends HTMLElement {
       if (gridActive) {
         const isSingle = c.img_scene_mode === 'single';
         if (isSingle) {
-          const path = gridW < -50 ? 'M 175,13 L 50,30' : 'M 50,30 L 175,13';
+          const path = gridW < -50 ? 'M 175,13.5 L 48,47.5' : 'M 48,47.5 L 175,13.5';
           this._setFlowPath(gridFlowIds, path);
         } else {
           const path = gridW < -50 ? 'M 195,48 L 65,48' : 'M 65,48 L 195,48';
