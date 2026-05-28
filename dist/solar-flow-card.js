@@ -2028,40 +2028,41 @@ class SolarFlowCard extends HTMLElement {
     const sr = this.shadowRoot;
 
     // Fonction helper : particule qui court sur un path en boucle
-    const animateFlow = (id, duration, delay = 0) => {
+    const animateFlow = (id, duration, delay = 0, segmentSize = 25) => {
       const el = sr.getElementById(id);
       if (!el) return;
-      // Réinitialise le dasharray CSS — GSAP prend le relais
       el.style.animation = 'none';
       el.style.strokeDasharray = 'none';
 
+      // Segment de segmentSize% qui court de -segmentSize% à 100%
       gsap.fromTo(el,
-        { drawSVG: '0% 0%' },
+        { drawSVG: `0% ${segmentSize}%` },      // segment visible au départ
         {
-          drawSVG: '100% 100%',
+          drawSVG: `${100 - segmentSize}% 100%`, // segment visible à l'arrivée
           duration: duration,
           delay: delay,
-          ease: 'none',
+          ease: 'power1.inOut',
           repeat: -1,
-          onRepeat: () => gsap.set(el, { drawSVG: '0% 0%' })
+          yoyo: false,
+          onRepeat: () => gsap.set(el, { drawSVG: `0% ${segmentSize}%` })
         }
       );
     };
 
     // Flux grid ↔ maison
-    animateFlow('sfcLGGlow',      1.8, 0);
-    animateFlow('sfcLGTailMid',   1.8, 0.1);
-    animateFlow('sfcLGTailLong',  1.8, 0.2);
+    animateFlow('sfcLGGlow',      1.8, 0, 20);
+    animateFlow('sfcLGTailMid',   1.8, 0.1, 35);
+    animateFlow('sfcLGTailLong',  1.8, 0.2, 55);
 
     // Flux maison ↔ batterie
-    animateFlow('sfcLBGlow',      2.1, 0);
-    animateFlow('sfcLBTailMid',   2.1, 0.1);
-    animateFlow('sfcLBTailLong',  2.1, 0.2);
+    animateFlow('sfcLBGlow',      2.1, 0, 20);
+    animateFlow('sfcLBTailMid',   2.1, 0.1, 35);
+    animateFlow('sfcLBTailLong',  2.1, 0.2, 55);
 
     // Flux soleil
-    animateFlow('sfcSunFlowGlow',    1.4, 0);
-    animateFlow('sfcSunFlowTailMid', 1.4, 0.1);
-    animateFlow('sfcSunFlowTailLong',1.4, 0.2);
+    animateFlow('sfcSunFlowGlow',    1.4, 0, 20);
+    animateFlow('sfcSunFlowTailMid', 1.4, 0.1, 35);
+    animateFlow('sfcSunFlowTailLong',1.4, 0.2, 55);
   }
 
   _createStars() {
