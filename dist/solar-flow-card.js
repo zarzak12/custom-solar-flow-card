@@ -1309,6 +1309,27 @@ const CARD_CSS = `
     display: none !important;
   }
 
+  /* ── Batterie SVG : vagues oscillantes (même principe que .sfc-batt-wave HTML) ── */
+  #sfcSVBattWave1 {
+    animation: sfcSVWave1 2.5s linear infinite;
+  }
+  #sfcSVBattWave2 {
+    animation: sfcSVWave2 3.5s linear infinite reverse;
+  }
+  @keyframes sfcSVWave1 { from { transform: translateX(-26px); } to { transform: translateX(26px); } }
+  @keyframes sfcSVWave2 { from { transform: translateX(-18px); } to { transform: translateX(18px); } }
+
+  /* Charge (vert pulsé, comme .sfc-batt-charge) */
+  #sfcSVBattFill.sv-charging {
+    animation: sfcSVBattCharge 2s ease-in-out infinite;
+  }
+  /* Batterie faible (rouge clignotant, comme .sfc-batt-low) */
+  #sfcSVBattFill.sv-low {
+    animation: sfcSVBattLow 1s ease-in-out infinite;
+  }
+  @keyframes sfcSVBattCharge { 0%,100% { filter: brightness(1); }  50% { filter: brightness(1.3); } }
+  @keyframes sfcSVBattLow    { 0%,100% { opacity: 1; }             50% { opacity: 0.55; } }
+
   /* Mode single : la batterie reste dans le flux flex normal */
   .sfc-scene-mode-single .node-battery {
     flex: 1;
@@ -1486,10 +1507,29 @@ function buildCardHTML(cfg) {
           preserveAspectRatio="xMidYMax meet">
 
           <defs>
-            <!-- clipPath pour le cylindre de la batterie SVG -->
+            <!-- Clip cylindre batterie -->
             <clipPath id="sfcSVBattClip">
               <rect x="1462" y="502" width="56" height="165" rx="4"/>
             </clipPath>
+            <!-- Gradients liquide selon état — même logique que le mode séparé HTML -->
+            <linearGradient id="sfcSVGradNeutral"   x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stop-color="rgba(0,220,255,0.9)"/>
+              <stop offset="100%" stop-color="rgba(0,100,220,1)"/>
+            </linearGradient>
+            <linearGradient id="sfcSVGradCharge"    x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stop-color="rgba(105,255,71,0.9)"/>
+              <stop offset="40%"  stop-color="rgba(0,200,100,1)"/>
+              <stop offset="100%" stop-color="rgba(0,140,60,1)"/>
+            </linearGradient>
+            <linearGradient id="sfcSVGradDischarge" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stop-color="rgba(255,180,0,0.9)"/>
+              <stop offset="40%"  stop-color="rgba(255,100,0,1)"/>
+              <stop offset="100%" stop-color="rgba(200,50,0,1)"/>
+            </linearGradient>
+            <linearGradient id="sfcSVGradLow"       x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stop-color="rgba(255,80,80,0.9)"/>
+              <stop offset="100%" stop-color="rgba(200,20,20,1)"/>
+            </linearGradient>
           </defs>
 
           <!-- ── FLUX Grid → Maison ── -->
@@ -1513,9 +1553,15 @@ function buildCardHTML(cfg) {
           <!-- Fond cylindre -->
           <rect x="1460" y="500" width="60" height="170" rx="6"
             fill="rgba(6,13,26,0.78)" stroke="rgba(255,255,255,0.18)" stroke-width="2.5"/>
-          <!-- Liquide (bottom-up) — y et height mis à jour par JS -->
+          <!-- Liquide (bottom-up) — y, height et fill mis à jour par JS selon l'état -->
           <rect id="sfcSVBattFill" x="1462" y="602" width="56" height="63"
-            fill="rgba(0,200,255,0.88)" clip-path="url(#sfcSVBattClip)"/>
+            fill="url(#sfcSVGradNeutral)" clip-path="url(#sfcSVBattClip)"/>
+          <!-- Vague 1 (lente) — Y mis à jour par JS au niveau du liquide -->
+          <rect id="sfcSVBattWave1" x="1432" y="597" width="116" height="14" rx="7"
+            fill="rgba(255,255,255,0.28)" clip-path="url(#sfcSVBattClip)"/>
+          <!-- Vague 2 (rapide, sens inverse) -->
+          <rect id="sfcSVBattWave2" x="1442" y="602" width="96" height="10" rx="5"
+            fill="rgba(255,255,255,0.16)" clip-path="url(#sfcSVBattClip)"/>
           <!-- Brillance gauche -->
           <rect x="1462" y="502" width="14" height="165" rx="2"
             fill="rgba(255,255,255,0.07)" clip-path="url(#sfcSVBattClip)" pointer-events="none"/>
@@ -1544,13 +1590,13 @@ function buildCardHTML(cfg) {
           <text id="sfcSGGridSub" text-anchor="middle" x="280" y="936"
             style="font-family:monospace;font-size:27px;fill:rgba(232,244,253,0.6)">—</text>
 
-          <!-- Maison : chip façade centrale -->
-          <rect x="384" y="596" width="252" height="88" rx="8"
+          <!-- Maison : chip centré sur la façade de la maison (X≈720 = 47% de 1536) -->
+          <rect x="594" y="596" width="252" height="88" rx="8"
             fill="rgba(6,13,26,0.68)" stroke="rgba(255,107,107,0.18)" stroke-width="1.5"/>
-          <text text-anchor="middle" x="510" y="622"
+          <text text-anchor="middle" x="720" y="622"
             style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">MAISON</text>
-          <text id="sfcSGHomeVal" text-anchor="middle" x="510" y="668"
+          <text id="sfcSGHomeVal" text-anchor="middle" x="720" y="668"
             style="font-family:monospace;font-size:36px;font-weight:700;
                    fill:var(--sfc-home,#FF6B6B);filter:drop-shadow(0 0 4px var(--sfc-home,#FF6B6B))">0 W</text>
 
@@ -2516,22 +2562,33 @@ class SolarFlowCard extends HTMLElement {
     const sgBattSub = this._el('sfcSGBattSub');
     if (sgBattSub) sgBattSub.textContent = battV ? battV.toFixed(1) + ' V' : '—';
 
-    // Batterie liquide SVG — rect bottom-up, hauteur = SOC%
-    // Cylindre : y=502, height=165 → fill : y=502+(165-fillH), height=fillH
-    const svFill = this._el('sfcSVBattFill');
+    // ── Batterie liquide SVG : gradient + vagues + animation CSS ──
+    // Cylindre intérieur : y=502, height=165 (identique à l'HTML mode séparé)
+    const svFill  = this._el('sfcSVBattFill');
+    const svWave1 = this._el('sfcSVBattWave1');
+    const svWave2 = this._el('sfcSVBattWave2');
     if (svFill) {
-      const maxH = 165, fillH = Math.round(maxH * battSoc / 100);
-      svFill.setAttribute('y',      String(502 + (maxH - fillH)));
+      const maxH = 165;
+      const fillH = Math.round(maxH * battSoc / 100);
+      const fillY = 502 + (maxH - fillH);
+      svFill.setAttribute('y',      String(fillY));
       svFill.setAttribute('height', String(fillH));
-      // Couleur selon l'état : rouge critique, vert charge, orange décharge, bleu neutre
-      const fc = battSoc < 15
-        ? 'rgba(255,50,50,0.9)'
-        : (battSoc < 99.5 && pvW > 100)
-          ? 'rgba(105,255,71,0.9)'
-          : (homeW > pvW + 100)
-            ? 'rgba(255,140,0,0.9)'
-            : 'rgba(0,200,255,0.88)';
-      svFill.setAttribute('fill', fc);
+
+      // Positionner les vagues au niveau du haut du liquide
+      if (svWave1) svWave1.setAttribute('y', String(fillY - 7));
+      if (svWave2) svWave2.setAttribute('y', String(fillY - 4));
+
+      // Gradient et classe CSS selon l'état (miroir exact du mode séparé HTML)
+      const isLow      = battSoc < 15;
+      const isCharging = !isLow && battSoc < 99.5 && pvW > 100;
+      const isDischarg = !isLow && homeW > pvW + 100;
+      const grad = isLow      ? 'url(#sfcSVGradLow)'
+                 : isCharging ? 'url(#sfcSVGradCharge)'
+                 : isDischarg ? 'url(#sfcSVGradDischarge)'
+                 :              'url(#sfcSVGradNeutral)';
+      svFill.setAttribute('fill', grad);
+      // Classe pour l'animation CSS (pulsation charge / clignotement low)
+      svFill.setAttribute('class', isLow ? 'sv-low' : isCharging ? 'sv-charging' : '');
     }
     const svSoc = this._el('sfcSVBattSoc');
     if (svSoc) svSoc.textContent = Math.round(battSoc) + '%';
