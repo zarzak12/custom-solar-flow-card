@@ -1591,17 +1591,25 @@ function buildCardHTML(cfg) {
             </linearGradient>
           </defs>
 
-          <!-- ── FLUX Grid → Maison ── -->
-          <path id="sfcLG_s"         class="sfc-flow-core"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3"   d="M 175,870 L 640,580"/>
-          <path id="sfcLGTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:6.5" d="M 175,870 L 640,580"/>
-          <path id="sfcLGTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:4.8" d="M 175,870 L 640,580"/>
-          <path id="sfcLGGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3.6" d="M 175,870 L 640,580"/>
+          <!-- ── FLUX Grid ↔ Maison ── -->
+          <path id="sfcLG_s"         class="sfc-flow-core"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3"   d="M426 915.5 L860.5 704.5 L579 660.5 L748 608"/>
+          <path id="sfcLGTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:6.5" d="M426 915.5 L860.5 704.5 L579 660.5 L748 608"/>
+          <path id="sfcLGTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:4.8" d="M426 915.5 L860.5 704.5 L579 660.5 L748 608"/>
+          <path id="sfcLGGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3.6" d="M426 915.5 L860.5 704.5 L579 660.5 L748 608"/>
 
-          <!-- ── FLUX Maison → Batterie ── -->
-          <path id="sfcLB_s"         class="sfc-flow-core"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3"   d="M 778,580 L 1410,580"/>
-          <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:6.5" d="M 778,580 L 1410,580"/>
-          <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:4.8" d="M 778,580 L 1410,580"/>
-          <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3.6" d="M 778,580 L 1410,580"/>
+          <!-- ── FLUX Maison ↔ Batterie ── -->
+          <path id="sfcLB_s"         class="sfc-flow-core"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3"   d="M945 623.5 L1402 639.5"/>
+          <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:6.5" d="M945 623.5 L1402 639.5"/>
+          <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:4.8" d="M945 623.5 L1402 639.5"/>
+          <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3.6" d="M945 623.5 L1402 639.5"/>
+
+          <!-- ── FLUX Maison → Spa (router1) ── -->
+          ${c.router1_enabled ? `
+          <path id="sfcLSpa_s"         class="sfc-flow-core"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:3"   d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
+          <path id="sfcLSpaTailLong_s" class="sfc-flow-tail-long" stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:6.5" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
+          <path id="sfcLSpaTailMid_s"  class="sfc-flow-tail-mid"  stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:4.8" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
+          <path id="sfcLSpaGlow_s"     class="sfc-flow-neon"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:3.6" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
+          ` : ''}
 
           <!-- ══════════════════════════════════════════════════════════
                BATTERIE LIQUIDE SVG — overlay sur la batterie murale de l'image.
@@ -1638,6 +1646,18 @@ function buildCardHTML(cfg) {
                font-size en unités SVG : 1 u ≈ 0.34 px à ~516px de card
                → label=24 u≈8px, valeur=36 u≈12px, sous-val=27 u≈9px
           ══════════════════════════════════════════════════════════ -->
+
+          <!-- Spa (router1) : chip près de l'extrémité du chemin -->
+          ${c.router1_enabled ? `
+          <rect x="150" y="562" width="230" height="88" rx="8"
+            fill="rgba(6,13,26,0.68)" stroke="rgba(255,160,64,0.25)" stroke-width="1.5"/>
+          <text text-anchor="middle" x="265" y="588"
+            style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:3px;
+                   fill:rgba(232,244,253,0.55)">${(c.router1_label||'SPA').toUpperCase()}</text>
+          <text id="sfcSGSpaVal" text-anchor="middle" x="265" y="634"
+            style="font-family:monospace;font-size:36px;font-weight:700;
+                   fill:#FFA040;filter:drop-shadow(0 0 4px #FFA040)">0 W</text>
+          ` : ''}
 
           <!-- Réseau : chip près du poteau bas-gauche -->
           <rect x="146" y="836" width="268" height="116" rx="8"
@@ -2510,8 +2530,10 @@ class SolarFlowCard extends HTMLElement {
       if (gridActive) {
         // Chemin mode separate/emoji (viewBox 420×100)
         const path   = gridW < -50 ? 'M 195,40 L 65,40'    : 'M 65,40 L 195,40';
-        // Chemin mode single (viewBox 1536×1024) — Y=580 = niveau batterie
-        const path_s = gridW < -50 ? 'M 640,580 L 175,870' : 'M 175,870 L 640,580';
+        // Chemin mode single (viewBox 1536×1024) — tracé Figma
+        const path_s = gridW < -50
+          ? 'M748 608 L579 660.5 L860.5 704.5 L426 915.5'
+          : 'M426 915.5 L860.5 704.5 L579 660.5 L748 608';
         this._setFlowPath(gridFlowIds,   path);
         this._setFlowPath(gridFlowIds_s, path_s);
       }
@@ -2527,11 +2549,11 @@ class SolarFlowCard extends HTMLElement {
       this._setFlowActive([...battFlowIds, ...battFlowIds_s], battActive);
       if (isDischarging) {
         this._setFlowPath(battFlowIds,   'M 355,40 L 225,40');
-        this._setFlowPath(battFlowIds_s, 'M 1410,580 L 778,580');
+        this._setFlowPath(battFlowIds_s, 'M1402 639.5 L945 623.5');
         lb.setAttribute('marker-end', 'url(#arrowDis)');
       } else {
         this._setFlowPath(battFlowIds,   'M 225,40 L 355,40');
-        this._setFlowPath(battFlowIds_s, 'M 778,580 L 1410,580');
+        this._setFlowPath(battFlowIds_s, 'M945 623.5 L1402 639.5');
         lb.setAttribute('marker-end', 'url(#arrowBatt)');
       }
     }
@@ -2693,6 +2715,14 @@ class SolarFlowCard extends HTMLElement {
       if (valEl) { valEl.textContent = w >= 1000 ? (w/1000).toFixed(2)+' kW' : Math.round(w)+' W'; valEl.className = 'sfc-router-val'+(active?'':' inactive'); }
       const node = this._el('sfcRouterNode' + rn);
       if (node)  node.classList.toggle('active', active);
+
+      // Flux single-mode pour router1 (Spa)
+      if (rn === 1 && c.img_scene_mode === 'single') {
+        const spaIds = ['sfcLSpa_s','sfcLSpaTailLong_s','sfcLSpaTailMid_s','sfcLSpaGlow_s'];
+        this._setFlowActive(spaIds, active);
+        const spaVal = this._el('sfcSGSpaVal');
+        if (spaVal) spaVal.textContent = w >= 1000 ? (w/1000).toFixed(2)+' kW' : Math.round(w)+' W';
+      }
     });
 
     // Ligne batterie depuis dernier routeur (ou maison)
