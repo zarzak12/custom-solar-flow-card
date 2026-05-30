@@ -547,6 +547,16 @@ function skyGradient(elev, wi) {
     ? 'linear-gradient(180deg,#263238 0%,#37474f 30%,#455a64 60%,#2a3f4f 100%)'
     : 'linear-gradient(180deg,#1c2833 0%,#2c3e50 100%)';
 
+  // Partiellement nuageux : ciel bleu avec nuages
+  const partlyCloudy = (typeof wi !== 'boolean') && wi && wi.cloud <= 0.5 && wi.cloudy && !wi.rain && !wi.snow && !wi.fog && !wi.storm;
+  if (partlyCloudy) {
+    if (elev > 45) return 'linear-gradient(180deg,#0d3a70 0%,#1a6abf 30%,#4aa0e0 60%,#80c8f8 80%,#1a3a5c 100%)';
+    if (elev > 20) return 'linear-gradient(180deg,#1a4a80 0%,#2d7cc0 30%,#5aaae8 60%,#90c8f8 80%,#1e3a60 100%)';
+    if (elev > 5)  return 'linear-gradient(180deg,#1e3870 0%,#3a70b8 30%,#6aaae0 60%,#a8d0f8 75%,#162840 100%)';
+    if (elev > 0)  return 'linear-gradient(180deg,#1a2a4a 0%,#c05018 20%,#e87030 35%,#b0c8e8 55%,#3870b0 75%,#0c1f3a 100%)';
+    return 'linear-gradient(180deg,#1f2937 0%,#111827 100%)';
+  }
+
   // Ciel couvert classique
   if (cloudy) {
     if (elev > 20) return 'linear-gradient(180deg,#4a5568 0%,#6b7280 40%,#3d4f60 100%)';
@@ -682,6 +692,49 @@ const CARD_CSS = `
     animation:sfc-cloud-move linear infinite;
   }
   @keyframes sfc-cloud-move { 0%{left:-200px} 100%{left:calc(100% + 200px)} }
+
+  /* Effets météo */
+  .sfc-weather-fx { position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:6; }
+  .sfc-raindrop {
+    position:absolute; top:-60px; width:1.5px; border-radius:2px;
+    background:linear-gradient(180deg,transparent 0%,rgba(174,210,255,0.85) 100%);
+    animation:sfc-rain-fall linear infinite;
+  }
+  @keyframes sfc-rain-fall {
+    0%   { transform:translateY(0) rotate(12deg); opacity:0; }
+    8%   { opacity:1; }
+    92%  { opacity:0.8; }
+    100% { transform:translateY(680px) rotate(12deg); opacity:0; }
+  }
+  .sfc-snowflake {
+    position:absolute; top:-20px; border-radius:50%;
+    background:rgba(255,255,255,0.92);
+    box-shadow:0 0 4px rgba(255,255,255,0.5);
+    animation:sfc-snow-fall ease-in-out infinite;
+  }
+  @keyframes sfc-snow-fall {
+    0%   { transform:translateY(0) translateX(0); opacity:0; }
+    10%  { opacity:0.88; }
+    25%  { transform:translateY(170px) translateX(15px); }
+    50%  { transform:translateY(340px) translateX(-12px); }
+    75%  { transform:translateY(510px) translateX(18px); }
+    92%  { opacity:0.6; }
+    100% { transform:translateY(680px) translateX(4px); opacity:0; }
+  }
+  .sfc-lightning-fx {
+    position:absolute;inset:0;pointer-events:none;z-index:10;opacity:0;
+    background:radial-gradient(ellipse at 65% 15%,rgba(210,225,255,0.75) 0%,rgba(180,200,255,0.3) 40%,transparent 70%);
+  }
+  .sfc-lightning-fx.sfc-flash { animation:sfc-lightning-strike 0.45s ease-out forwards; }
+  @keyframes sfc-lightning-strike {
+    0%   { opacity:0; }
+    6%   { opacity:1; }
+    18%  { opacity:0.05; }
+    28%  { opacity:0.85; }
+    42%  { opacity:0.02; }
+    100% { opacity:0; }
+  }
+
   /* Arc solaire */
   .sfc-sun-arc-svg { position:absolute;inset:0;width:100%;height:100%; }
   .sfc-sun-arc-svg path { stroke-linecap:round; stroke-linejoin:round; }
@@ -1396,6 +1449,11 @@ function buildCardHTML(cfg) {
         <div class="sfc-cloud-shape" style="width:110px;height:25px;top:22%;animation-duration:85s;animation-delay:-20s;opacity:0.35;"></div>
         <div class="sfc-cloud-shape" style="width:200px;height:40px;top:8%;animation-duration:100s;animation-delay:-40s;opacity:0.4;"></div>
       </div>
+
+      <!-- Effets météo (pluie / neige / foudre) -->
+      <div class="sfc-weather-fx" id="sfcRain" style="display:none;"></div>
+      <div class="sfc-weather-fx" id="sfcSnow" style="display:none;"></div>
+      <div class="sfc-lightning-fx" id="sfcLightningFx" style="display:none;"></div>
 
       <!-- Arc de trajectoire solaire -->
       <svg class="sfc-sun-arc-svg" viewBox="0 0 520 200" preserveAspectRatio="xMidYMid meet"
@@ -2300,10 +2358,8 @@ class SolarFlowCard extends HTMLElement {
   }
 
   disconnectedCallback() {
-    if (this._sunTimer) {
-      clearInterval(this._sunTimer);
-      this._sunTimer = null;
-    }
+    if (this._sunTimer) { clearInterval(this._sunTimer); this._sunTimer = null; }
+    if (this._lightningTimer) { clearTimeout(this._lightningTimer); this._lightningTimer = null; }
   }
 
   _getNum(entityId, fallback = 0) {
@@ -2583,8 +2639,9 @@ class SolarFlowCard extends HTMLElement {
     const svSoc = this._el('sfcSVBattSoc');
     if (svSoc) svSoc.textContent = Math.round(battSoc) + '%';
 
-    // Sun
-    this._updateSun(wi.cloudy);
+    // Sun + effets météo
+    this._updateSun();
+    this._updateWeatherFx(wi);
   }
 
   _setPct(barId, pctId, pct) {
@@ -2762,18 +2819,109 @@ class SolarFlowCard extends HTMLElement {
     }
     const sky = this._el('sfcSky');
     const wi  = getWeather(this._getState(c.weather) || '');
-    const cloudy = cloudyOverride !== undefined ? cloudyOverride : wi.cloudy;
-    if (sky) sky.style.background = skyGradient(elevation, cloudy);
+    if (sky) sky.style.background = skyGradient(elevation, cloudyOverride !== undefined ? cloudyOverride : wi);
 
     const stars = this._el('sfcStars');
     if (stars) stars.style.opacity = elevation < 0 ? Math.min(1, -elevation/8).toFixed(2) : '0';
 
     // Nuages météo
-    const cl1 = this._el('sfcCloud1'); if (cl1) cl1.style.opacity = wi.cloudy ? '.22' : '.08';
-    const cl2 = this._el('sfcCloud2'); if (cl2) cl2.style.opacity = wi.cloudy ? '.16' : '.04';
+    const clouds = this._el('sfcClouds');
+    if (clouds) {
+      const cover = wi.cloud || 0;
+      clouds.style.opacity = cover >= 0.8 ? '0.6' : cover >= 0.3 ? '1.0' : '0.15';
+    }
 
     const stl = this._el('sfcSunTime');
     if (stl) stl.textContent = now.toLocaleTimeString(c.language==='en'?'en-GB':'fr-FR',{hour:'2-digit',minute:'2-digit'}) + ' · ' + Math.round(elevation) + '°';
+  }
+
+  _updateWeatherFx(wi) {
+    const rainEl  = this._el('sfcRain');
+    const snowEl  = this._el('sfcSnow');
+    const lightEl = this._el('sfcLightningFx');
+
+    // Pluie
+    if (rainEl) {
+      if (wi.rain && !wi.snow) {
+        if (!rainEl._init) {
+          rainEl.innerHTML = '';
+          const heavy = wi.cloud >= 0.95;
+          const count = heavy ? 70 : 40;
+          for (let i = 0; i < count; i++) {
+            const d = document.createElement('div');
+            d.className = 'sfc-raindrop';
+            const dur = heavy ? (0.28 + Math.random() * 0.3) : (0.5 + Math.random() * 0.5);
+            d.style.cssText = [
+              `left:${(Math.random()*110 - 5).toFixed(1)}%`,
+              `height:${(12 + Math.random()*18).toFixed(0)}px`,
+              `animation-duration:${dur.toFixed(2)}s`,
+              `animation-delay:${(-(Math.random()*dur*4)).toFixed(2)}s`,
+              `opacity:${(heavy ? 0.5 + Math.random()*0.4 : 0.3 + Math.random()*0.4).toFixed(2)}`,
+            ].join(';');
+            rainEl.appendChild(d);
+          }
+          rainEl._init = true;
+        }
+        rainEl.style.display = '';
+      } else {
+        rainEl.style.display = 'none';
+        if (rainEl._init) { rainEl.innerHTML = ''; rainEl._init = false; }
+      }
+    }
+
+    // Neige
+    if (snowEl) {
+      if (wi.snow) {
+        if (!snowEl._init) {
+          snowEl.innerHTML = '';
+          for (let i = 0; i < 45; i++) {
+            const f = document.createElement('div');
+            f.className = 'sfc-snowflake';
+            const sz = (2 + Math.random() * 5).toFixed(1);
+            const dur = (3 + Math.random() * 5).toFixed(2);
+            f.style.cssText = [
+              `left:${(Math.random()*110 - 5).toFixed(1)}%`,
+              `width:${sz}px`, `height:${sz}px`,
+              `animation-duration:${dur}s`,
+              `animation-delay:${(-(Math.random()*parseFloat(dur)*2)).toFixed(2)}s`,
+              `opacity:${(0.55 + Math.random()*0.4).toFixed(2)}`,
+            ].join(';');
+            snowEl.appendChild(f);
+          }
+          snowEl._init = true;
+        }
+        snowEl.style.display = '';
+      } else {
+        snowEl.style.display = 'none';
+        if (snowEl._init) { snowEl.innerHTML = ''; snowEl._init = false; }
+      }
+    }
+
+    // Foudre
+    if (lightEl) {
+      if (wi.storm) {
+        lightEl.style.display = '';
+        if (!this._lightningTimer) {
+          const flash = () => {
+            lightEl.classList.remove('sfc-flash');
+            void lightEl.offsetWidth;
+            lightEl.classList.add('sfc-flash');
+          };
+          const schedule = () => {
+            this._lightningTimer = setTimeout(() => {
+              if (this._el('sfcLightningFx')) { flash(); schedule(); }
+              else this._lightningTimer = null;
+            }, 4000 + Math.random() * 9000);
+          };
+          flash();
+          schedule();
+        }
+      } else {
+        lightEl.style.display = 'none';
+        lightEl.classList.remove('sfc-flash');
+        if (this._lightningTimer) { clearTimeout(this._lightningTimer); this._lightningTimer = null; }
+      }
+    }
   }
 }
 
