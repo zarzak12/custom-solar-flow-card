@@ -1361,15 +1361,8 @@ const CARD_CSS = `
     display: none !important;
   }
 
-  /* ── Batterie SVG : vagues oscillantes (même principe que .sfc-batt-wave HTML) ── */
-  #sfcSVBattWave1 {
-    animation: sfcSVWave1 2.5s linear infinite;
-  }
-  #sfcSVBattWave2 {
-    animation: sfcSVWave2 3.5s linear infinite reverse;
-  }
-  @keyframes sfcSVWave1 { from { transform: translateX(-26px); } to { transform: translateX(26px); } }
-  @keyframes sfcSVWave2 { from { transform: translateX(-18px); } to { transform: translateX(18px); } }
+  /* Vagues SVG supprimées — artefact visuel à cette échelle, remplacées par bulles GSAP */
+  #sfcSVBattWave1, #sfcSVBattWave2 { display: none !important; }
 
   /* Charge (vert pulsé, comme .sfc-batt-charge) */
   #sfcSVBattFill.sv-charging {
@@ -2505,18 +2498,7 @@ class SolarFlowCard extends HTMLElement {
     const ease = rising ? 'elastic.out(1, 0.38)' : 'power2.out';
     const dur  = rising ? 2.8 : 1.6;
 
-    if (svFill)  gsap.to(svFill,  { attr: { y: fillY, height: fillH }, duration: dur,        ease, overwrite: 'auto' });
-
-    // ── 2. Vagues — positionnées sur la surface du liquide, masquées si niveau trop bas ──
-    const showWaves = fillH >= 10;
-    if (svWave1) {
-      gsap.to(svWave1, { attr: { y: fillY }, opacity: showWaves ? 0.9 : 0, duration: dur + 0.12, ease, overwrite: 'auto' });
-      if (showWaves) svWave1.style.animationDuration = state === 'charging' ? '1.3s' : state === 'discharging' ? '2.0s' : '2.8s';
-    }
-    if (svWave2) {
-      gsap.to(svWave2, { attr: { y: fillY + 3 }, opacity: showWaves ? 0.9 : 0, duration: dur + 0.12, ease, overwrite: 'auto' });
-      if (showWaves) svWave2.style.animationDuration = state === 'charging' ? '1.9s' : state === 'discharging' ? '2.9s' : '4.2s';
-    }
+    if (svFill) gsap.to(svFill, { attr: { y: fillY, height: fillH }, duration: dur, ease, overwrite: 'auto' });
 
     // ── 3. Gradient + classe CSS ──────────────────────────────────────────
     if (svFill) {
@@ -2856,9 +2838,6 @@ class SolarFlowCard extends HTMLElement {
         const fillY = 502 + (maxH - fillH);
         svFill.setAttribute('y', String(fillY));
         svFill.setAttribute('height', String(fillH));
-        const showWavesFb = fillH >= 10;
-        if (svWave1) { svWave1.setAttribute('y', String(fillY)); svWave1.setAttribute('opacity', showWavesFb ? '0.9' : '0'); }
-        if (svWave2) { svWave2.setAttribute('y', String(fillY + 3)); svWave2.setAttribute('opacity', showWavesFb ? '0.9' : '0'); }
         const grad = battState === 'low'         ? 'url(#sfcSVGradLow)'
                    : battState === 'charging'    ? 'url(#sfcSVGradCharge)'
                    : battState === 'discharging' ? 'url(#sfcSVGradDischarge)'
