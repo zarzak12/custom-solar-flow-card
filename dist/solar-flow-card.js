@@ -2028,39 +2028,6 @@ function buildCardHTML(cfg) {
     </div>
     <div class="sfc-gap"></div>` : ''}
 
-    <!-- ÉCONOMIES & ROI -->
-    ${showSavings ? `
-    <div class="sfc-savings" id="sfcSavings">
-      <div class="sfc-savings-header">
-        <span class="sfc-savings-title">💰 ${t(c,'section_savings')}</span>
-        ${c.tempo_color ? `<span class="sfc-tempo-badge" id="sfcTempoBadge" style="display:none;"></span>` : ''}
-        <span class="sfc-savings-price" id="sfcCurrentPrice">${parseFloat(c.electricity_price||0.23).toFixed(4).replace(/0+$/,'').replace(/\.$/,'')} €/kWh</span>
-      </div>
-      <div class="sfc-savings-row">
-        <span class="sfc-sav-lbl">${t(c,'sav_today')}</span>
-        <span class="sfc-sav-val" id="sfcSavDay">— €</span>
-        <span class="sfc-sav-co2" id="sfcCo2Day">—</span>
-      </div>
-      ${c.pv_month_kwh ? `<div class="sfc-savings-row">
-        <span class="sfc-sav-lbl">${t(c,'sav_month')}</span>
-        <span class="sfc-sav-val" id="sfcSavMonth">— €</span>
-        <span class="sfc-sav-co2" id="sfcCo2Month">—</span>
-      </div>` : ''}
-      ${c.pv_year_kwh ? `<div class="sfc-savings-row">
-        <span class="sfc-sav-lbl">${t(c,'sav_year')}</span>
-        <span class="sfc-sav-val" id="sfcSavYear">— €</span>
-        <span class="sfc-sav-co2" id="sfcCo2Year">—</span>
-      </div>` : ''}
-      ${parseFloat(c.install_cost||0) > 0 && c.pv_year_kwh ? `
-      <div class="sfc-savings-sep"></div>
-      <div class="sfc-roi-row">
-        <span class="sfc-sav-lbl">${t(c,'sav_roi')}</span>
-        <div class="sfc-roi-bar-wrap"><div class="sfc-roi-bar" id="sfcRoiBar"></div></div>
-        <span class="sfc-roi-val" id="sfcRoiVal">— ${t(c,'sav_roi_years')}</span>
-      </div>` : ''}
-    </div>
-    <div class="sfc-gap"></div>` : ''}
-
     <!-- INVERTER -->
     ${showInv ? `
     <div class="sfc-section">${t(c,"section_inverter")}</div>
@@ -2087,6 +2054,40 @@ function buildCardHTML(cfg) {
         <span class="sfc-inv-label">${t(c,"inv_today_load")}</span>
         <span class="sfc-inv-val c-home" id="sfcTodayLoad">— kWh</span>
       </div>
+    </div>` : ''}
+
+    <!-- ÉCONOMIES & ROI -->
+    ${showSavings ? `
+    <div class="sfc-gap"></div>
+    <div class="sfc-section">💰 ${t(c,'section_savings')}</div>
+    <div class="sfc-gap" style="height:6px;"></div>
+    <div class="sfc-savings" id="sfcSavings">
+      <div class="sfc-savings-header">
+        ${c.tempo_color ? `<span class="sfc-tempo-badge" id="sfcTempoBadge" style="display:none;"></span>` : '<span></span>'}
+        <span class="sfc-savings-price" id="sfcCurrentPrice">${parseFloat(c.electricity_price||0.23).toFixed(4).replace(/\.?0+$/,'')} €/kWh</span>
+      </div>
+      <div class="sfc-savings-row">
+        <span class="sfc-sav-lbl">${t(c,'sav_today')}</span>
+        <span class="sfc-sav-val" id="sfcSavDay">— €</span>
+        <span class="sfc-sav-co2" id="sfcCo2Day">—</span>
+      </div>
+      ${c.pv_month_kwh ? `<div class="sfc-savings-row">
+        <span class="sfc-sav-lbl">${t(c,'sav_month')}</span>
+        <span class="sfc-sav-val" id="sfcSavMonth">— €</span>
+        <span class="sfc-sav-co2" id="sfcCo2Month">—</span>
+      </div>` : ''}
+      ${c.pv_year_kwh ? `<div class="sfc-savings-row">
+        <span class="sfc-sav-lbl">${t(c,'sav_year')}</span>
+        <span class="sfc-sav-val" id="sfcSavYear">— €</span>
+        <span class="sfc-sav-co2" id="sfcCo2Year">—</span>
+      </div>` : ''}
+      ${parseFloat(c.install_cost||0) > 0 && c.pv_year_kwh ? `
+      <div class="sfc-savings-sep"></div>
+      <div class="sfc-roi-row">
+        <span class="sfc-sav-lbl">${t(c,'sav_roi')}</span>
+        <div class="sfc-roi-bar-wrap"><div class="sfc-roi-bar" id="sfcRoiBar"></div></div>
+        <span class="sfc-roi-val" id="sfcRoiVal">— ${t(c,'sav_roi_years')}</span>
+      </div>` : ''}
     </div>` : ''}
 
     <div class="sfc-gap" style="height:10px;"></div>
