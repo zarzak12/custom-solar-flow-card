@@ -1259,7 +1259,8 @@ const CARD_CSS = `
 
   /* ── Économies & ROI ── */
   .sfc-savings {
-    background:var(--card);border:1px solid var(--border);border-radius:13px;padding:11px 14px;
+    background:var(--card);border:1px solid var(--border);border-radius:11px;
+    padding:9px 9px;margin:0 10px;
     display:flex;flex-direction:column;gap:7px;
   }
   .sfc-savings-header {
