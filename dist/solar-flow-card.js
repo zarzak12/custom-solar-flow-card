@@ -1339,14 +1339,11 @@ const CARD_CSS = `
     display: none !important;
   }
 
-  /* Routeurs : conserver leur style overlay (pas de SVG text pour eux) */
-  .sfc-scene-mode-single .sfc-router-label,
-  .sfc-scene-mode-single .sfc-router-val {
-    background: rgba(6,13,26,0.65);
-    backdrop-filter: blur(4px);
-    border-radius: 5px;
-    padding: 2px 6px;
-    text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+  /* Mode single : masquer les nœuds routeurs HTML (remplacés par les chemins SVG overlay) */
+  .sfc-scene-mode-single #sfcRouterNode1,
+  .sfc-scene-mode-single #sfcRouterNode2,
+  .sfc-scene-mode-single #sfcRouterNode3 {
+    display: none !important;
   }
 
   .sfc-scene-mode-single ~ .sfc-sunrise,
