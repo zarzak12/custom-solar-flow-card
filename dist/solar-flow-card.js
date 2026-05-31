@@ -110,6 +110,22 @@ const DEFAULTS = {
   show_total_pv: true,
   show_mode: true,
   title: 'Solar Flow',
+  // ── Économies & Tarification ──
+  show_savings:      true,
+  electricity_price: 0.23,    // €/kWh fixe (fallback)
+  price_entity:      '',      // sensor.prix_kwh → priorité 2
+  tempo_color:       '',      // sensor.rte_tempo_color → priorité 1
+  tempo_blue_hc:     0.1296,
+  tempo_blue_hp:     0.1609,
+  tempo_white_hc:    0.1470,
+  tempo_white_hp:    0.1894,
+  tempo_red_hc:      0.1568,
+  tempo_red_hp:      0.7562,
+  pv_month_kwh:      '',      // sensor.pv_energie_mois
+  pv_year_kwh:       '',      // sensor.pv_energie_annee
+  grid_export_today: '',      // sensor.energie_injectee (affine autoconso)
+  install_cost:      0,       // € coût installation (0 = ROI masqué)
+  co2_factor:        0.4,     // kg CO₂/kWh évités
 };
 
 // ══════════════════════════════════════════════════════════
@@ -202,6 +218,25 @@ const I18N = {
     ed_show_cells:    'Tensions cellules',
     ed_show_endurance:'Autonomie batterie',
     ed_show_inverter: 'Section Onduleur',
+    ed_show_savings:  'Bloc Économies',
+    // Savings block
+    section_savings:   'Économies & ROI',
+    sav_today:         "Aujourd'hui",
+    sav_month:         'Ce mois',
+    sav_year:          'Cette année',
+    sav_roi:           'ROI',
+    sav_roi_years:     'ans',
+    // Editor savings
+    ed_savings:         'Économies & Tarification',
+    ed_elec_price:      'Prix fixe (€/kWh)',
+    ed_price_entity:    'Entité prix dynamique',
+    ed_tempo_color:     'Entité couleur Tempo',
+    ed_tempo_prices:    'Prix Tempo (€/kWh) — HC / HP',
+    ed_pv_month:        'PV ce mois (entité kWh)',
+    ed_pv_year:         'PV cette année (entité kWh)',
+    ed_grid_export:     "Export réseau auj. (entité kWh)",
+    ed_install_cost:    "Coût installation (€)",
+    ed_co2_factor:      'Facteur CO₂ (kg/kWh)',
     ed_apply:         '💾 Appliquer les modifications',
     ed_saved:         '✓ Configuration sauvegardée',
     ed_saved_note:    'Appuyez sur Appliquer après chaque modification.',
@@ -334,6 +369,23 @@ const I18N = {
     ed_show_cells:    'Cell voltages',
     ed_show_endurance:'Battery endurance',
     ed_show_inverter: 'Inverter section',
+    ed_show_savings:  'Savings block',
+    section_savings:   'Savings & ROI',
+    sav_today:         'Today',
+    sav_month:         'This month',
+    sav_year:          'This year',
+    sav_roi:           'ROI',
+    sav_roi_years:     'yrs',
+    ed_savings:        'Savings & Pricing',
+    ed_elec_price:     'Fixed price (€/kWh)',
+    ed_price_entity:   'Dynamic price entity',
+    ed_tempo_color:    'Tempo color entity',
+    ed_tempo_prices:   'Tempo prices (€/kWh) — HC / HP',
+    ed_pv_month:       'PV this month (kWh entity)',
+    ed_pv_year:        'PV this year (kWh entity)',
+    ed_grid_export:    'Grid export today (kWh entity)',
+    ed_install_cost:   'Install cost (€)',
+    ed_co2_factor:     'CO₂ factor (kg/kWh)',
     ed_apply:         '💾 Apply changes',
     ed_saved:         '✓ Configuration saved',
     ed_saved_note:    'Press Apply after each change.',
@@ -1205,6 +1257,52 @@ const CARD_CSS = `
   .sfc-end-val { font-family:monospace;font-size:13px;font-weight:700;color:var(--batt);text-shadow:0 0 6px rgba(105,255,71,.4); }
   .sfc-end-sub { font-size:9px;color:var(--muted);margin-left:4px; }
 
+  /* ── Économies & ROI ── */
+  .sfc-savings {
+    background:var(--card);border:1px solid var(--border);border-radius:13px;padding:11px 14px;
+    display:flex;flex-direction:column;gap:7px;
+  }
+  .sfc-savings-header {
+    display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:1px;
+  }
+  .sfc-savings-title {
+    font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);flex:1;
+  }
+  .sfc-savings-price {
+    font-family:monospace;font-size:11px;font-weight:700;color:#FFD700;
+    background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.22);
+    border-radius:6px;padding:2px 7px;white-space:nowrap;
+  }
+  .sfc-tempo-badge {
+    font-family:monospace;font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap;
+  }
+  .sfc-tempo-blue  { background:rgba(30,120,255,0.18);color:#7ad;border:1px solid rgba(30,120,255,0.35); }
+  .sfc-tempo-white { background:rgba(200,210,230,0.18);color:#cce;border:1px solid rgba(200,210,230,0.35); }
+  .sfc-tempo-red   { background:rgba(255,40,40,0.20);color:#f88;border:1px solid rgba(255,40,40,0.40); }
+  .sfc-savings-row { display:flex;align-items:center;gap:4px; }
+  .sfc-sav-lbl {
+    font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+    width:76px;flex-shrink:0;
+  }
+  .sfc-sav-val {
+    font-family:monospace;font-size:14px;font-weight:700;
+    color:#69FF47;text-shadow:0 0 6px rgba(105,255,71,0.35);flex:1;
+  }
+  .sfc-sav-co2 { font-family:monospace;font-size:10px;color:#6af;text-align:right;white-space:nowrap; }
+  .sfc-savings-sep { height:1px;background:var(--border);margin:1px 0; }
+  .sfc-roi-row { display:flex;align-items:center;gap:8px; }
+  .sfc-roi-bar-wrap {
+    flex:1;height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;
+  }
+  .sfc-roi-bar {
+    height:100%;width:0%;background:linear-gradient(90deg,#69FF47,#FFD700);
+    border-radius:3px;transition:width 1.5s ease;
+  }
+  .sfc-roi-val {
+    font-family:monospace;font-size:11px;font-weight:700;color:#FFD700;
+    white-space:nowrap;min-width:50px;text-align:right;
+  }
+
   /* ── Section title ── */
   .sfc-section { font-size:8px;letter-spacing:2px;text-transform:uppercase;
     color:var(--muted);font-weight:700;display:flex;align-items:center;gap:5px;
@@ -1393,9 +1491,10 @@ const CARD_CSS = `
 // ══════════════════════════════════════════════════════════
 function buildCardHTML(cfg) {
   const c = { ...DEFAULTS, ...cfg };
-  const showBars = c.show_progress_bars;
-  const showInv  = c.show_inverter;
-  const showEnd  = c.show_endurance;
+  const showBars    = c.show_progress_bars;
+  const showInv     = c.show_inverter;
+  const showEnd     = c.show_endurance;
+  const showSavings = c.show_savings !== false;
   const showCells= c.show_cells;
 
   return `
@@ -1929,6 +2028,39 @@ function buildCardHTML(cfg) {
     </div>
     <div class="sfc-gap"></div>` : ''}
 
+    <!-- ÉCONOMIES & ROI -->
+    ${showSavings ? `
+    <div class="sfc-savings" id="sfcSavings">
+      <div class="sfc-savings-header">
+        <span class="sfc-savings-title">💰 ${t(c,'section_savings')}</span>
+        ${c.tempo_color ? `<span class="sfc-tempo-badge" id="sfcTempoBadge" style="display:none;"></span>` : ''}
+        <span class="sfc-savings-price" id="sfcCurrentPrice">${parseFloat(c.electricity_price||0.23).toFixed(4).replace(/0+$/,'').replace(/\.$/,'')} €/kWh</span>
+      </div>
+      <div class="sfc-savings-row">
+        <span class="sfc-sav-lbl">${t(c,'sav_today')}</span>
+        <span class="sfc-sav-val" id="sfcSavDay">— €</span>
+        <span class="sfc-sav-co2" id="sfcCo2Day">—</span>
+      </div>
+      ${c.pv_month_kwh ? `<div class="sfc-savings-row">
+        <span class="sfc-sav-lbl">${t(c,'sav_month')}</span>
+        <span class="sfc-sav-val" id="sfcSavMonth">— €</span>
+        <span class="sfc-sav-co2" id="sfcCo2Month">—</span>
+      </div>` : ''}
+      ${c.pv_year_kwh ? `<div class="sfc-savings-row">
+        <span class="sfc-sav-lbl">${t(c,'sav_year')}</span>
+        <span class="sfc-sav-val" id="sfcSavYear">— €</span>
+        <span class="sfc-sav-co2" id="sfcCo2Year">—</span>
+      </div>` : ''}
+      ${parseFloat(c.install_cost||0) > 0 && c.pv_year_kwh ? `
+      <div class="sfc-savings-sep"></div>
+      <div class="sfc-roi-row">
+        <span class="sfc-sav-lbl">${t(c,'sav_roi')}</span>
+        <div class="sfc-roi-bar-wrap"><div class="sfc-roi-bar" id="sfcRoiBar"></div></div>
+        <span class="sfc-roi-val" id="sfcRoiVal">— ${t(c,'sav_roi_years')}</span>
+      </div>` : ''}
+    </div>
+    <div class="sfc-gap"></div>` : ''}
+
     <!-- INVERTER -->
     ${showInv ? `
     <div class="sfc-section">${t(c,"section_inverter")}</div>
@@ -2174,6 +2306,86 @@ function buildEditorHTML(cfg) {
       ${edEntity('img_overlay2_label', t(c,'ed_img_overlay2_label'), '', c)}
     `)}
 
+    <!-- SECTION: Économies & Tarification -->
+    ${edSection('savings', t(c,'ed_savings'), false, `
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_elec_price')}</label>
+        <label class="sfc-ed-desc">Prix fixe utilisé si aucune entité ni Tempo configuré</label>
+        <input class="sfc-ed-input sfc-ed-number" data-key="electricity_price" type="number" step="0.0001" placeholder="0.23" value="${c.electricity_price||''}"/>
+      </div>
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_price_entity')}</label>
+        <label class="sfc-ed-desc">Entité HA retournant le prix €/kWh en temps réel (priorité 2)</label>
+        <input class="sfc-ed-input" data-key="price_entity" placeholder="sensor.prix_kwh" value="${c.price_entity||''}"/>
+      </div>
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_tempo_color')}</label>
+        <label class="sfc-ed-desc">Entité couleur Tempo (BLUE/WHITE/RED) — priorité 1</label>
+        <input class="sfc-ed-input" data-key="tempo_color" placeholder="sensor.rte_tempo_color" value="${c.tempo_color||''}"/>
+      </div>
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label" style="color:#7ad;">${t(c,'ed_tempo_prices')} — 🔵 Bleu</label>
+        <div class="sfc-ed-grid">
+          <div class="sfc-ed-row">
+            <label class="sfc-ed-label">HC</label>
+            <input class="sfc-ed-input sfc-ed-number" data-key="tempo_blue_hc" type="number" step="0.0001" placeholder="0.1296" value="${c.tempo_blue_hc||''}"/>
+          </div>
+          <div class="sfc-ed-row">
+            <label class="sfc-ed-label">HP</label>
+            <input class="sfc-ed-input sfc-ed-number" data-key="tempo_blue_hp" type="number" step="0.0001" placeholder="0.1609" value="${c.tempo_blue_hp||''}"/>
+          </div>
+        </div>
+      </div>
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label" style="color:#cce;">— ⚪ Blanc</label>
+        <div class="sfc-ed-grid">
+          <div class="sfc-ed-row">
+            <label class="sfc-ed-label">HC</label>
+            <input class="sfc-ed-input sfc-ed-number" data-key="tempo_white_hc" type="number" step="0.0001" placeholder="0.1470" value="${c.tempo_white_hc||''}"/>
+          </div>
+          <div class="sfc-ed-row">
+            <label class="sfc-ed-label">HP</label>
+            <input class="sfc-ed-input sfc-ed-number" data-key="tempo_white_hp" type="number" step="0.0001" placeholder="0.1894" value="${c.tempo_white_hp||''}"/>
+          </div>
+        </div>
+      </div>
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label" style="color:#f88;">— 🔴 Rouge</label>
+        <div class="sfc-ed-grid">
+          <div class="sfc-ed-row">
+            <label class="sfc-ed-label">HC</label>
+            <input class="sfc-ed-input sfc-ed-number" data-key="tempo_red_hc" type="number" step="0.0001" placeholder="0.1568" value="${c.tempo_red_hc||''}"/>
+          </div>
+          <div class="sfc-ed-row">
+            <label class="sfc-ed-label">HP</label>
+            <input class="sfc-ed-input sfc-ed-number" data-key="tempo_red_hp" type="number" step="0.0001" placeholder="0.7562" value="${c.tempo_red_hp||''}"/>
+          </div>
+        </div>
+      </div>
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_grid_export')}</label>
+        <input class="sfc-ed-input" data-key="grid_export_today" placeholder="sensor.energie_injectee" value="${c.grid_export_today||''}"/>
+      </div>
+      <div class="sfc-ed-grid">
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_pv_month')}</label>
+          <input class="sfc-ed-input" data-key="pv_month_kwh" placeholder="sensor.pv_mois" value="${c.pv_month_kwh||''}"/>
+        </div>
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_pv_year')}</label>
+          <input class="sfc-ed-input" data-key="pv_year_kwh" placeholder="sensor.pv_annee" value="${c.pv_year_kwh||''}"/>
+        </div>
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_install_cost')}</label>
+          <input class="sfc-ed-input sfc-ed-number" data-key="install_cost" type="number" placeholder="8000" value="${c.install_cost||''}"/>
+        </div>
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_co2_factor')}</label>
+          <input class="sfc-ed-input sfc-ed-number" data-key="co2_factor" type="number" step="0.01" placeholder="0.4" value="${c.co2_factor||''}"/>
+        </div>
+      </div>
+    `)}
+
     <!-- SECTION: Affichage -->
     ${edSection('display', t(c,'ed_display'), false, `
       ${edToggle('show_progress_bars', t(c,'ed_show_bars'), c)}
@@ -2183,6 +2395,7 @@ function buildEditorHTML(cfg) {
       ${edToggle('show_cells', t(c,'ed_show_cells'), c)}
       ${edToggle('show_endurance', t(c,'ed_show_endurance'), c)}
       ${edToggle('show_inverter', t(c,'ed_show_inverter'), c)}
+      ${edToggle('show_savings',  t(c,'ed_show_savings'),  c)}
     `)}
 
     <!-- ACTIONS -->
@@ -2244,9 +2457,14 @@ class SolarFlowCard extends HTMLElement {
     this.attachShadow({ mode: 'open' });
     this._cfg = {};
     this._hass = null;
-    this._sunTimer = null;
-    this._starsCreated = false;
+    this._sunTimer       = null;
+    this._starsCreated   = false;
     this._lightningTimer = null;
+    // Savings accumulator
+    this._savDay     = null;
+    this._savAccum   = 0;
+    this._savLastPv  = null;
+    this._savLastExp = null;
     this._rainAnim = null;
     this._snowAnim = null;
   }
@@ -2533,6 +2751,121 @@ class SolarFlowCard extends HTMLElement {
           gsap.to(this._svgBubbles, { opacity: 0, duration: 0.3, overwrite: 'auto' });
         }
       }
+    }
+  }
+
+  // ── Prix électricité ─────────────────────────────────────────────────────
+  _isHCPeriod() {
+    const h = new Date().getHours();
+    return h >= 22 || h < 6;
+  }
+
+  _getCurrentPrice() {
+    const c = this._cfg;
+    // Priorité 1 : Tempo EDF
+    if (c.tempo_color) {
+      const raw = (this._getState(c.tempo_color) || '').toLowerCase();
+      const isHC = this._isHCPeriod();
+      const map = {
+        blue: ['tempo_blue_hc','tempo_blue_hp'], bleu:  ['tempo_blue_hc','tempo_blue_hp'],
+        white:['tempo_white_hc','tempo_white_hp'],blanc: ['tempo_white_hc','tempo_white_hp'],
+        red:  ['tempo_red_hc','tempo_red_hp'],   rouge: ['tempo_red_hc','tempo_red_hp'],
+      };
+      const keys = map[raw];
+      if (keys) return parseFloat(c[isHC ? keys[0] : keys[1]]) || (isHC ? 0.1296 : 0.1609);
+    }
+    // Priorité 2 : entité dynamique
+    if (c.price_entity) { const p = this._getNum(c.price_entity); if (p > 0) return p; }
+    // Priorité 3 : prix fixe
+    return parseFloat(c.electricity_price) || 0.23;
+  }
+
+  // ── Bloc Économies ────────────────────────────────────────────────────────
+  _updateSavingsBlock(pvTodayKwh) {
+    const c = this._cfg;
+    if (c.show_savings === false) return;
+
+    const exportKwh = c.grid_export_today ? Math.max(0, this._getNum(c.grid_export_today)) : 0;
+    const price     = this._getCurrentPrice();
+    const co2k      = parseFloat(c.co2_factor) || 0.4;
+    const today     = new Date().toDateString();
+
+    // Reset à minuit
+    if (this._savDay !== today) {
+      this._savDay = today; this._savAccum = null;
+      this._savLastPv = null; this._savLastExp = null;
+    }
+
+    // Accumulation delta — prix au moment de la production
+    if (this._savLastPv === null) {
+      // Initialisation : estimation avec prix actuel (quasi-exact car production = HP)
+      this._savAccum   = Math.max(0, pvTodayKwh - exportKwh) * price;
+      this._savLastPv  = pvTodayKwh;
+      this._savLastExp = exportKwh;
+    } else {
+      const pvDelta  = pvTodayKwh  - this._savLastPv;
+      const expDelta = Math.max(0, exportKwh - this._savLastExp);
+      const auto     = Math.max(0, pvDelta - expDelta);
+      if (auto > 0) this._savAccum += auto * price;
+      this._savLastPv  = pvTodayKwh;
+      this._savLastExp = exportKwh;
+    }
+
+    const fmtEur = v => v < 0.005 ? '0.00 €' : v >= 100 ? Math.round(v) + ' €' : v.toFixed(2) + ' €';
+    const fmtCo2 = kg => {
+      if (kg < 0.05) return '< 0.1 kg CO₂';
+      return kg >= 1000 ? (kg/1000).toFixed(2) + ' t CO₂' : kg.toFixed(1) + ' kg CO₂';
+    };
+
+    // Prix affiché
+    const priceEl = this._el('sfcCurrentPrice');
+    if (priceEl) priceEl.textContent = price.toFixed(4).replace(/\.?0+$/,'') + ' €/kWh';
+
+    // Badge Tempo
+    const tempoBadge = this._el('sfcTempoBadge');
+    if (tempoBadge && c.tempo_color) {
+      const raw = (this._getState(c.tempo_color) || '').toLowerCase();
+      const isHC = this._isHCPeriod();
+      const colorMap = { blue:'blue',bleu:'blue',white:'white',blanc:'white',red:'red',rouge:'red' };
+      const cls = colorMap[raw];
+      if (cls) {
+        const icon = { blue:'🔵 BLEU', white:'⚪ BLANC', red:'🔴 ROUGE' }[cls];
+        tempoBadge.textContent = `${icon} · ${isHC ? 'HC' : 'HP'}`;
+        tempoBadge.className   = `sfc-tempo-badge sfc-tempo-${cls}`;
+        tempoBadge.style.display = '';
+      }
+    }
+
+    // Aujourd'hui
+    const savDay = this._el('sfcSavDay');
+    const co2Day = this._el('sfcCo2Day');
+    if (savDay) savDay.textContent = fmtEur(this._savAccum || 0);
+    if (co2Day) co2Day.textContent = fmtCo2(Math.max(0, pvTodayKwh - exportKwh) * co2k);
+
+    // Mois
+    const pvMonth = c.pv_month_kwh ? this._getNum(c.pv_month_kwh) : 0;
+    if (pvMonth > 0) {
+      const sm = this._el('sfcSavMonth'); if (sm) sm.textContent = fmtEur(pvMonth * price);
+      const cm = this._el('sfcCo2Month'); if (cm) cm.textContent = fmtCo2(pvMonth * co2k);
+    }
+
+    // Année
+    const pvYear = c.pv_year_kwh ? this._getNum(c.pv_year_kwh) : 0;
+    if (pvYear > 0) {
+      const sy = this._el('sfcSavYear'); if (sy) sy.textContent = fmtEur(pvYear * price);
+      const cy = this._el('sfcCo2Year'); if (cy) cy.textContent = fmtCo2(pvYear * co2k);
+    }
+
+    // ROI
+    const cost = parseFloat(c.install_cost) || 0;
+    if (cost > 0 && pvYear > 0) {
+      const annualSav = pvYear * price;
+      const roiYrs    = cost / annualSav;
+      const pct       = Math.min(100, annualSav / cost * 100);
+      const bar = this._el('sfcRoiBar'); if (bar) bar.style.width = pct.toFixed(1) + '%';
+      const val = this._el('sfcRoiVal');
+      const lang = c.language === 'en' ? 'yrs' : 'ans';
+      if (val) val.textContent = roiYrs.toFixed(1) + ' ' + lang;
     }
   }
 
@@ -2846,6 +3179,9 @@ class SolarFlowCard extends HTMLElement {
         svFill.setAttribute('class', battState === 'low' ? 'sv-low' : battState === 'charging' ? 'sv-charging' : '');
       }
     }
+
+    // Économies
+    this._updateSavingsBlock(todayPv || 0);
 
     // Sun + effets météo
     this._updateSun();
