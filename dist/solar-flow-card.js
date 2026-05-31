@@ -2357,8 +2357,9 @@ class SolarFlowCard extends HTMLElement {
     // Flux spa single-mode
     animateFlow('sfcLSpaGlow_s', 2.4, 0, 40);
 
-    // Animation batterie GSAP
+    // Animation batterie — mode séparé (HTML) et mode single (SVG)
     this._initBatteryAnimation();
+    this._initBatterySVGAnimation();
   }
 
   _initBatteryAnimation() {
@@ -2465,6 +2466,92 @@ class SolarFlowCard extends HTMLElement {
     }
   }
 
+  _initBatterySVGAnimation() {
+    if (!window.gsap || this._battSVGAnimReady) return;
+    const svgEl = this._el('sfcSingleFlowSvg');
+    if (!svgEl) return;
+
+    // 5 bulles SVG dans le cylindre (clipPath les confine)
+    const NS = 'http://www.w3.org/2000/svg';
+    this._svgBubbles = Array.from({ length: 5 }, () => {
+      const c = document.createElementNS(NS, 'circle');
+      c.setAttribute('r',           (1.8 + Math.random() * 2.8).toFixed(1));
+      c.setAttribute('cx',          (1427 + Math.random() * 59).toFixed(0));
+      c.setAttribute('cy',          '610');
+      c.setAttribute('fill',        'rgba(200,255,200,0.62)');
+      c.setAttribute('opacity',     '0');
+      c.setAttribute('clip-path',   'url(#sfcSVBattClip)');
+      svgEl.appendChild(c);
+      return c;
+    });
+
+    this._battSVGAnimReady = true;
+    this._prevBattSVGSoc   = -1;
+    this._svgBubbleTls     = null;
+  }
+
+  _updateBatterySVGGSAP(battSoc, state) {
+    if (!window.gsap) return;
+    if (!this._battSVGAnimReady) { this._initBatterySVGAnimation(); if (!this._battSVGAnimReady) return; }
+
+    const svFill  = this._el('sfcSVBattFill');
+    const svWave1 = this._el('sfcSVBattWave1');
+    const svWave2 = this._el('sfcSVBattWave2');
+
+    // ── 1. Niveau liquide avec physique élastique ─────────────────────────
+    const maxH   = 110;
+    const fillH  = Math.round(maxH * battSoc / 100);
+    const fillY  = 502 + (maxH - fillH);
+    const rising = battSoc > this._prevBattSVGSoc && this._prevBattSVGSoc >= 0;
+    this._prevBattSVGSoc = battSoc;
+
+    const ease = rising ? 'elastic.out(1, 0.38)' : 'power2.out';
+    const dur  = rising ? 2.8 : 1.6;
+
+    if (svFill)  gsap.to(svFill,  { attr: { y: fillY, height: fillH },  duration: dur,        ease, overwrite: 'auto' });
+    if (svWave1) gsap.to(svWave1, { attr: { y: fillY - 7 },             duration: dur + 0.12, ease, overwrite: 'auto' });
+    if (svWave2) gsap.to(svWave2, { attr: { y: fillY - 4 },             duration: dur + 0.12, ease, overwrite: 'auto' });
+
+    // ── 2. Vitesse de vague selon état ────────────────────────────────────
+    if (svWave1) svWave1.style.animationDuration = state === 'charging' ? '1.3s' : state === 'discharging' ? '2.0s' : '2.8s';
+    if (svWave2) svWave2.style.animationDuration = state === 'charging' ? '1.9s' : state === 'discharging' ? '2.9s' : '4.2s';
+
+    // ── 3. Gradient + classe CSS ──────────────────────────────────────────
+    if (svFill) {
+      const grad = state === 'low'         ? 'url(#sfcSVGradLow)'
+                 : state === 'charging'    ? 'url(#sfcSVGradCharge)'
+                 : state === 'discharging' ? 'url(#sfcSVGradDischarge)'
+                 :                           'url(#sfcSVGradNeutral)';
+      svFill.setAttribute('fill', grad);
+      svFill.setAttribute('class', state === 'low' ? 'sv-low' : state === 'charging' ? 'sv-charging' : '');
+    }
+
+    // ── 4. Bulles de charge ascendantes ──────────────────────────────────
+    if (this._svgBubbles) {
+      if (state === 'charging') {
+        if (!this._svgBubbleTls) {
+          this._svgBubbleTls = this._svgBubbles.map((b, i) => {
+            const dur2  = 1.1 + Math.random() * 1.0;
+            const pause = 0.4 + Math.random() * 1.3;
+            const tl = gsap.timeline({ repeat: -1, delay: i * 0.42 + Math.random() * 0.3 });
+            tl.set(b,   { attr: { cy: 608 }, opacity: 0 })
+              .to(b,    { opacity: 0.78, duration: 0.12 })
+              .to(b,    { attr: { cy: 507 }, opacity: 0, duration: dur2, ease: 'power1.out' })
+              .set(b,   { attr: { cy: 608 } })
+              .to({},   { duration: pause });
+            return tl;
+          });
+        }
+      } else {
+        if (this._svgBubbleTls) {
+          this._svgBubbleTls.forEach(tl => tl.kill());
+          this._svgBubbleTls = null;
+          gsap.to(this._svgBubbles, { opacity: 0, duration: 0.3, overwrite: 'auto' });
+        }
+      }
+    }
+  }
+
   _createStars() {
     if (this._starsCreated) return;
     const container = this.shadowRoot.getElementById('sfcStars');
@@ -2491,8 +2578,9 @@ class SolarFlowCard extends HTMLElement {
   disconnectedCallback() {
     if (this._sunTimer) { clearInterval(this._sunTimer); this._sunTimer = null; }
     if (this._lightningTimer) { clearTimeout(this._lightningTimer); this._lightningTimer = null; }
-    if (this._battGlowTl) { this._battGlowTl.kill(); this._battGlowTl = null; }
-    if (this._bubbleTls)  { this._bubbleTls.forEach(t => t.kill()); this._bubbleTls = null; }
+    if (this._battGlowTl)   { this._battGlowTl.kill(); this._battGlowTl = null; }
+    if (this._bubbleTls)    { this._bubbleTls.forEach(t => t.kill()); this._bubbleTls = null; }
+    if (this._svgBubbleTls) { this._svgBubbleTls.forEach(t => t.kill()); this._svgBubbleTls = null; }
   }
 
   _getNum(entityId, fallback = 0) {
@@ -2750,36 +2838,32 @@ class SolarFlowCard extends HTMLElement {
     const sgBattSub = this._el('sfcSGBattSub');
     if (sgBattSub) sgBattSub.textContent = battV ? battV.toFixed(1) + ' V' : '—';
 
-    // ── Batterie liquide SVG : gradient + vagues + animation CSS ──
-    // Cylindre intérieur : y=502, height=165 (identique à l'HTML mode séparé)
-    const svFill  = this._el('sfcSVBattFill');
-    const svWave1 = this._el('sfcSVBattWave1');
-    const svWave2 = this._el('sfcSVBattWave2');
-    if (svFill) {
-      const maxH = 110; // hauteur intérieure du clipPath (502 → 612)
-      const fillH = Math.round(maxH * battSoc / 100);
-      const fillY = 502 + (maxH - fillH);
-      svFill.setAttribute('y',      String(fillY));
-      svFill.setAttribute('height', String(fillH));
-
-      // Positionner les vagues au niveau du haut du liquide
-      if (svWave1) svWave1.setAttribute('y', String(fillY - 7));
-      if (svWave2) svWave2.setAttribute('y', String(fillY - 4));
-
-      // Gradient et classe CSS selon l'état (miroir exact du mode séparé HTML)
-      const isLow      = battSoc < 15;
-      const isCharging = !isLow && battSoc < 99.5 && pvW > 100;
-      const isDischarg = !isLow && homeW > pvW + 100;
-      const grad = isLow      ? 'url(#sfcSVGradLow)'
-                 : isCharging ? 'url(#sfcSVGradCharge)'
-                 : isDischarg ? 'url(#sfcSVGradDischarge)'
-                 :              'url(#sfcSVGradNeutral)';
-      svFill.setAttribute('fill', grad);
-      // Classe pour l'animation CSS (pulsation charge / clignotement low)
-      svFill.setAttribute('class', isLow ? 'sv-low' : isCharging ? 'sv-charging' : '');
-    }
+    // ── Batterie liquide SVG (mode single) ──
     const svSoc = this._el('sfcSVBattSoc');
     if (svSoc) svSoc.textContent = Math.round(battSoc) + '%';
+    if (this._battSVGAnimReady) {
+      this._updateBatterySVGGSAP(battSoc, battState);
+    } else {
+      // Fallback CSS si GSAP pas encore chargé
+      const svFill  = this._el('sfcSVBattFill');
+      const svWave1 = this._el('sfcSVBattWave1');
+      const svWave2 = this._el('sfcSVBattWave2');
+      if (svFill) {
+        const maxH  = 110;
+        const fillH = Math.round(maxH * battSoc / 100);
+        const fillY = 502 + (maxH - fillH);
+        svFill.setAttribute('y', String(fillY));
+        svFill.setAttribute('height', String(fillH));
+        if (svWave1) svWave1.setAttribute('y', String(fillY - 7));
+        if (svWave2) svWave2.setAttribute('y', String(fillY - 4));
+        const grad = battState === 'low'         ? 'url(#sfcSVGradLow)'
+                   : battState === 'charging'    ? 'url(#sfcSVGradCharge)'
+                   : battState === 'discharging' ? 'url(#sfcSVGradDischarge)'
+                   :                               'url(#sfcSVGradNeutral)';
+        svFill.setAttribute('fill', grad);
+        svFill.setAttribute('class', battState === 'low' ? 'sv-low' : battState === 'charging' ? 'sv-charging' : '');
+      }
+    }
 
     // Sun + effets météo
     this._updateSun();
