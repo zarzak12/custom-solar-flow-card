@@ -227,7 +227,7 @@ const I18N = {
     sav_roi:           'ROI',
     sav_roi_years:     'ans',
     // Editor savings
-    ed_savings:         'Économies & Tarification',
+    ed_savings:         '🔌Économies & Tarification',
     ed_elec_price:      'Prix fixe (€/kWh)',
     ed_price_entity:    'Entité prix dynamique',
     ed_tempo_color:     'Entité couleur Tempo',
@@ -743,7 +743,18 @@ const CARD_CSS = `
     -webkit-backface-visibility:hidden;
     animation:sfc-cloud-move linear infinite;
   }
-  @keyframes sfc-cloud-move { 0%{left:-200px} 100%{left:calc(100% + 200px)} }
+  /* Nuages distincts pour "partiellement nuageux" */
+  .sfc-cloud-puff {
+    position:absolute;
+    border-radius:999px;
+    background:rgba(255,255,255,0.78);
+    filter:blur(6px);
+    transform:translateZ(0);
+    will-change:left;
+    animation:sfc-cloud-move linear infinite;
+  }
+  .sfc-partly-clouds { position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2;opacity:0;transition:opacity 4s ease; }
+  @keyframes sfc-cloud-move { 0%{left:-300px} 100%{left:calc(100% + 300px)} }
 
   /* Effets météo */
   .sfc-weather-fx { position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:6; }
@@ -1534,11 +1545,25 @@ function buildCardHTML(cfg) {
       <!-- Étoiles (nuit) -->
       <div class="sfc-stars" id="sfcStars" style="opacity:0;"></div>
 
-      <!-- Nuages CSS photoréalistes -->
+      <!-- Nuages CSS — voile atmosphérique (toutes conditions nuageuses) -->
       <div class="sfc-clouds" id="sfcClouds">
         <div class="sfc-cloud-shape" style="width:160px;height:35px;top:12%;animation-duration:65s;animation-delay:0s;opacity:0.5;"></div>
         <div class="sfc-cloud-shape" style="width:110px;height:25px;top:22%;animation-duration:85s;animation-delay:-20s;opacity:0.35;"></div>
         <div class="sfc-cloud-shape" style="width:200px;height:40px;top:8%;animation-duration:100s;animation-delay:-40s;opacity:0.4;"></div>
+      </div>
+
+      <!-- Nuages distincts — partiellement nuageux uniquement -->
+      <div class="sfc-partly-clouds" id="sfcPartlyClouds">
+        <!-- Cluster 1 : gros cumulus gauche -->
+        <div class="sfc-cloud-puff" style="width:290px;height:70px;top:7%;animation-duration:78s;animation-delay:-8s;opacity:0.82;"></div>
+        <div class="sfc-cloud-puff" style="width:200px;height:58px;top:5%;animation-duration:78s;animation-delay:-8s;opacity:0.6;left:50px;"></div>
+        <div class="sfc-cloud-puff" style="width:160px;height:50px;top:9%;animation-duration:78s;animation-delay:-8s;opacity:0.5;left:110px;"></div>
+        <!-- Cluster 2 : nuage moyen centre-droite -->
+        <div class="sfc-cloud-puff" style="width:240px;height:58px;top:19%;animation-duration:95s;animation-delay:-38s;opacity:0.75;"></div>
+        <div class="sfc-cloud-puff" style="width:170px;height:50px;top:17%;animation-duration:95s;animation-delay:-38s;opacity:0.55;left:40px;"></div>
+        <!-- Cluster 3 : petit nuage haut-droite -->
+        <div class="sfc-cloud-puff" style="width:190px;height:48px;top:11%;animation-duration:60s;animation-delay:-25s;opacity:0.7;"></div>
+        <div class="sfc-cloud-puff" style="width:130px;height:42px;top:9%;animation-duration:60s;animation-delay:-25s;opacity:0.5;left:35px;"></div>
       </div>
 
       <!-- Effets météo (pluie / neige / foudre) -->
@@ -3378,11 +3403,17 @@ class SolarFlowCard extends HTMLElement {
     const stars = this._el('sfcStars');
     if (stars) stars.style.opacity = elevation < 0 ? Math.min(1, -elevation/8).toFixed(2) : '0';
 
-    // Nuages météo
+    // Nuages météo — voile atmosphérique
     const clouds = this._el('sfcClouds');
     if (clouds) {
       const cover = wi.cloud || 0;
-      clouds.style.opacity = cover >= 0.8 ? '0.6' : cover >= 0.3 ? '1.0' : '0.15';
+      clouds.style.opacity = cover >= 0.8 ? '0.6' : cover >= 0.3 ? '0.7' : '0.15';
+    }
+    // Nuages distincts (cumulus) — partiellement nuageux uniquement
+    const partlyClouds = this._el('sfcPartlyClouds');
+    if (partlyClouds) {
+      const isPartly = wi && wi.cloud <= 0.55 && wi.cloudy && !wi.rain && !wi.snow && !wi.fog && !wi.storm;
+      partlyClouds.style.opacity = isPartly ? '1' : '0';
     }
 
     const stl = this._el('sfcSunTime');
