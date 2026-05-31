@@ -893,19 +893,20 @@ const CARD_CSS = `
     position:absolute;
     bottom:0; left:0; right:0;
     height:0%;
-    transition:height 2s cubic-bezier(0.4,0,0.2,1);
+    /* hauteur animée par GSAP — pas de transition CSS */
     background:linear-gradient(180deg,
       rgba(0,220,255,0.9) 0%,
       rgba(0,160,255,1) 40%,
       rgba(0,100,220,1) 100%);
     border-radius:4px 4px 0 0;
+    will-change:height;
   }
   .sfc-batt-wave {
     position:absolute;
     bottom:0; left:0; right:0;
     height:0%;
-    transition:height 2s cubic-bezier(0.4,0,0.2,1);
     overflow:hidden;
+    will-change:height;
   }
   .sfc-batt-wave::before {
     content:'';
@@ -914,7 +915,7 @@ const CARD_CSS = `
     width:220%; height:16px;
     background:rgba(255,255,255,0.35);
     border-radius:50%;
-    animation:sfc-wave 2.5s linear infinite;
+    animation:sfc-wave var(--wave-spd, 2.5s) linear infinite;
   }
   .sfc-batt-wave::after {
     content:'';
@@ -923,7 +924,7 @@ const CARD_CSS = `
     width:180%; height:10px;
     background:rgba(255,255,255,0.2);
     border-radius:50%;
-    animation:sfc-wave 3.5s linear infinite reverse;
+    animation:sfc-wave calc(var(--wave-spd, 2.5s) * 1.45) linear infinite reverse;
   }
   @keyframes sfc-wave { from{transform:translateX(0)} to{transform:translateX(45%)} }
   /* Image batterie au-dessus (mix-blend-mode:screen = fond blanc→visible, fond noir→transparent) */
@@ -2352,6 +2353,116 @@ class SolarFlowCard extends HTMLElement {
 
     // Flux soleil → maison (commun aux 3 modes)
     animateFlow('sfcSunFlowGlow', 1.4, 0, 40);
+
+    // Flux spa single-mode
+    animateFlow('sfcLSpaGlow_s', 2.4, 0, 40);
+
+    // Animation batterie GSAP
+    this._initBatteryAnimation();
+  }
+
+  _initBatteryAnimation() {
+    if (!window.gsap || this._battAnimReady) return;
+    const wrapper    = this._el('sfcBattWrapper');
+    if (!wrapper) return;
+    const liquidWrap = wrapper.querySelector('.sfc-batt-liquid-wrap');
+    if (!liquidWrap) return;
+
+    // Créer 6 bulles de charge (particules DOM)
+    this._bubbles = Array.from({ length: 6 }, () => {
+      const b  = document.createElement('div');
+      const sz = (2.5 + Math.random() * 3).toFixed(1);
+      b.style.cssText = [
+        'position:absolute', 'border-radius:50%', 'z-index:2',
+        'opacity:0', 'pointer-events:none', 'will-change:transform,opacity',
+        `width:${sz}px`, `height:${sz}px`,
+        `left:${(10 + Math.random() * 80).toFixed(0)}%`,
+        'bottom:4%',
+      ].join(';');
+      liquidWrap.appendChild(b);
+      return b;
+    });
+
+    this._battAnimReady = true;
+    this._prevBattSoc   = -1;
+    this._bubbleTls     = null;
+    this._battGlowTl    = null;
+  }
+
+  _updateBatteryGSAP(soc, state) {
+    if (!window.gsap) return;
+    if (!this._battAnimReady) { this._initBatteryAnimation(); if (!this._battAnimReady) return; }
+
+    const liquid     = this._el('sfcBattLiquid');
+    const wave       = this._el('sfcBattWave');
+    const img        = this._el('sfcBattImg');
+    const wrapper    = this._el('sfcBattWrapper');
+    const liquidWrap = wrapper?.querySelector('.sfc-batt-liquid-wrap');
+
+    // ── 1. Niveau liquide avec physique élastique ─────────────────────────
+    const rising = soc > this._prevBattSoc && this._prevBattSoc >= 0;
+    this._prevBattSoc = soc;
+    const h    = Math.round(soc) + '%';
+    const ease = rising ? 'elastic.out(1, 0.38)' : 'power2.out';
+    const dur  = rising ? 2.8 : 1.6;
+    if (liquid) gsap.to(liquid, { height: h, duration: dur, ease, overwrite: 'auto' });
+    if (wave)   gsap.to(wave,   { height: h, duration: dur + 0.15, ease, overwrite: 'auto' });
+
+    // ── 2. Vitesse de vague selon puissance ───────────────────────────────
+    if (wave) {
+      const spd = state === 'charging' ? '1.3s' : state === 'discharging' ? '2.0s' : '3.8s';
+      wave.style.setProperty('--wave-spd', spd);
+    }
+
+    // ── 3. Glow pulsé sur l'image batterie ───────────────────────────────
+    if (img) {
+      if (this._battGlowTl) { this._battGlowTl.kill(); this._battGlowTl = null; }
+      const base = 'drop-shadow(0 4px 16px rgba(0,0,0,0.6))';
+      if (state === 'charging') {
+        this._battGlowTl = gsap.timeline({ repeat: -1 })
+          .to(img, { filter: `${base} drop-shadow(0 0 22px rgba(105,255,71,1))`,    duration: 0.8, ease: 'sine.inOut' })
+          .to(img, { filter: `${base} drop-shadow(0 0 5px rgba(105,255,71,0.25))`,  duration: 0.8, ease: 'sine.inOut' });
+      } else if (state === 'discharging') {
+        this._battGlowTl = gsap.timeline({ repeat: -1 })
+          .to(img, { filter: `${base} drop-shadow(0 0 18px rgba(255,120,0,0.9))`,   duration: 1.1, ease: 'sine.inOut' })
+          .to(img, { filter: `${base} drop-shadow(0 0 4px rgba(255,120,0,0.2))`,    duration: 1.1, ease: 'sine.inOut' });
+      } else if (state === 'low') {
+        this._battGlowTl = gsap.timeline({ repeat: -1 })
+          .to(img, { filter: `${base} drop-shadow(0 0 26px rgba(255,40,40,1))`,     duration: 0.3, ease: 'power2.in'  })
+          .to(img, { filter: `${base} drop-shadow(0 0 4px rgba(255,40,40,0.15))`,   duration: 0.3, ease: 'power2.out' })
+          .to({},  { duration: 0.5 });
+      } else {
+        gsap.to(img, { filter: base, duration: 1.0, overwrite: 'auto' });
+      }
+    }
+
+    // ── 4. Bulles de charge ascendantes ──────────────────────────────────
+    if (this._bubbles) {
+      if (state === 'charging') {
+        if (!this._bubbleTls) {
+          const wrapH = liquidWrap?.offsetHeight || 42;
+          this._bubbles.forEach(b => { b.style.background = 'rgba(200,255,200,0.6)'; });
+          this._bubbleTls = this._bubbles.map((b, i) => {
+            const travel = -(wrapH * 0.86);
+            const dur    = 1.0 + Math.random() * 0.9;
+            const pause  = 0.4 + Math.random() * 1.1;
+            const tl = gsap.timeline({ repeat: -1, delay: i * 0.38 + Math.random() * 0.25 });
+            tl.set(b, { y: 0, opacity: 0 })
+              .to(b, { opacity: 0.8, duration: 0.12 })
+              .to(b, { y: travel, opacity: 0, duration: dur, ease: 'power1.out' })
+              .set(b, { y: 0 })
+              .to({}, { duration: pause });
+            return tl;
+          });
+        }
+      } else {
+        if (this._bubbleTls) {
+          this._bubbleTls.forEach(tl => tl.kill());
+          this._bubbleTls = null;
+          gsap.to(this._bubbles, { opacity: 0, duration: 0.3, overwrite: 'auto' });
+        }
+      }
+    }
   }
 
   _createStars() {
@@ -2380,6 +2491,8 @@ class SolarFlowCard extends HTMLElement {
   disconnectedCallback() {
     if (this._sunTimer) { clearInterval(this._sunTimer); this._sunTimer = null; }
     if (this._lightningTimer) { clearTimeout(this._lightningTimer); this._lightningTimer = null; }
+    if (this._battGlowTl) { this._battGlowTl.kill(); this._battGlowTl = null; }
+    if (this._bubbleTls)  { this._bubbleTls.forEach(t => t.kill()); this._bubbleTls = null; }
   }
 
   _getNum(entityId, fallback = 0) {
@@ -2477,19 +2590,26 @@ class SolarFlowCard extends HTMLElement {
     const gdEl= this._el('sfcGridDir');
     if (gdEl) gdEl.textContent = gridW > 50 ? t(c,'dir_import') : gridW < -50 ? t(c,'dir_export') : '—';
 
-    // Batterie liquide
+    // Batterie — état
     const battWrapper = this._el('sfcBattWrapper');
-    const battLiquid  = this._el('sfcBattLiquid');
-    const battWave    = this._el('sfcBattWave');
     const battSocTxt  = this._el('sfcBattSocText');
-    if (battLiquid) battLiquid.style.height = Math.round(battSoc) + '%';
-    if (battWave)   battWave.style.height   = Math.round(battSoc) + '%';
-    if (battSocTxt) battSocTxt.textContent  = Math.round(battSoc) + '%';
+    if (battSocTxt) battSocTxt.textContent = Math.round(battSoc) + '%';
+    const battState = battSoc < 15          ? 'low'
+                    : battSoc < 99.5 && pvW > 100  ? 'charging'
+                    : homeW > pvW + 100             ? 'discharging'
+                    :                                 'idle';
     if (battWrapper) {
       battWrapper.classList.remove('charging','discharging','low');
-      if (battSoc < 15)                          battWrapper.classList.add('low');
-      else if (battSoc < 99.5 && pvW > 100)      battWrapper.classList.add('charging');
-      else if (homeW > pvW + 100)                battWrapper.classList.add('discharging');
+      if (battState !== 'idle') battWrapper.classList.add(battState);
+    }
+    // Animation GSAP (physique liquide + bulles + glow)
+    if (this._battAnimReady) {
+      this._updateBatteryGSAP(battSoc, battState);
+    } else {
+      // Fallback CSS si GSAP pas encore chargé
+      const bl = this._el('sfcBattLiquid'), bw = this._el('sfcBattWave');
+      if (bl) bl.style.height = Math.round(battSoc) + '%';
+      if (bw) bw.style.height = Math.round(battSoc) + '%';
     }
     
     //batterie power
