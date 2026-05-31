@@ -1626,12 +1626,12 @@ function buildCardHTML(cfg) {
           <!-- Liquide (bottom-up) — y et height mis à jour par JS -->
           <rect id="sfcSVBattFill" x="1422" y="562" width="71" height="63"
             fill="url(#sfcSVGradNeutral)" clip-path="url(#sfcSVBattClip)"/>
-          <!-- Vague 1 (lente) -->
-          <rect id="sfcSVBattWave1" x="1392" y="557" width="131" height="14" rx="7"
-            fill="rgba(255,255,255,0.28)" clip-path="url(#sfcSVBattClip)"/>
+          <!-- Vague 1 (lente) — positionnée par GSAP sur la surface du liquide -->
+          <rect id="sfcSVBattWave1" x="1392" y="610" width="131" height="14" rx="7"
+            fill="rgba(255,255,255,0.28)" clip-path="url(#sfcSVBattClip)" opacity="0"/>
           <!-- Vague 2 (rapide, sens inverse) -->
-          <rect id="sfcSVBattWave2" x="1402" y="562" width="111" height="10" rx="5"
-            fill="rgba(255,255,255,0.16)" clip-path="url(#sfcSVBattClip)"/>
+          <rect id="sfcSVBattWave2" x="1402" y="610" width="111" height="10" rx="5"
+            fill="rgba(255,255,255,0.16)" clip-path="url(#sfcSVBattClip)" opacity="0"/>
           <!-- Brillance gauche -->
           <rect x="1422" y="502" width="14" height="110" rx="2"
             fill="rgba(255,255,255,0.07)" clip-path="url(#sfcSVBattClip)" pointer-events="none"/>
@@ -2508,13 +2508,18 @@ class SolarFlowCard extends HTMLElement {
     const ease = rising ? 'elastic.out(1, 0.38)' : 'power2.out';
     const dur  = rising ? 2.8 : 1.6;
 
-    if (svFill)  gsap.to(svFill,  { attr: { y: fillY, height: fillH },  duration: dur,        ease, overwrite: 'auto' });
-    if (svWave1) gsap.to(svWave1, { attr: { y: fillY - 7 },             duration: dur + 0.12, ease, overwrite: 'auto' });
-    if (svWave2) gsap.to(svWave2, { attr: { y: fillY - 4 },             duration: dur + 0.12, ease, overwrite: 'auto' });
+    if (svFill)  gsap.to(svFill,  { attr: { y: fillY, height: fillH }, duration: dur,        ease, overwrite: 'auto' });
 
-    // ── 2. Vitesse de vague selon état ────────────────────────────────────
-    if (svWave1) svWave1.style.animationDuration = state === 'charging' ? '1.3s' : state === 'discharging' ? '2.0s' : '2.8s';
-    if (svWave2) svWave2.style.animationDuration = state === 'charging' ? '1.9s' : state === 'discharging' ? '2.9s' : '4.2s';
+    // ── 2. Vagues — positionnées sur la surface du liquide, masquées si niveau trop bas ──
+    const showWaves = fillH >= 10;
+    if (svWave1) {
+      gsap.to(svWave1, { attr: { y: fillY }, opacity: showWaves ? 0.9 : 0, duration: dur + 0.12, ease, overwrite: 'auto' });
+      if (showWaves) svWave1.style.animationDuration = state === 'charging' ? '1.3s' : state === 'discharging' ? '2.0s' : '2.8s';
+    }
+    if (svWave2) {
+      gsap.to(svWave2, { attr: { y: fillY + 3 }, opacity: showWaves ? 0.9 : 0, duration: dur + 0.12, ease, overwrite: 'auto' });
+      if (showWaves) svWave2.style.animationDuration = state === 'charging' ? '1.9s' : state === 'discharging' ? '2.9s' : '4.2s';
+    }
 
     // ── 3. Gradient + classe CSS ──────────────────────────────────────────
     if (svFill) {
@@ -2854,8 +2859,9 @@ class SolarFlowCard extends HTMLElement {
         const fillY = 502 + (maxH - fillH);
         svFill.setAttribute('y', String(fillY));
         svFill.setAttribute('height', String(fillH));
-        if (svWave1) svWave1.setAttribute('y', String(fillY - 7));
-        if (svWave2) svWave2.setAttribute('y', String(fillY - 4));
+        const showWavesFb = fillH >= 10;
+        if (svWave1) { svWave1.setAttribute('y', String(fillY)); svWave1.setAttribute('opacity', showWavesFb ? '0.9' : '0'); }
+        if (svWave2) { svWave2.setAttribute('y', String(fillY + 3)); svWave2.setAttribute('opacity', showWavesFb ? '0.9' : '0'); }
         const grad = battState === 'low'         ? 'url(#sfcSVGradLow)'
                    : battState === 'charging'    ? 'url(#sfcSVGradCharge)'
                    : battState === 'discharging' ? 'url(#sfcSVGradDischarge)'
