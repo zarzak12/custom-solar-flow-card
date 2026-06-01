@@ -1815,91 +1815,91 @@ function buildCardHTML(cfg) {
           <!-- SOC % centré (Y = top_clip + height/2 = 502 + 55 = 557) -->
           <text id="sfcSVBattSoc" x="1458" y="557"
             text-anchor="middle" dominant-baseline="middle"
-            style="font-family:monospace;font-size:48px;font-weight:900;fill:#fff;
-                   paint-order:stroke fill;stroke:rgba(0,0,0,0.9);stroke-width:7">—%</text>
+            style="font-family:monospace;font-size:40px;font-weight:900;fill:#fff;
+                   paint-order:stroke fill;stroke:rgba(0,0,0,0.9);stroke-width:6">—%</text>
 
           <!-- ══════════════════════════════════════════════════════════
                LABELS DE PUISSANCE
                font-size en unités SVG : 1 u ≈ 0.34 px à ~516px de card
-               → label=38 u≈13px, valeur=56 u≈19px, sous-val=42 u≈14px
+               → label=30 u≈10px, valeur=46 u≈16px, sous-val=34 u≈11px
           ══════════════════════════════════════════════════════════ -->
 
           <!-- Spa (router1) — center x=265 -->
           ${c.router1_enabled ? `
-          <rect x="120" y="562" width="290" height="${c.router1_temp ? '162' : '128'}" rx="10"
-            fill="rgba(6,13,26,0.72)" stroke="rgba(255,160,64,0.28)" stroke-width="1.5"/>
-          <text text-anchor="middle" x="265" y="598"
-            style="font-family:monospace;font-size:38px;font-weight:700;letter-spacing:3px;
+          <rect x="135" y="562" width="260" height="${c.router1_temp ? '142' : '108'}" rx="9"
+            fill="rgba(6,13,26,0.70)" stroke="rgba(255,160,64,0.25)" stroke-width="1.5"/>
+          <text text-anchor="middle" x="265" y="593"
+            style="font-family:monospace;font-size:30px;font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${(c.router1_label||'SPA').toUpperCase()}</text>
-          <text id="sfcSGSpaVal" text-anchor="middle" x="265" y="${c.router1_temp ? '650' : '666'}"
-            style="font-family:monospace;font-size:56px;font-weight:700;
-                   fill:#FFA040;filter:drop-shadow(0 0 5px #FFA040)">0 W</text>
+          <text id="sfcSGSpaVal" text-anchor="middle" x="265" y="${c.router1_temp ? '638' : '650'}"
+            style="font-family:monospace;font-size:46px;font-weight:700;
+                   fill:#FFA040;filter:drop-shadow(0 0 4px #FFA040)">0 W</text>
           ${c.router1_temp ? `
-          <text id="sfcSGSpaTemp" text-anchor="middle" x="265" y="708"
-            style="font-family:monospace;font-size:42px;font-weight:600;
-                   fill:#7ecfff;filter:drop-shadow(0 0 4px rgba(126,207,255,0.5))">🌡 — °C</text>
+          <text id="sfcSGSpaTemp" text-anchor="middle" x="265" y="686"
+            style="font-family:monospace;font-size:34px;font-weight:600;
+                   fill:#7ecfff;filter:drop-shadow(0 0 3px rgba(126,207,255,0.5))">🌡 — °C</text>
           ` : ''}
           ` : ''}
 
           <!-- ECS (router2) — center x=1268 -->
           ${c.router2_enabled ? `
-          <rect x="1118" y="460" width="300" height="128" rx="10"
-            fill="rgba(6,13,26,0.72)" stroke="rgba(255,160,64,0.28)" stroke-width="1.5"/>
-          <text text-anchor="middle" x="1268" y="496"
-            style="font-family:monospace;font-size:38px;font-weight:700;letter-spacing:3px;
+          <rect x="1133" y="460" width="270" height="108" rx="9"
+            fill="rgba(6,13,26,0.70)" stroke="rgba(255,160,64,0.25)" stroke-width="1.5"/>
+          <text text-anchor="middle" x="1268" y="491"
+            style="font-family:monospace;font-size:30px;font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${(c.router2_label||'ECS').toUpperCase()}</text>
-          <text id="sfcSGECSVal" text-anchor="middle" x="1268" y="564"
-            style="font-family:monospace;font-size:56px;font-weight:700;
-                   fill:#FFA040;filter:drop-shadow(0 0 5px #FFA040)">0 W</text>
+          <text id="sfcSGECSVal" text-anchor="middle" x="1268" y="548"
+            style="font-family:monospace;font-size:46px;font-weight:700;
+                   fill:#FFA040;filter:drop-shadow(0 0 4px #FFA040)">0 W</text>
           ` : ''}
 
-          <!-- EV — center x=1101, positionné sous le chemin EV (y=598) -->
+          <!-- EV — center x=1101, positionné sous le chemin EV -->
           ${c.ev_enabled ? `
-          <rect x="961" y="618" width="280" height="${c.ev_soc ? '165' : '128'}" rx="10"
-            fill="rgba(6,13,26,0.75)" stroke="rgba(79,195,247,0.32)" stroke-width="1.5"/>
-          <text text-anchor="middle" x="1101" y="654"
-            style="font-family:monospace;font-size:38px;font-weight:700;letter-spacing:3px;
+          <rect x="975" y="618" width="253" height="${c.ev_soc ? '142' : '108'}" rx="9"
+            fill="rgba(6,13,26,0.72)" stroke="rgba(79,195,247,0.28)" stroke-width="1.5"/>
+          <text text-anchor="middle" x="1101" y="649"
+            style="font-family:monospace;font-size:30px;font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${(c.ev_label||'VOITURE').toUpperCase()}</text>
-          <text id="sfcSGEVPwr" text-anchor="middle" x="1101" y="722"
-            style="font-family:monospace;font-size:56px;font-weight:700;
-                   fill:#4FC3F7;filter:drop-shadow(0 0 5px #4FC3F7)">0 W</text>
-          ${c.ev_soc ? `<text id="sfcSGEVSoc" text-anchor="middle" x="1101" y="766"
-            style="font-family:monospace;font-size:42px;fill:rgba(232,244,253,0.65)">— %</text>` : ''}
+          <text id="sfcSGEVPwr" text-anchor="middle" x="1101" y="706"
+            style="font-family:monospace;font-size:46px;font-weight:700;
+                   fill:#4FC3F7;filter:drop-shadow(0 0 4px #4FC3F7)">0 W</text>
+          ${c.ev_soc ? `<text id="sfcSGEVSoc" text-anchor="middle" x="1101" y="746"
+            style="font-family:monospace;font-size:34px;fill:rgba(232,244,253,0.65)">— %</text>` : ''}
           ` : ''}
 
           <!-- Réseau — center x=280 -->
-          <rect x="110" y="836" width="340" height="170" rx="10"
-            fill="rgba(6,13,26,0.72)" stroke="rgba(79,195,247,0.22)" stroke-width="1.5"/>
-          <text text-anchor="middle" x="280" y="872"
-            style="font-family:monospace;font-size:38px;font-weight:700;letter-spacing:3px;
+          <rect x="128" y="836" width="304" height="143" rx="9"
+            fill="rgba(6,13,26,0.70)" stroke="rgba(79,195,247,0.20)" stroke-width="1.5"/>
+          <text text-anchor="middle" x="280" y="867"
+            style="font-family:monospace;font-size:30px;font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">RÉSEAU</text>
-          <text id="sfcSGGridVal" text-anchor="middle" x="280" y="940"
-            style="font-family:monospace;font-size:56px;font-weight:700;
-                   fill:var(--sfc-grid,#4FC3F7);filter:drop-shadow(0 0 5px var(--sfc-grid,#4FC3F7))">0 W</text>
-          <text id="sfcSGGridSub" text-anchor="middle" x="280" y="990"
-            style="font-family:monospace;font-size:42px;fill:rgba(232,244,253,0.6)">—</text>
+          <text id="sfcSGGridVal" text-anchor="middle" x="280" y="921"
+            style="font-family:monospace;font-size:46px;font-weight:700;
+                   fill:var(--sfc-grid,#4FC3F7);filter:drop-shadow(0 0 4px var(--sfc-grid,#4FC3F7))">0 W</text>
+          <text id="sfcSGGridSub" text-anchor="middle" x="280" y="962"
+            style="font-family:monospace;font-size:34px;fill:rgba(232,244,253,0.6)">—</text>
 
           <!-- Maison — center x=720 -->
-          <rect x="560" y="447" width="320" height="128" rx="10"
-            fill="rgba(6,13,26,0.72)" stroke="rgba(255,107,107,0.22)" stroke-width="1.5"/>
-          <text text-anchor="middle" x="720" y="483"
-            style="font-family:monospace;font-size:38px;font-weight:700;letter-spacing:3px;
+          <rect x="577" y="447" width="286" height="108" rx="9"
+            fill="rgba(6,13,26,0.70)" stroke="rgba(255,107,107,0.20)" stroke-width="1.5"/>
+          <text text-anchor="middle" x="720" y="478"
+            style="font-family:monospace;font-size:30px;font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">MAISON</text>
-          <text id="sfcSGHomeVal" text-anchor="middle" x="720" y="551"
-            style="font-family:monospace;font-size:56px;font-weight:700;
-                   fill:var(--sfc-home,#FF6B6B);filter:drop-shadow(0 0 5px var(--sfc-home,#FF6B6B))">0 W</text>
+          <text id="sfcSGHomeVal" text-anchor="middle" x="720" y="535"
+            style="font-family:monospace;font-size:46px;font-weight:700;
+                   fill:var(--sfc-home,#FF6B6B);filter:drop-shadow(0 0 4px var(--sfc-home,#FF6B6B))">0 W</text>
 
           <!-- Batterie — center x=1414 -->
-          <rect x="1259" y="686" width="310" height="170" rx="10"
-            fill="rgba(6,13,26,0.72)" stroke="rgba(105,255,71,0.22)" stroke-width="1.5"/>
-          <text text-anchor="middle" x="1414" y="722"
-            style="font-family:monospace;font-size:38px;font-weight:700;letter-spacing:3px;
+          <rect x="1269" y="686" width="290" height="143" rx="9"
+            fill="rgba(6,13,26,0.70)" stroke="rgba(105,255,71,0.20)" stroke-width="1.5"/>
+          <text text-anchor="middle" x="1414" y="717"
+            style="font-family:monospace;font-size:30px;font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">BATTERIE</text>
-          <text id="sfcSGBattVal" text-anchor="middle" x="1414" y="790"
-            style="font-family:monospace;font-size:56px;font-weight:700;
-                   fill:var(--sfc-batt,#69FF47);filter:drop-shadow(0 0 5px var(--sfc-batt,#69FF47))">—</text>
-          <text id="sfcSGBattSub" text-anchor="middle" x="1414" y="840"
-            style="font-family:monospace;font-size:42px;fill:rgba(232,244,253,0.6)">—</text>
+          <text id="sfcSGBattVal" text-anchor="middle" x="1414" y="771"
+            style="font-family:monospace;font-size:46px;font-weight:700;
+                   fill:var(--sfc-batt,#69FF47);filter:drop-shadow(0 0 4px var(--sfc-batt,#69FF47))">—</text>
+          <text id="sfcSGBattSub" text-anchor="middle" x="1414" y="813"
+            style="font-family:monospace;font-size:34px;fill:rgba(232,244,253,0.6)">—</text>
         </svg>
         <img class="sfc-scene-image" id="sfcSceneImg"
           src="${(c[`img_scene_day_${(c.img_scene_variant||'esc_ev').replace(/^esc_/, '')}`] || c.img_scene_day || '')}"
