@@ -126,6 +126,15 @@ const DEFAULTS = {
   grid_export_today: '',      // sensor.energie_injectee (affine autoconso)
   install_cost:      0,       // € coût installation (0 = ROI masqué)
   co2_factor:        0.4,     // kg CO₂/kWh évités
+  // ── Prévision de production ──
+  pv_forecast_today:    '',   // sensor.xxx → kWh prévus aujourd'hui
+  pv_forecast_tomorrow: '',   // sensor.xxx → kWh prévus demain (optionnel)
+  // ── Véhicule électrique (EV) ──
+  ev_enabled:  false,
+  ev_label:    'Voiture',
+  ev_power:    '',   // W — positif = charge, négatif = V2H (Vehicle-to-Home)
+  ev_soc:      '',   // % SOC du véhicule (optionnel)
+  ev_max_kwh:  0,    // kWh capacité batterie EV (optionnel, pour affichage)
 };
 
 // ══════════════════════════════════════════════════════════
@@ -219,6 +228,15 @@ const I18N = {
     ed_show_endurance:'Autonomie batterie',
     ed_show_inverter: 'Section Onduleur',
     ed_show_savings:  'Bloc Économies',
+    // EV
+    ed_forecast:          'Prévision de production',
+    ed_forecast_today:    "Prévision aujourd'hui (kWh)",
+    ed_forecast_tomorrow: 'Prévision demain (kWh)',
+    ed_ev:          'Véhicule électrique (EV)',
+    ed_ev_label:    'Nom du véhicule',
+    ed_ev_power:    'Puissance charge/V2H (W)',
+    ed_ev_soc:      'SOC batterie EV (%)',
+    ed_ev_max_kwh:  'Capacité batterie EV (kWh)',
     // Savings block
     section_savings:   'Économies & ROI',
     sav_today:         "Aujourd'hui",
@@ -370,6 +388,14 @@ const I18N = {
     ed_show_endurance:'Battery endurance',
     ed_show_inverter: 'Inverter section',
     ed_show_savings:  'Savings block',
+    ed_forecast:          'Production forecast',
+    ed_forecast_today:    'Forecast today (kWh)',
+    ed_forecast_tomorrow: 'Forecast tomorrow (kWh)',
+    ed_ev:          'Electric Vehicle (EV)',
+    ed_ev_label:    'Vehicle name',
+    ed_ev_power:    'Charge/V2H power (W)',
+    ed_ev_soc:      'EV battery SOC (%)',
+    ed_ev_max_kwh:  'EV battery capacity (kWh)',
     section_savings:   'Savings & ROI',
     sav_today:         'Today',
     sav_month:         'This month',
@@ -712,6 +738,16 @@ const CARD_CSS = `
   .sfc-pv-val { font-family:monospace;font-size:15px;font-weight:700;color:var(--solar);text-shadow:0 0 10px rgba(255,215,0,.6); }
   .sfc-sun-time { position:absolute;top:8px;right:10px;font-family:monospace;font-size:10px;font-weight:600;
     color:var(--solar);background:rgba(0,0,0,.4);padding:2px 7px;border-radius:7px;border:1px solid rgba(255,215,0,.2);z-index:3; }
+  .sfc-forecast-badge {
+    position:absolute;top:8px;left:10px;z-index:3;
+    font-family:monospace;font-size:10px;font-weight:600;
+    background:rgba(0,0,0,.4);border-radius:7px;
+    border:1px solid rgba(100,180,255,0.25);
+    padding:3px 8px;display:flex;flex-direction:column;gap:1px;
+    backdrop-filter:blur(4px);
+  }
+  .sfc-forecast-today    { color:#7ecfff; }
+  .sfc-forecast-tomorrow { color:rgba(180,210,255,0.65);font-size:9px; }
   .sfc-sunrise { position:absolute;bottom:190px;left:10px;font-size:9px;color:var(--muted);font-weight:600;z-index:3; }
   .sfc-sunset  { position:absolute;bottom:190px;right:10px;font-size:9px;color:var(--muted);font-weight:600;z-index:3; }
 
@@ -1639,6 +1675,13 @@ function buildCardHTML(cfg) {
         <span class="sfc-pv-val" id="sfcPvBig">0 W</span>
       </div>
 
+      <!-- Prévision de production (top-left, si configurée) -->
+      ${c.pv_forecast_today ? `
+      <div class="sfc-forecast-badge" id="sfcForecastBadge">
+        <span class="sfc-forecast-today"  id="sfcForecastToday">📊 — kWh</span>
+        ${c.pv_forecast_tomorrow ? `<span class="sfc-forecast-tomorrow" id="sfcForecastTomorrow">↪ — kWh</span>` : ''}
+      </div>` : ''}
+
       <!-- Heure + élévation -->
       <div class="sfc-sun-time" id="sfcSunTime">12:00 · 45°</div>
 
@@ -1727,6 +1770,22 @@ function buildCardHTML(cfg) {
           <path id="sfcLSpaGlow_s"     class="sfc-flow-neon"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:3.6" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
           ` : ''}
 
+          <!-- ── FLUX Maison → ECS (router2) ── -->
+          ${c.router2_enabled ? `
+          <path id="sfcLECS_s"         class="sfc-flow-core"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:3"   d="M865.5 597.5 V514.5 H1333.5"/>
+          <path id="sfcLECSTailLong_s" class="sfc-flow-tail-long" stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:6.5" d="M865.5 597.5 V514.5 H1333.5"/>
+          <path id="sfcLECSTailMid_s"  class="sfc-flow-tail-mid"  stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:4.8" d="M865.5 597.5 V514.5 H1333.5"/>
+          <path id="sfcLECSGlow_s"     class="sfc-flow-neon"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:3.6" d="M865.5 597.5 V514.5 H1333.5"/>
+          ` : ''}
+
+          <!-- ── FLUX Maison ↔ EV (bidirectionnel : charge / V2H) ── -->
+          ${c.ev_enabled ? `
+          <path id="sfcLEV_s"         class="sfc-flow-core"      stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:3"   d="M916.5 597.5 H1140"/>
+          <path id="sfcLEVTailLong_s" class="sfc-flow-tail-long" stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:6.5" d="M916.5 597.5 H1140"/>
+          <path id="sfcLEVTailMid_s"  class="sfc-flow-tail-mid"  stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:4.8" d="M916.5 597.5 H1140"/>
+          <path id="sfcLEVGlow_s"     class="sfc-flow-neon"      stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:3.6" d="M916.5 597.5 H1140"/>
+          ` : ''}
+
           <!-- ══════════════════════════════════════════════════════════
                BATTERIE LIQUIDE SVG — overlay sur la batterie murale de l'image.
                Coords 1536×1024 : batterie mur droit garage ~X=1462, Y=500.
@@ -1773,6 +1832,30 @@ function buildCardHTML(cfg) {
           <text id="sfcSGSpaVal" text-anchor="middle" x="265" y="634"
             style="font-family:monospace;font-size:36px;font-weight:700;
                    fill:#FFA040;filter:drop-shadow(0 0 4px #FFA040)">0 W</text>
+          ` : ''}
+
+          ${c.router2_enabled ? `
+          <rect x="1148" y="460" width="240" height="88" rx="8"
+            fill="rgba(6,13,26,0.68)" stroke="rgba(255,160,64,0.25)" stroke-width="1.5"/>
+          <text text-anchor="middle" x="1268" y="486"
+            style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:3px;
+                   fill:rgba(232,244,253,0.55)">${(c.router2_label||'ECS').toUpperCase()}</text>
+          <text id="sfcSGECSVal" text-anchor="middle" x="1268" y="532"
+            style="font-family:monospace;font-size:36px;font-weight:700;
+                   fill:#FFA040;filter:drop-shadow(0 0 4px #FFA040)">0 W</text>
+          ` : ''}
+
+          ${c.ev_enabled ? `
+          <rect x="988" y="530" width="226" height="${c.ev_soc ? '120' : '88'}" rx="8"
+            fill="rgba(6,13,26,0.72)" stroke="rgba(79,195,247,0.3)" stroke-width="1.5"/>
+          <text text-anchor="middle" x="1101" y="556"
+            style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:3px;
+                   fill:rgba(232,244,253,0.55)">${(c.ev_label||'VOITURE').toUpperCase()}</text>
+          <text id="sfcSGEVPwr" text-anchor="middle" x="1101" y="600"
+            style="font-family:monospace;font-size:36px;font-weight:700;
+                   fill:#4FC3F7;filter:drop-shadow(0 0 4px #4FC3F7)">0 W</text>
+          ${c.ev_soc ? `<text id="sfcSGEVSoc" text-anchor="middle" x="1101" y="636"
+            style="font-family:monospace;font-size:28px;fill:rgba(232,244,253,0.65)">— %</text>` : ''}
           ` : ''}
 
           <!-- Réseau : chip près du poteau bas-gauche -->
@@ -2413,6 +2496,43 @@ function buildEditorHTML(cfg) {
       </div>
     `)}
 
+    <!-- SECTION: Prévision de production -->
+    ${edSection('forecast', t(c,'ed_forecast'), false, `
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_forecast_today')}</label>
+        <label class="sfc-ed-desc">Affiché en haut à gauche du ciel — laisser vide pour masquer</label>
+        <input class="sfc-ed-input" data-key="pv_forecast_today" placeholder="sensor.solcast_forecast_today" value="${c.pv_forecast_today||''}"/>
+      </div>
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_forecast_tomorrow')}</label>
+        <input class="sfc-ed-input" data-key="pv_forecast_tomorrow" placeholder="sensor.solcast_forecast_tomorrow" value="${c.pv_forecast_tomorrow||''}"/>
+      </div>
+    `)}
+
+    <!-- SECTION: Véhicule électrique -->
+    ${edSection('ev', t(c,'ed_ev'), false, `
+      ${edToggle('ev_enabled', t(c,'ed_ev'), c)}
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_ev_label')}</label>
+        <input class="sfc-ed-input" data-key="ev_label" placeholder="Voiture" value="${c.ev_label||''}"/>
+      </div>
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_ev_power')}</label>
+        <label class="sfc-ed-desc">Positif = charge, Négatif = V2H (décharge vers maison)</label>
+        <input class="sfc-ed-input" data-key="ev_power" placeholder="sensor.ev_power" value="${c.ev_power||''}"/>
+      </div>
+      <div class="sfc-ed-grid">
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_ev_soc')}</label>
+          <input class="sfc-ed-input" data-key="ev_soc" placeholder="sensor.ev_soc" value="${c.ev_soc||''}"/>
+        </div>
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_ev_max_kwh')}</label>
+          <input class="sfc-ed-input sfc-ed-number" data-key="ev_max_kwh" type="number" step="0.1" placeholder="75" value="${c.ev_max_kwh||''}"/>
+        </div>
+      </div>
+    `)}
+
     <!-- SECTION: Affichage -->
     ${edSection('display', t(c,'ed_display'), false, `
       ${edToggle('show_progress_bars', t(c,'ed_show_bars'), c)}
@@ -2589,8 +2709,10 @@ class SolarFlowCard extends HTMLElement {
     // Flux soleil → maison (commun aux 3 modes)
     animateFlow('sfcSunFlowGlow', 1.4, 0, 40);
 
-    // Flux spa single-mode
-    animateFlow('sfcLSpaGlow_s', 2.4, 0, 40);
+    // Flux routeurs single-mode
+    animateFlow('sfcLSpaGlow_s',  2.4, 0, 40);
+    animateFlow('sfcLECSGlow_s',  2.2, 0, 40);
+    animateFlow('sfcLEVGlow_s',   1.8, 0, 40);
 
     // Animation batterie — mode séparé (HTML) et mode single (SVG)
     this._initBatteryAnimation();
@@ -2778,6 +2900,44 @@ class SolarFlowCard extends HTMLElement {
           gsap.to(this._svgBubbles, { opacity: 0, duration: 0.3, overwrite: 'auto' });
         }
       }
+    }
+  }
+
+  // ── Véhicule électrique ──────────────────────────────────────────────────
+  _updateEV() {
+    const c = this._cfg;
+    if (!c.ev_enabled) return;
+
+    const evW    = this._getNum(c.ev_power);
+    const evSoc  = c.ev_soc ? this._getNum(c.ev_soc) : null;
+    const active = Math.abs(evW) >= 50;
+    const isV2H  = evW < -50;   // décharge vers la maison
+
+    // Flux SVG single-mode (bidirectionnel)
+    const evIds = ['sfcLEV_s','sfcLEVTailLong_s','sfcLEVTailMid_s','sfcLEVGlow_s'];
+    this._setFlowActive(evIds, active);
+    if (active && c.img_scene_mode === 'single') {
+      // Inverser le chemin selon direction charge/V2H
+      const pathCharge = 'M916.5 597.5 H1140';
+      const pathV2H    = 'M1140 597.5 H916.5';
+      this._setFlowPath(evIds, isV2H ? pathV2H : pathCharge);
+    }
+
+    // Chip SVG — puissance ± et SOC
+    const pwrEl = this._el('sfcSGEVPwr');
+    if (pwrEl) {
+      const abs  = Math.abs(evW);
+      const sign = isV2H ? '−' : evW > 50 ? '+' : '';
+      pwrEl.textContent = abs >= 1000 ? sign + (abs/1000).toFixed(2) + ' kW' : sign + Math.round(abs) + ' W';
+      pwrEl.style.fill  = isV2H ? '#69FF47' : '#4FC3F7';
+      pwrEl.style.filter= isV2H
+        ? 'drop-shadow(0 0 4px #69FF47)'
+        : 'drop-shadow(0 0 4px #4FC3F7)';
+    }
+
+    const socEl = this._el('sfcSGEVSoc');
+    if (socEl && evSoc !== null) {
+      socEl.textContent = Math.round(evSoc) + ' %';
     }
   }
 
@@ -3149,6 +3309,21 @@ class SolarFlowCard extends HTMLElement {
     // Routeurs
     this._updateRouters();
 
+    // Véhicule électrique
+    this._updateEV();
+
+    // Prévision de production
+    if (c.pv_forecast_today) {
+      const fToday = this._getNum(c.pv_forecast_today);
+      const elToday = this._el('sfcForecastToday');
+      if (elToday) elToday.textContent = '📊 ' + (fToday > 0 ? fToday.toFixed(1) + ' kWh' : '— kWh');
+      if (c.pv_forecast_tomorrow) {
+        const fTom = this._getNum(c.pv_forecast_tomorrow);
+        const elTom = this._el('sfcForecastTomorrow');
+        if (elTom) elTom.textContent = '↪ ' + (fTom > 0 ? fTom.toFixed(1) + ' kWh' : '— kWh');
+      }
+    }
+
     // Inverter
     const tp  = this._el('sfcTodayPv');    if (tp)  tp.textContent  = todayPv  ? todayPv.toFixed(2)+' kWh'  : '— kWh';
     const cd  = this._el('sfcChgDis');     if (cd)  cd.textContent  = battChg  ? battChg.toFixed(2)+' kWh'  : '— kWh';
@@ -3265,12 +3440,18 @@ class SolarFlowCard extends HTMLElement {
       const node = this._el('sfcRouterNode' + rn);
       if (node)  node.classList.toggle('active', active);
 
-      // Flux single-mode pour router1 (Spa)
-      if (rn === 1 && c.img_scene_mode === 'single') {
-        const spaIds = ['sfcLSpa_s','sfcLSpaTailLong_s','sfcLSpaTailMid_s','sfcLSpaGlow_s'];
-        this._setFlowActive(spaIds, active);
-        const spaVal = this._el('sfcSGSpaVal');
-        if (spaVal) spaVal.textContent = w >= 1000 ? (w/1000).toFixed(2)+' kW' : Math.round(w)+' W';
+      // Flux single-mode par routeur
+      if (c.img_scene_mode === 'single') {
+        const fmt = v => v >= 1000 ? (v/1000).toFixed(2)+' kW' : Math.round(v)+' W';
+        if (rn === 1) {
+          this._setFlowActive(['sfcLSpa_s','sfcLSpaTailLong_s','sfcLSpaTailMid_s','sfcLSpaGlow_s'], active);
+          const el = this._el('sfcSGSpaVal'); if (el) el.textContent = fmt(w);
+        }
+        if (rn === 2) {
+          this._setFlowActive(['sfcLECS_s','sfcLECSTailLong_s','sfcLECSTailMid_s','sfcLECSGlow_s'], active);
+          const el = this._el('sfcSGECSVal'); if (el) el.textContent = fmt(w);
+        }
+        // rn === 3 : pas de path dédié en single (EV géré séparément via ev_enabled)
       }
     });
 
