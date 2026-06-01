@@ -26,6 +26,7 @@ const DEFAULTS = {
   router1_resistance_w: 0,    // puissance nominale de la résistance en W (mode 'calc')
   router1_opening:      '',   // sensor.xxx → % ouverture 0-100 (mode 'calc')
   router1_energy:       '',   // sensor.xxx → kWh aujourd'hui
+  router1_temp:         '',   // sensor.xxx → °C (température eau, spa...)
   router1_position:     'right',
 
   router2_enabled:      false,
@@ -291,6 +292,7 @@ const I18N = {
     ed_router_img:      'Image (chemin)',
     ed_router_power:    'Entité puissance (W)',
     ed_router_energy:   'Entité énergie jour (kWh)',
+    ed_router_temp:     'Température eau (°C) — mode single',
     ed_router_mode:       'Mode de mesure',
     ed_router_mode_power: 'Puissance directe (entité W)',
     ed_router_mode_calc:  'Calcul — résistance × ouverture %',
@@ -448,6 +450,7 @@ const I18N = {
     ed_router_img:      'Image (path)',
     ed_router_power:    'Power entity (W)',
     ed_router_energy:   'Daily energy entity (kWh)',
+    ed_router_temp:     'Water temperature (°C) — single mode',
     ed_router_mode:       'Measurement mode',
     ed_router_mode_power: 'Direct power entity (W)',
     ed_router_mode_calc:  'Calculated — resistance × opening %',
@@ -1824,14 +1827,19 @@ function buildCardHTML(cfg) {
 
           <!-- Spa (router1) : chip près de l'extrémité du chemin -->
           ${c.router1_enabled ? `
-          <rect x="150" y="562" width="230" height="88" rx="8"
+          <rect x="150" y="562" width="230" height="${c.router1_temp ? '122' : '88'}" rx="8"
             fill="rgba(6,13,26,0.68)" stroke="rgba(255,160,64,0.25)" stroke-width="1.5"/>
           <text text-anchor="middle" x="265" y="588"
             style="font-family:monospace;font-size:24px;font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${(c.router1_label||'SPA').toUpperCase()}</text>
-          <text id="sfcSGSpaVal" text-anchor="middle" x="265" y="634"
+          <text id="sfcSGSpaVal" text-anchor="middle" x="265" y="${c.router1_temp ? '628' : '634'}"
             style="font-family:monospace;font-size:36px;font-weight:700;
                    fill:#FFA040;filter:drop-shadow(0 0 4px #FFA040)">0 W</text>
+          ${c.router1_temp ? `
+          <text id="sfcSGSpaTemp" text-anchor="middle" x="265" y="664"
+            style="font-family:monospace;font-size:28px;font-weight:600;
+                   fill:#7ecfff;filter:drop-shadow(0 0 3px rgba(126,207,255,0.5))">🌡 — °C</text>
+          ` : ''}
           ` : ''}
 
           ${c.router2_enabled ? `
@@ -2320,6 +2328,7 @@ function buildEditorHTML(cfg) {
       ${edEntity('router1_resistance_w', t(c,'ed_router_resistance'),  '2000', c)}
       ${edEntity('router1_opening',      t(c,'ed_router_opening'),     'sensor.f1atb_opening', c)}
       ${edEntity('router1_energy',       t(c,'ed_router_energy'),      'sensor.spa_energy_today', c)}
+      ${edEntity('router1_temp',         t(c,'ed_router_temp'),         'sensor.spa_temperature', c)}
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,'ed_router_pos')}</label>
         <select class="sfc-ed-input" data-key="router1_position" style="cursor:pointer;">
@@ -3446,6 +3455,11 @@ class SolarFlowCard extends HTMLElement {
         if (rn === 1) {
           this._setFlowActive(['sfcLSpa_s','sfcLSpaTailLong_s','sfcLSpaTailMid_s','sfcLSpaGlow_s'], active);
           const el = this._el('sfcSGSpaVal'); if (el) el.textContent = fmt(w);
+          const tempEl = this._el('sfcSGSpaTemp');
+          if (tempEl && c.router1_temp) {
+            const temp = this._getNum(c.router1_temp);
+            tempEl.textContent = temp ? '🌡 ' + temp.toFixed(1) + ' °C' : '🌡 — °C';
+          }
         }
         if (rn === 2) {
           this._setFlowActive(['sfcLECS_s','sfcLECSTailLong_s','sfcLECSTailMid_s','sfcLECSGlow_s'], active);
