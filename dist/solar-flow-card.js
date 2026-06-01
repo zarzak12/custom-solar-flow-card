@@ -739,20 +739,20 @@ const CARD_CSS = `
     padding:4px 14px;display:flex;align-items:center;gap:6px;backdrop-filter:blur(8px);z-index:3;
   }
   .sfc-pv-val { font-family:monospace;font-size:15px;font-weight:700;color:var(--solar);text-shadow:0 0 10px rgba(255,215,0,.6); }
-  .sfc-sun-time { position:absolute;top:8px;right:10px;font-family:monospace;font-size:10px;font-weight:600;
+  .sfc-sun-time { position:absolute;top:8px;right:10px;font-family:monospace;font-size:13px;font-weight:600;
     color:var(--solar);background:rgba(0,0,0,.4);padding:2px 7px;border-radius:7px;border:1px solid rgba(255,215,0,.2);z-index:3; }
   .sfc-forecast-badge {
     position:absolute;top:8px;left:10px;z-index:3;
-    font-family:monospace;font-size:10px;font-weight:600;
+    font-family:monospace;font-size:13px;font-weight:600;
     background:rgba(0,0,0,.4);border-radius:7px;
     border:1px solid rgba(100,180,255,0.25);
     padding:3px 8px;display:flex;flex-direction:column;gap:1px;
     backdrop-filter:blur(4px);
   }
   .sfc-forecast-today    { color:#7ecfff; }
-  .sfc-forecast-tomorrow { color:rgba(180,210,255,0.65);font-size:9px; }
-  .sfc-sunrise { position:absolute;bottom:190px;left:10px;font-size:9px;color:var(--muted);font-weight:600;z-index:3; }
-  .sfc-sunset  { position:absolute;bottom:190px;right:10px;font-size:9px;color:var(--muted);font-weight:600;z-index:3; }
+  .sfc-forecast-tomorrow { color:rgba(180,210,255,0.65);font-size:12px; }
+  .sfc-sunrise { position:absolute;bottom:190px;left:10px;font-size:12px;color:var(--muted);font-weight:600;z-index:3; }
+  .sfc-sunset  { position:absolute;bottom:190px;right:10px;font-size:12px;color:var(--muted);font-weight:600;z-index:3; }
 
   /* ── Flow scene ── */
   /* ══════════════════════════════════════════
@@ -1576,7 +1576,7 @@ function buildCardHTML(cfg) {
          SCÈNE UNIFIÉE : ciel + soleil + énergie
     ════════════════════════════════════════════ -->
     <div class="sfc-unified-scene ${c.img_scene_mode === 'single' ? 'sfc-scene-mode-single-scene' : ''}" id="sfcUnifiedScene"
-         style="height: ${c.show_images !== false ? (c.img_scene_mode === 'single' ? '520px' : '380px') : '200px'};">
+         style="height: ${c.show_images !== false ? (c.img_scene_mode === 'single' ? '490px' : '355px') : '200px'};">
 
       <!-- Fond ciel dynamique -->
       <div class="sfc-sky" id="sfcSky"></div>
