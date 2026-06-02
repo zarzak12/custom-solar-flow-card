@@ -1,11 +1,14 @@
 /**
  * ╔══════════════════════════════════════════════════════════╗
  * ║          SOLAR FLOW CARD — Home Assistant                ║
- * ║    Custom Lovelace Card · Version 1.0.0                  ║
+ * ║    Custom Lovelace Card                                  ║
  * ║    Inspiré de Lumina Energy Card                         ║
  * ║    Arc solaire · Météo · Flux animés · Temps réel        ║
  * ╚══════════════════════════════════════════════════════════╝
  */
+
+// ── Version — modifier uniquement ici ──────────────────────
+const VERSION = '1.0.61';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -1500,9 +1503,10 @@ const CARD_CSS = `
     bottom: 310px;
   }
   
-  /* Mode single : masquer les SVG de flux standards (remplacés par sfcSingleFlowSvg) */
+  /* Mode single : masquer les SVG de flux + arc standards (remplacés par sfcSingleFlowSvg) */
   .sfc-scene-mode-single-scene #sfcFlowSvg,
-  .sfc-scene-mode-single-scene .sfc-sun-flow {
+  .sfc-scene-mode-single-scene .sfc-sun-flow,
+  .sfc-scene-mode-single-scene .sfc-sun-arc-svg {
     display: none;
   }
 
@@ -1752,13 +1756,26 @@ function buildCardHTML(cfg) {
               <stop offset="0%"   stop-color="rgba(255,80,80,0.9)"/>
               <stop offset="100%" stop-color="rgba(200,20,20,1)"/>
             </linearGradient>
+            <!-- Halo solaire (mode single) -->
+            <radialGradient id="sfcGlowGradS" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stop-color="rgba(255,200,0,0.28)"/>
+              <stop offset="100%" stop-color="rgba(255,200,0,0)"/>
+            </radialGradient>
           </defs>
 
-          <!-- ── FLUX Soleil → Maison (chemin fixe ciel → maison) ── -->
-          <path id="sfcSunFlowLine_s"     class="sfc-sun-flow-core"     stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:3"   d="M 748,120 L 748,608"/>
-          <path id="sfcSunFlowTailLong_s" class="sfc-sun-flow-tail-long" stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:6.5" d="M 748,120 L 748,608"/>
-          <path id="sfcSunFlowTailMid_s"  class="sfc-sun-flow-tail-mid"  stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:4.8" d="M 748,120 L 748,608"/>
-          <path id="sfcSunFlowGlow_s"     class="sfc-sun-flow-neon"      stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:3.6" d="M 748,120 L 748,608"/>
+          <!-- ── ARC TRAJECTOIRE SOLAIRE (calé sur l'image, coords Figma) ── -->
+          <path class="sfc-sun-arc-bg" d="M127 163 C544 -95.5 1117 -37 1416 138.5"
+            fill="none" stroke="rgba(255,215,0,0.22)" stroke-width="3" stroke-linecap="round"/>
+          <path id="sfcArcDone_s" class="sfc-sun-arc-active" d="M127 163 C544 -95.5 1117 -37 1416 138.5"
+            fill="none" stroke="rgba(255,215,0,0.78)" stroke-width="5" stroke-linecap="round"
+            style="transition:stroke-dashoffset 20s ease;filter:drop-shadow(0 0 10px rgba(255,215,0,0.35))"/>
+          <ellipse id="sfcGlowEl_s" cx="760" cy="20" rx="150" ry="100" fill="url(#sfcGlowGradS)" style="transition:all 20s ease;"/>
+
+          <!-- ── FLUX Soleil → Maison (chemin fixe ciel → maison, x=790 Figma) ── -->
+          <path id="sfcSunFlowLine_s"     class="sfc-sun-flow-core"     stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:3"   d="M 790,130 L 790,608"/>
+          <path id="sfcSunFlowTailLong_s" class="sfc-sun-flow-tail-long" stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:6.5" d="M 790,130 L 790,608"/>
+          <path id="sfcSunFlowTailMid_s"  class="sfc-sun-flow-tail-mid"  stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:4.8" d="M 790,130 L 790,608"/>
+          <path id="sfcSunFlowGlow_s"     class="sfc-sun-flow-neon"      stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:3.6" d="M 790,130 L 790,608"/>
 
           <!-- ── FLUX Grid ↔ Maison ── -->
           <path id="sfcLG_s"         class="sfc-flow-core"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3"   d="M426 915.5 L860.5 704.5 L579 660.5 L748 608"/>
@@ -2563,10 +2580,8 @@ function buildEditorHTML(cfg) {
     `)}
 
     <!-- ACTIONS -->
-    <div class="sfc-ed-actions" style="flex-direction:column;gap:8px;">
-      <button class="sfc-ed-apply" id="sfcEdApply">💾 Appliquer les modifications</button>
-      <div class="sfc-ed-saved" id="sfcEdSaved"></div>
-      <button class="sfc-ed-btn secondary" id="sfcEdReset" style="align-self:flex-end;">↺ Réinitialiser</button>
+    <div class="sfc-ed-actions">
+      <button class="sfc-ed-btn secondary" id="sfcEdReset">↺ Réinitialiser</button>
     </div>
   </div>
   `;
@@ -3499,6 +3514,24 @@ class SolarFlowCard extends HTMLElement {
     }
   }
 
+  // Convertit un point (x,y) du viewBox 1536×1024 en % de la scène,
+  // en tenant compte du letterbox preserveAspectRatio="xMidYMax meet".
+  _svgToScenePct(svgX, svgY) {
+    const svg   = this._el('sfcSingleFlowSvg');
+    const scene = this._el('sfcUnifiedScene');
+    if (!svg || !scene) return null;
+    const sr = svg.getBoundingClientRect();
+    const pr = scene.getBoundingClientRect();
+    if (!sr.width || !sr.height || !pr.width || !pr.height) return null;
+    const scale = Math.min(sr.width / 1536, sr.height / 1024);
+    const rw = 1536 * scale, rh = 1024 * scale;
+    const ox = (sr.width - rw) / 2;   // xMid : centré horizontalement
+    const oy = sr.height - rh;        // YMax : aligné en bas
+    const px = (sr.left - pr.left) + ox + svgX * scale;
+    const py = (sr.top  - pr.top)  + oy + svgY * scale;
+    return { x: (px / pr.width * 100).toFixed(2), y: (py / pr.height * 100).toFixed(2) };
+  }
+
   _updateSun(cloudyOverride) {
 
     const c   = this._cfg;
@@ -3538,13 +3571,24 @@ class SolarFlowCard extends HTMLElement {
     progress = Math.max(0, Math.min(1, progress));
 
     const tt   = progress;
+    // Ancien arc quadratique (viewBox 520×200) — utilisé pour le glow/arc du mode séparé
     const bx   = (1-tt)*(1-tt)*40  + 2*(1-tt)*tt*260 + tt*tt*480;
     const by   = (1-tt)*(1-tt)*175 + 2*(1-tt)*tt*30  + tt*tt*175;
     const isSingleMode = c.img_scene_mode === 'single';
     const skyFraction = isSingleMode ? 0.35 : 0.55;
-    const pctX = (bx / 520) * 100;
+    let pctX = (bx / 520) * 100;
     // Décalage fixe pour que le soleil reste au-dessus de l'arc
-    const pctY = Math.max(1, (by / 200) * skyFraction * 100 - 4);
+    let pctY = Math.max(1, (by / 200) * skyFraction * 100 - 4);
+
+    // Mode single : position le long du Bézier cubique Figma (coords 1536×1024)
+    let sgx = null, sgy = null;
+    if (isSingleMode) {
+      const mt = 1 - tt;
+      sgx = mt*mt*mt*127 + 3*mt*mt*tt*544 + 3*mt*tt*tt*1117 + tt*tt*tt*1416;
+      sgy = mt*mt*mt*163 + 3*mt*mt*tt*(-95.5) + 3*mt*tt*tt*(-37) + tt*tt*tt*138.5;
+      const pos = this._svgToScenePct(sgx, sgy);
+      if (pos) { pctX = pos.x; pctY = pos.y; }
+    }
 
     const orb = this._el('sfcSunOrb');
     const isNight = elevation < -3;
@@ -3573,10 +3617,19 @@ class SolarFlowCard extends HTMLElement {
         // progress est dans [0,1] (clampé), on extrapole pour la nuit
         const nightProgress = progress < 0.5 ? 1 - progress * 0.5 : 0.5 + (1 - progress) * 0.5;
         const mt = Math.max(0, Math.min(1, nightProgress));
-        const mx = (1-mt)*(1-mt)*40 + 2*(1-mt)*mt*260 + mt*mt*480;
-        const my = (1-mt)*(1-mt)*175 + 2*(1-mt)*mt*30 + mt*mt*175;
-        moonEl.style.left = ((mx / 520) * 100) + '%';
-        moonEl.style.top  = Math.max(1, (my / 200) * 0.55 * 100 - 4) + '%';
+        if (isSingleMode) {
+          // Même arc Bézier cubique que le soleil (coords 1536×1024)
+          const nt = 1 - mt;
+          const mgx = nt*nt*nt*127 + 3*nt*nt*mt*544 + 3*nt*mt*mt*1117 + mt*mt*mt*1416;
+          const mgy = nt*nt*nt*163 + 3*nt*nt*mt*(-95.5) + 3*nt*mt*mt*(-37) + mt*mt*mt*138.5;
+          const pos = this._svgToScenePct(mgx, mgy);
+          if (pos) { moonEl.style.left = pos.x + '%'; moonEl.style.top = pos.y + '%'; }
+        } else {
+          const mx = (1-mt)*(1-mt)*40 + 2*(1-mt)*mt*260 + mt*mt*480;
+          const my = (1-mt)*(1-mt)*175 + 2*(1-mt)*mt*30 + mt*mt*175;
+          moonEl.style.left = ((mx / 520) * 100) + '%';
+          moonEl.style.top  = Math.max(1, (my / 200) * 0.55 * 100 - 4) + '%';
+        }
       } else {
         moonEl.style.display = 'none';
       }
@@ -3589,6 +3642,22 @@ class SolarFlowCard extends HTMLElement {
     if (glowEl) { glowEl.setAttribute('cx', bx.toFixed(1)); glowEl.setAttribute('cy', by.toFixed(1)); }
     const arcDone = this._el('sfcArcDone');
     if (arcDone) arcDone.style.strokeDashoffset = (1000*(1-progress)).toFixed(0);
+
+    // Mode single : glow + arc progressif dans la frame unique (sfcSingleFlowSvg)
+    if (isSingleMode && sgx !== null) {
+      const glowS = this._el('sfcGlowEl_s');
+      if (glowS) {
+        glowS.setAttribute('cx', sgx.toFixed(1));
+        glowS.setAttribute('cy', sgy.toFixed(1));
+        glowS.style.opacity = isNight ? '0' : '1';
+      }
+      const arcDoneS = this._el('sfcArcDone_s');
+      if (arcDoneS && arcDoneS.getTotalLength) {
+        const len = arcDoneS.getTotalLength() || 1700;
+        arcDoneS.style.strokeDasharray  = len.toFixed(0);
+        arcDoneS.style.strokeDashoffset = (len * (1 - progress)).toFixed(0);
+      }
+    }
 
     const sceneImg = this._el('sfcSceneImg');
     if (sceneImg) {
@@ -3721,16 +3790,7 @@ class SolarFlowCard extends HTMLElement {
 //  EDITOR — iOS-safe (v1.0.0)
 // ══════════════════════════════════════════════════════════
 const EDITOR_EXTRA_CSS = `
-  .sfc-ed-apply {
-    width:100%; padding:14px; border:none; border-radius:10px;
-    cursor:pointer; font-size:14px; font-weight:700;
-    letter-spacing:0.5px; color:#fff; background:#14a085;
-    transition:all 0.3s; -webkit-appearance:none;
-  }
-  .sfc-ed-apply:active { transform:scale(0.97); }
-  .sfc-ed-apply.saved   { background:rgba(20,160,133,0.25); box-shadow:none; }
-  .sfc-ed-apply.pending { background:#14a085; box-shadow:0 0 16px rgba(20,160,133,0.5); }
-  .sfc-ed-saved { text-align:center; font-size:11px; color:rgba(255,255,255,0.4); padding:4px 0 0; min-height:16px; }
+  /* Bouton Appliquer supprimé — sauvegarde via bouton natif HA */
 `;
 
 class SolarFlowCardEditor extends HTMLElement {
@@ -3808,27 +3868,17 @@ class SolarFlowCardEditor extends HTMLElement {
       }
     });
 
-    const applyBtn = this.shadowRoot.getElementById('sfcEdApply');
-    if (applyBtn) applyBtn.addEventListener('click', () => this._apply());
     const rst = this.shadowRoot.getElementById('sfcEdReset');
     if (rst) rst.addEventListener('click', () => { this._draft = { ...DEFAULTS }; this._populateAll(); this._apply(); });
   }
 
-  _setDirty() { this._dirty = true; this._refreshBtn(); }
-
-  _refreshBtn() {
-    const btn  = this.shadowRoot.getElementById('sfcEdApply');
-    const note = this.shadowRoot.getElementById('sfcEdSaved');
-    if (!btn) return;
-    if (this._dirty) {
-      btn.textContent = t(this._draft,'ed_apply'); btn.className = 'sfc-ed-apply pending'; if (note) note.textContent = '';
-    } else {
-      btn.textContent = t(this._draft,'ed_saved'); btn.className = 'sfc-ed-apply saved'; if (note) note.textContent = t(this._draft,'ed_saved_note');
-    }
+  _setDirty() {
+    // Dispatch automatique avec debounce 300ms — le bouton Save de HA prend le relais
+    clearTimeout(this._applyTimer);
+    this._applyTimer = setTimeout(() => this._apply(), 300);
   }
 
   _apply() {
-    this._dirty = false; this._refreshBtn();
     this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: { ...this._draft } }, bubbles: true, composed: true }));
   }
 }
@@ -3842,6 +3892,6 @@ customElements.define('solar-flow-card-editor', SolarFlowCardEditor);
 window.customCards = window.customCards || [];
 window.customCards.push({ type:'solar-flow-card', name:'Solar Flow Card', description:'Arc solaire animé, météo dynamique, flux énergie temps réel', preview:true });
 
-console.info('%c☀️ SOLAR FLOW CARD %c v1.0.12 ',
+console.info(`%c☀️ SOLAR FLOW CARD %c v${VERSION} `,
   'background:#0d7377;color:#fff;padding:2px 6px;border-radius:4px 0 0 4px;font-weight:700',
   'background:#14a085;color:#fff;padding:2px 6px;border-radius:0 4px 4px 0;');
