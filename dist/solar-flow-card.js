@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.61';
+const VERSION = '1.0.62';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -1771,11 +1771,11 @@ function buildCardHTML(cfg) {
             style="transition:stroke-dashoffset 20s ease;filter:drop-shadow(0 0 10px rgba(255,215,0,0.35))"/>
           <ellipse id="sfcGlowEl_s" cx="760" cy="20" rx="150" ry="100" fill="url(#sfcGlowGradS)" style="transition:all 20s ease;"/>
 
-          <!-- ── FLUX Soleil → Maison (chemin fixe ciel → maison, x=790 Figma) ── -->
-          <path id="sfcSunFlowLine_s"     class="sfc-sun-flow-core"     stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:3"   d="M 790,130 L 790,608"/>
-          <path id="sfcSunFlowTailLong_s" class="sfc-sun-flow-tail-long" stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:6.5" d="M 790,130 L 790,608"/>
-          <path id="sfcSunFlowTailMid_s"  class="sfc-sun-flow-tail-mid"  stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:4.8" d="M 790,130 L 790,608"/>
-          <path id="sfcSunFlowGlow_s"     class="sfc-sun-flow-neon"      stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:3.6" d="M 790,130 L 790,608"/>
+          <!-- ── FLUX Soleil → Maison (rayon ciel, coords Figma M790 15.5 V224.5) ── -->
+          <path id="sfcSunFlowLine_s"     class="sfc-sun-flow-core"     stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:3"   d="M 790,15.5 L 790,224.5"/>
+          <path id="sfcSunFlowTailLong_s" class="sfc-sun-flow-tail-long" stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:6.5" d="M 790,15.5 L 790,224.5"/>
+          <path id="sfcSunFlowTailMid_s"  class="sfc-sun-flow-tail-mid"  stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:4.8" d="M 790,15.5 L 790,224.5"/>
+          <path id="sfcSunFlowGlow_s"     class="sfc-sun-flow-neon"      stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:3.6" d="M 790,15.5 L 790,224.5"/>
 
           <!-- ── FLUX Grid ↔ Maison ── -->
           <path id="sfcLG_s"         class="sfc-flow-core"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3"   d="M426 915.5 L860.5 704.5 L579 660.5 L748 608"/>
