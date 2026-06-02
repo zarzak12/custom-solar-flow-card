@@ -1500,8 +1500,9 @@ const CARD_CSS = `
     bottom: 310px;
   }
   
-  /* Mode single : masquer le SVG de flux standard (remplacé par sfcSingleFlowSvg) */
-  .sfc-scene-mode-single #sfcFlowSvg {
+  /* Mode single : masquer les SVG de flux standards (remplacés par sfcSingleFlowSvg) */
+  .sfc-scene-mode-single-scene #sfcFlowSvg,
+  .sfc-scene-mode-single-scene .sfc-sun-flow {
     display: none;
   }
 
@@ -1752,6 +1753,12 @@ function buildCardHTML(cfg) {
               <stop offset="100%" stop-color="rgba(200,20,20,1)"/>
             </linearGradient>
           </defs>
+
+          <!-- ── FLUX Soleil → Maison (chemin fixe ciel → maison) ── -->
+          <path id="sfcSunFlowLine_s"     class="sfc-sun-flow-core"     stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:3"   d="M 748,120 L 748,608"/>
+          <path id="sfcSunFlowTailLong_s" class="sfc-sun-flow-tail-long" stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:6.5" d="M 748,120 L 748,608"/>
+          <path id="sfcSunFlowTailMid_s"  class="sfc-sun-flow-tail-mid"  stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:4.8" d="M 748,120 L 748,608"/>
+          <path id="sfcSunFlowGlow_s"     class="sfc-sun-flow-neon"      stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:3.6" d="M 748,120 L 748,608"/>
 
           <!-- ── FLUX Grid ↔ Maison ── -->
           <path id="sfcLG_s"         class="sfc-flow-core"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3"   d="M426 915.5 L860.5 704.5 L579 660.5 L748 608"/>
@@ -2716,8 +2723,9 @@ class SolarFlowCard extends HTMLElement {
     animateFlow('sfcLBGlow',   2.1, 0,40);
     animateFlow('sfcLBGlow_s', 2.1, 0,40);
 
-    // Flux soleil → maison (commun aux 3 modes)
-    animateFlow('sfcSunFlowGlow', 1.4, 0, 40);
+    // Flux soleil → maison
+    animateFlow('sfcSunFlowGlow',   1.4, 0, 40);   // mode séparé/emoji
+    animateFlow('sfcSunFlowGlow_s', 1.4, 0, 40);   // mode single (chemin fixe 1536×1024)
 
     // Flux routeurs single-mode
     animateFlow('sfcLSpaGlow_s',  2.4, 0, 40);
@@ -3181,7 +3189,10 @@ class SolarFlowCard extends HTMLElement {
     // PV badge
     const pvb = this._el('sfcPvBig'); if (pvb) pvb.textContent = this._fmt(pvW);
     const sunActive = pvW > 50;
-    this._setFlowActive(['sfcSunFlowLine','sfcSunFlowTailLong','sfcSunFlowTailMid','sfcSunFlowGlow'], sunActive);
+    this._setFlowActive([
+      'sfcSunFlowLine','sfcSunFlowTailLong','sfcSunFlowTailMid','sfcSunFlowGlow',
+      'sfcSunFlowLine_s','sfcSunFlowTailLong_s','sfcSunFlowTailMid_s','sfcSunFlowGlow_s',
+    ], sunActive);
 
     // Flow nodes
     const gEl = this._el('sfcGrid');   if (gEl) gEl.textContent = this._fmt(Math.abs(gridW));
