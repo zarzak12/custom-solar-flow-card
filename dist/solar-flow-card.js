@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.62';
+const VERSION = '1.0.63';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -1498,9 +1498,10 @@ const CARD_CSS = `
     display: none !important;
   }
 
-  .sfc-scene-mode-single ~ .sfc-sunrise,
-  .sfc-scene-mode-single ~ .sfc-sunset {
-    bottom: 310px;
+  /* Mode single : lever/coucher affichés dans le SVG global (masquer les HTML) */
+  .sfc-scene-mode-single-scene .sfc-sunrise,
+  .sfc-scene-mode-single-scene .sfc-sunset {
+    display: none !important;
   }
   
   /* Mode single : masquer les SVG de flux + arc standards (remplacés par sfcSingleFlowSvg) */
@@ -1581,7 +1582,7 @@ function buildCardHTML(cfg) {
          SCÈNE UNIFIÉE : ciel + soleil + énergie
     ════════════════════════════════════════════ -->
     <div class="sfc-unified-scene ${c.img_scene_mode === 'single' ? 'sfc-scene-mode-single-scene' : ''}" id="sfcUnifiedScene"
-         style="height: ${c.show_images !== false ? (c.img_scene_mode === 'single' ? '490px' : '355px') : '200px'};">
+         style="height: ${c.show_images !== false ? (c.img_scene_mode === 'single' ? '461px' : '355px') : '200px'};">
 
       <!-- Fond ciel dynamique -->
       <div class="sfc-sky" id="sfcSky"></div>
@@ -1770,6 +1771,12 @@ function buildCardHTML(cfg) {
             fill="none" stroke="rgba(255,215,0,0.78)" stroke-width="5" stroke-linecap="round"
             style="transition:stroke-dashoffset 20s ease;filter:drop-shadow(0 0 10px rgba(255,215,0,0.35))"/>
           <ellipse id="sfcGlowEl_s" cx="760" cy="20" rx="150" ry="100" fill="url(#sfcGlowGradS)" style="transition:all 20s ease;"/>
+
+          <!-- Lever / coucher — extrémités de l'arc -->
+          <text id="sfcSGSunrise" text-anchor="start" x="120" y="225"
+            style="font-family:monospace;font-size:30px;font-weight:600;fill:rgba(232,244,253,0.6)">🌅 —</text>
+          <text id="sfcSGSunset"  text-anchor="end"   x="1416" y="200"
+            style="font-family:monospace;font-size:30px;font-weight:600;fill:rgba(232,244,253,0.6)">— 🌇</text>
 
           <!-- ── FLUX Soleil → Maison (rayon ciel, coords Figma M790 15.5 V224.5) ── -->
           <path id="sfcSunFlowLine_s"     class="sfc-sun-flow-core"     stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:3"   d="M 790,15.5 L 790,224.5"/>
@@ -3553,13 +3560,18 @@ class SolarFlowCard extends HTMLElement {
     const srEl = this._el('sfcSunrise');
     if (srEl) {
       srEl.textContent = '🌅 ' + formatTime(sunrise);
-      srEl.style.bottom = isSingle ? '320px' : '190px';
+      srEl.style.bottom = '190px';
     }
     const ssEl = this._el('sfcSunset');
     if (ssEl) {
       ssEl.textContent = '🌇 ' + formatTime(sunset);
-      ssEl.style.bottom = isSingle ? '320px' : '190px';
+      ssEl.style.bottom = '190px';
     }
+    // Mode single : lever/coucher dans le SVG global
+    const srSvg = this._el('sfcSGSunrise');
+    if (srSvg) srSvg.textContent = '🌅 ' + formatTime(sunrise);
+    const ssSvg = this._el('sfcSGSunset');
+    if (ssSvg) ssSvg.textContent = formatTime(sunset) + ' 🌇';
 
     let progress = 0.5;
     if (sunrise && sunset) {
@@ -3586,7 +3598,8 @@ class SolarFlowCard extends HTMLElement {
       const mt = 1 - tt;
       sgx = mt*mt*mt*127 + 3*mt*mt*tt*544 + 3*mt*tt*tt*1117 + tt*tt*tt*1416;
       sgy = mt*mt*mt*163 + 3*mt*mt*tt*(-95.5) + 3*mt*tt*tt*(-37) + tt*tt*tt*138.5;
-      const pos = this._svgToScenePct(sgx, sgy);
+      // Soleil légèrement au-dessus de l'arc (−40 unités SVG)
+      const pos = this._svgToScenePct(sgx, sgy - 40);
       if (pos) { pctX = pos.x; pctY = pos.y; }
     }
 
