@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.63';
+const VERSION = '1.0.64';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -1582,7 +1582,7 @@ function buildCardHTML(cfg) {
          SCÈNE UNIFIÉE : ciel + soleil + énergie
     ════════════════════════════════════════════ -->
     <div class="sfc-unified-scene ${c.img_scene_mode === 'single' ? 'sfc-scene-mode-single-scene' : ''}" id="sfcUnifiedScene"
-         style="height: ${c.show_images !== false ? (c.img_scene_mode === 'single' ? '461px' : '355px') : '200px'};">
+         style="height: ${c.show_images !== false ? (c.img_scene_mode === 'single' ? '450px' : '355px') : '200px'};">
 
       <!-- Fond ciel dynamique -->
       <div class="sfc-sky" id="sfcSky"></div>
@@ -3598,8 +3598,8 @@ class SolarFlowCard extends HTMLElement {
       const mt = 1 - tt;
       sgx = mt*mt*mt*127 + 3*mt*mt*tt*544 + 3*mt*tt*tt*1117 + tt*tt*tt*1416;
       sgy = mt*mt*mt*163 + 3*mt*mt*tt*(-95.5) + 3*mt*tt*tt*(-37) + tt*tt*tt*138.5;
-      // Soleil légèrement au-dessus de l'arc (−40 unités SVG)
-      const pos = this._svgToScenePct(sgx, sgy - 40);
+      // Soleil au-dessus de l'arc (−75 unités SVG)
+      const pos = this._svgToScenePct(sgx, sgy - 75);
       if (pos) { pctX = pos.x; pctY = pos.y; }
     }
 
