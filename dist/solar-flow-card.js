@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.64';
+const VERSION = '1.0.66';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -161,6 +161,7 @@ const I18N = {
     lbl_mode:     'Mode',
     lbl_bms_temp: 'Temp. BMS',
     lbl_total_pv: 'Total PV',
+    lbl_co2_today:'CO₂ évité',
     lbl_min_cell: 'Cell. min',
     lbl_max_cell: 'Cell. max',
     lbl_batt_dis: 'Décharge',
@@ -227,7 +228,7 @@ const I18N = {
     ed_show_bars:     'Barres de progression',
     ed_show_mode:     'Mode batterie',
     ed_show_bms:      'Température BMS',
-    ed_show_total_pv: 'Total PV généré',
+    ed_show_total_pv: 'CO₂ évité (jour)',
     ed_show_cells:    'Tensions cellules',
     ed_show_endurance:'Autonomie batterie',
     ed_show_inverter: 'Section Onduleur',
@@ -322,6 +323,7 @@ const I18N = {
     lbl_mode:     'Mode',
     lbl_bms_temp: 'BMS Temp',
     lbl_total_pv: 'Total PV',
+    lbl_co2_today:'CO₂ saved',
     lbl_min_cell: 'Min Cell',
     lbl_max_cell: 'Max Cell',
     lbl_batt_dis: 'Batt Dis.',
@@ -388,7 +390,7 @@ const I18N = {
     ed_show_bars:     'Progress bars',
     ed_show_mode:     'Battery mode',
     ed_show_bms:      'BMS temperature',
-    ed_show_total_pv: 'Total PV generated',
+    ed_show_total_pv: 'CO₂ saved (today)',
     ed_show_cells:    'Cell voltages',
     ed_show_endurance:'Battery endurance',
     ed_show_inverter: 'Inverter section',
@@ -2140,8 +2142,8 @@ function buildCardHTML(cfg) {
       </div>` : ''}
       ${c.show_total_pv ? `
       <div class="sfc-mc">
-        <div class="sfc-mc-header">${"📊 " + t(c,"lbl_total_pv")}</div>
-        <div class="sfc-mc-val c-solar" id="sfcTotalPv">— kWh</div>
+        <div class="sfc-mc-header">${"🌱 " + t(c,"lbl_co2_today")}</div>
+        <div class="sfc-mc-val" style="color:#6bd47e;" id="sfcMcCo2">— kg</div>
       </div>` : ''}
     </div>
 
@@ -3330,7 +3332,13 @@ class SolarFlowCard extends HTMLElement {
     }
 
     const bmsEl = this._el('sfcBmsT');    if (bmsEl) bmsEl.textContent = bmsT ? bmsT.toFixed(1) + '°C' : '—°C';
-    const tpEl  = this._el('sfcTotalPv'); if (tpEl)  tpEl.textContent  = totalPv ? totalPv.toFixed(2) + ' kWh' : '— kWh';
+    const co2El = this._el('sfcMcCo2');
+    if (co2El) {
+      const co2k = (parseFloat(c.co2_factor) || 0.4) * (todayPv || 0);
+      co2El.textContent = co2k > 0
+        ? (co2k >= 1000 ? (co2k/1000).toFixed(2) + ' t' : co2k.toFixed(1) + ' kg')
+        : '— kg';
+    }
     const mn    = this._el('sfcMinCell'); if (mn)    mn.textContent    = minCell ? minCell.toFixed(3) + ' V' : '—V';
     const mx    = this._el('sfcMaxCell'); if (mx)    mx.textContent    = maxCell ? maxCell.toFixed(3) + ' V' : '—V';
     const dl    = this._el('sfcCellDelta');
@@ -3851,7 +3859,6 @@ class SolarFlowCardEditor extends HTMLElement {
       else if (el.dataset.colorKey) el.value = d[el.dataset.colorKey] || '';
       else el.value = (d[k] !== undefined && d[k] !== null) ? String(d[k]) : '';
     });
-    this._refreshBtn();
   }
 
   _attachListeners() {
