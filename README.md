@@ -71,6 +71,9 @@ type: module
 
 ## ⚙️ Configuration minimale
 
+<img width="1206" height="2284" alt="image" src="https://github.com/user-attachments/assets/821e7388-cbb7-4f52-a7c3-77508afd2a31" />
+
+
 ```yaml
 type: custom:solar-flow-card
 latitude: 48.85       # Votre latitude (calcul position soleil)
