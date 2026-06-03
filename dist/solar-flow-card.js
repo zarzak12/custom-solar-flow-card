@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.67';
+const VERSION = '1.0.69';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -234,10 +234,10 @@ const I18N = {
     ed_show_inverter: 'Section Onduleur',
     ed_show_savings:  'Bloc Économies',
     // EV
-    ed_forecast:          'Prévision de production',
+    ed_forecast:          '🔮 Prévision de production',
     ed_forecast_today:    "Prévision aujourd'hui (kWh)",
     ed_forecast_tomorrow: 'Prévision demain (kWh)',
-    ed_ev:          'Véhicule électrique (EV)',
+    ed_ev:          '🚗 Véhicule électrique (EV)',
     ed_ev_label:    'Nom du véhicule',
     ed_ev_power:    'Puissance charge/V2H (W)',
     ed_ev_soc:      'SOC batterie EV (%)',
@@ -395,10 +395,10 @@ const I18N = {
     ed_show_endurance:'Battery endurance',
     ed_show_inverter: 'Inverter section',
     ed_show_savings:  'Savings block',
-    ed_forecast:          'Production forecast',
+    ed_forecast:          '🔮 Production forecast',
     ed_forecast_today:    'Forecast today (kWh)',
     ed_forecast_tomorrow: 'Forecast tomorrow (kWh)',
-    ed_ev:          'Electric Vehicle (EV)',
+    ed_ev:          '🚗 Electric Vehicle (EV)',
     ed_ev_label:    'Vehicle name',
     ed_ev_power:    'Charge/V2H power (W)',
     ed_ev_soc:      'EV battery SOC (%)',
@@ -1776,9 +1776,9 @@ function buildCardHTML(cfg) {
 
           <!-- Lever / coucher — extrémités de l'arc -->
           <text id="sfcSGSunrise" text-anchor="start" x="120" y="225"
-            style="font-family:monospace;font-size:30px;font-weight:600;fill:rgba(232,244,253,0.6)">🌅 —</text>
+            style="font-family:monospace;font-size:36px;font-weight:600;fill:rgba(232,244,253,0.65)">🌅 —</text>
           <text id="sfcSGSunset"  text-anchor="end"   x="1416" y="200"
-            style="font-family:monospace;font-size:30px;font-weight:600;fill:rgba(232,244,253,0.6)">— 🌇</text>
+            style="font-family:monospace;font-size:36px;font-weight:600;fill:rgba(232,244,253,0.65)">— 🌇</text>
 
           <!-- ── FLUX Soleil → Maison (rayon ciel, coords Figma M790 15.5 V224.5) ── -->
           <path id="sfcSunFlowLine_s"     class="sfc-sun-flow-core"     stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:3"   d="M 790,15.5 L 790,224.5"/>
@@ -3606,8 +3606,8 @@ class SolarFlowCard extends HTMLElement {
       const mt = 1 - tt;
       sgx = mt*mt*mt*127 + 3*mt*mt*tt*544 + 3*mt*tt*tt*1117 + tt*tt*tt*1416;
       sgy = mt*mt*mt*163 + 3*mt*mt*tt*(-95.5) + 3*mt*tt*tt*(-37) + tt*tt*tt*138.5;
-      // Soleil au-dessus de l'arc (−75 unités SVG)
-      const pos = this._svgToScenePct(sgx, sgy - 75);
+      // Soleil au-dessus de l'arc (−95 unités SVG)
+      const pos = this._svgToScenePct(sgx, sgy - 95);
       if (pos) { pctX = pos.x; pctY = pos.y; }
     }
 
@@ -3643,7 +3643,8 @@ class SolarFlowCard extends HTMLElement {
           const nt = 1 - mt;
           const mgx = nt*nt*nt*127 + 3*nt*nt*mt*544 + 3*nt*mt*mt*1117 + mt*mt*mt*1416;
           const mgy = nt*nt*nt*163 + 3*nt*nt*mt*(-95.5) + 3*nt*mt*mt*(-37) + mt*mt*mt*138.5;
-          const pos = this._svgToScenePct(mgx, mgy);
+          // Lune au-dessus de l'arc, même décalage que le soleil (−95)
+          const pos = this._svgToScenePct(mgx, mgy - 95);
           if (pos) { moonEl.style.left = pos.x + '%'; moonEl.style.top = pos.y + '%'; }
         } else {
           const mx = (1-mt)*(1-mt)*40 + 2*(1-mt)*mt*260 + mt*mt*480;
