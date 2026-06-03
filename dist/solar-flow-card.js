@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.69';
+const VERSION = '1.0.71';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -56,7 +56,7 @@ const DEFAULTS = {
   img_house:   '/hacsfiles/solar-flow-card/img/house.png',
   img_battery: '/hacsfiles/solar-flow-card/img/battery.png',
   img_grid:    '/hacsfiles/solar-flow-card/img/grid.png',
-  img_scene_mode:    'separate',
+  img_scene_mode:    'single',
   img_scene_variant: 'esc_ev',
   img_scene_day:     'hacsfiles/solar-flow-card/img/house-grid.png',
   img_scene_night:   'hacsfiles/solar-flow-card/img/house-night.png',
@@ -116,9 +116,14 @@ const DEFAULTS = {
   title: 'Solar Flow',
   // ── Économies & Tarification ──
   show_savings:      true,
-  electricity_price: 0.23,    // €/kWh fixe (fallback)
-  price_entity:      '',      // sensor.prix_kwh → priorité 2
-  tempo_color:       '',      // sensor.rte_tempo_color → priorité 1
+  price_mode:        'fixed', // 'fixed' | 'hphc' | 'tempo' | 'entity'
+  electricity_price: 0.23,    // €/kWh fixe
+  hp_price:          0.27,    // €/kWh heures pleines (mode hphc)
+  hc_price:          0.20,    // €/kWh heures creuses (mode hphc)
+  hc_start:          22,      // heure de début des HC (0-23)
+  hc_end:            6,       // heure de fin des HC (0-23)
+  price_entity:      '',      // sensor.prix_kwh (mode entity)
+  tempo_color:       '',      // sensor.rte_tempo_color (mode tempo)
   tempo_blue_hc:     0.1296,
   tempo_blue_hp:     0.1609,
   tempo_white_hc:    0.1470,
@@ -251,6 +256,15 @@ const I18N = {
     sav_roi_years:     'ans',
     // Editor savings
     ed_savings:         '🔌Économies & Tarification',
+    ed_price_mode:        'Mode de tarification',
+    ed_price_mode_fixed:  '💶 Prix fixe',
+    ed_price_mode_hphc:   '🕐 Heures Pleines / Creuses',
+    ed_price_mode_tempo:  '🌈 Tempo EDF',
+    ed_price_mode_entity: '🔗 Entité dynamique',
+    ed_hp_price:          'Prix Heures Pleines (€/kWh)',
+    ed_hc_price:          'Prix Heures Creuses (€/kWh)',
+    ed_hc_start:          'Début HC (heure 0-23)',
+    ed_hc_end:            'Fin HC (heure 0-23)',
     ed_elec_price:      'Prix fixe (€/kWh)',
     ed_price_entity:    'Entité prix dynamique',
     ed_tempo_color:     'Entité couleur Tempo',
@@ -409,7 +423,16 @@ const I18N = {
     sav_year:          'This year',
     sav_roi:           'ROI',
     sav_roi_years:     'yrs',
-    ed_savings:        'Savings & Pricing',
+    ed_savings:        '🔌 Savings & Pricing',
+    ed_price_mode:        'Pricing mode',
+    ed_price_mode_fixed:  '💶 Fixed price',
+    ed_price_mode_hphc:   '🕐 Peak / Off-peak',
+    ed_price_mode_tempo:  '🌈 EDF Tempo',
+    ed_price_mode_entity: '🔗 Dynamic entity',
+    ed_hp_price:          'Peak price (€/kWh)',
+    ed_hc_price:          'Off-peak price (€/kWh)',
+    ed_hc_start:          'Off-peak start (hour 0-23)',
+    ed_hc_end:            'Off-peak end (hour 0-23)',
     ed_elec_price:     'Fixed price (€/kWh)',
     ed_price_entity:   'Dynamic price entity',
     ed_tempo_color:    'Tempo color entity',
@@ -2214,7 +2237,7 @@ function buildCardHTML(cfg) {
     <div class="sfc-gap" style="height:6px;"></div>
     <div class="sfc-savings" id="sfcSavings">
       <div class="sfc-savings-header">
-        ${c.tempo_color ? `<span class="sfc-tempo-badge" id="sfcTempoBadge" style="display:none;"></span>` : '<span></span>'}
+        ${c.price_mode === 'tempo' ? `<span class="sfc-tempo-badge" id="sfcTempoBadge" style="display:none;"></span>` : '<span></span>'}
         <span class="sfc-savings-price" id="sfcCurrentPrice">${parseFloat(c.electricity_price||0.23).toFixed(4).replace(/\.?0+$/,'')} €/kWh</span>
       </div>
       <div class="sfc-savings-row">
@@ -2287,6 +2310,48 @@ function buildEditorHTML(cfg) {
           <option value="en" ${(c.language||"fr")==="en"?"selected":""}>🇬🇧 English</option>
         </select>
       </div>
+    `)}
+
+    <!-- SECTION: Images -->
+    ${edSection('images', t(c,'ed_images'), false, `
+      ${edToggle('show_images', t(c,'ed_show_images'), c)}
+      <div class="sfc-ed-info">${t(c,'ed_images_info')}</div>
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_img_scene_mode')}</label>
+        <select class="sfc-ed-input" data-key="img_scene_mode">
+          <option value="single"${(c.img_scene_mode==='single'?' selected':'')}>${t(c,'ed_img_scene_mode_single')}</option>
+          <option value="separate"${(c.img_scene_mode==='separate'?' selected':'')}>${t(c,'ed_img_scene_mode_separate')}</option>
+        </select>
+      </div>
+
+      ${c.img_scene_mode === 'separate' ? `
+      ${edEntity('img_house',   t(c,'ed_img_house'),   '/local/solar-flow-card/img/house.png', c)}
+      ${edEntity('img_battery', t(c,'ed_img_battery'), '/local/solar-flow-card/img/battery.png', c)}
+      ${edEntity('img_grid',    t(c,'ed_img_grid'),    '/local/solar-flow-card/img/grid.png', c)}
+      <div class="sfc-ed-label" style="margin-top:8px;color:var(--muted);font-size:10px;">— Overlays optionnels —</div>
+      ${edEntity('img_overlay1',       t(c,'ed_img_overlay1'),       '', c)}
+      ${edEntity('img_overlay1_label', t(c,'ed_img_overlay1_label'), '', c)}
+      ${edEntity('img_overlay2',       t(c,'ed_img_overlay2'),       '', c)}
+      ${edEntity('img_overlay2_label', t(c,'ed_img_overlay2_label'), '', c)}
+      ` : `
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_img_scene_variant')}</label>
+        <select class="sfc-ed-input" data-key="img_scene_variant">
+          <option value="esc_ev"${(c.img_scene_variant==='esc_ev'?' selected':'')}>${t(c,'ed_img_scene_variant_ev')}</option>
+          <option value="esc_spa"${(c.img_scene_variant==='esc_spa'?' selected':'')}>${t(c,'ed_img_scene_variant_spa')}</option>
+        </select>
+      </div>
+      ${(c.img_scene_variant||'esc_ev') === 'esc_ev' ? `
+      ${edEntity('img_scene_day_ev',   t(c,'ed_img_scene_day_ev'),   '/local/solar-flow-card/img/scene-day-ev.png', c)}
+      ${edEntity('img_scene_night_ev', t(c,'ed_img_scene_night_ev'), '/local/solar-flow-card/img/scene-night-ev.png', c)}
+      ` : `
+      ${edEntity('img_scene_day_spa',  t(c,'ed_img_scene_day_spa'),  '/local/solar-flow-card/img/scene-day-spa.png', c)}
+      ${edEntity('img_scene_night_spa',t(c,'ed_img_scene_night_spa'),'/local/solar-flow-card/img/scene-night-spa.png', c)}
+      `}
+      <div class="sfc-ed-label" style="margin-top:8px;color:var(--muted);font-size:10px;">— Images par défaut (fallback) —</div>
+      ${edEntity('img_scene_day',    t(c,'ed_img_scene_day'),    '/local/solar-flow-card/img/scene-day.png', c)}
+      ${edEntity('img_scene_night',  t(c,'ed_img_scene_night'),  '/local/solar-flow-card/img/scene-night.png', c)}
+      `}
     `)}
 
     <!-- SECTION: PV -->
@@ -2426,54 +2491,55 @@ function buildEditorHTML(cfg) {
     `)}
 
     <!-- SECTION: Images -->
-    ${edSection('images', t(c,'ed_images'), false, `
-      ${edToggle('show_images', t(c,'ed_show_images'), c)}
-      <div class="sfc-ed-info">${t(c,'ed_images_info')}</div>
-      ${edEntity('img_house',   t(c,'ed_img_house'),   '/local/solar-flow-card/img/house.png', c)}
-      ${edEntity('img_battery', t(c,'ed_img_battery'), '/local/solar-flow-card/img/battery.png', c)}
-      ${edEntity('img_grid',    t(c,'ed_img_grid'),    '/local/solar-flow-card/img/grid.png', c)}
-      <div class="sfc-ed-row">
-        <label class="sfc-ed-label">${t(c,'ed_img_scene_mode')}</label>
-        <select class="sfc-ed-input" data-key="img_scene_mode">
-          <option value="separate"${(c.img_scene_mode==='separate'?' selected':'')}>${t(c,'ed_img_scene_mode_separate')}</option>
-          <option value="single"${(c.img_scene_mode==='single'?' selected':'')}>${t(c,'ed_img_scene_mode_single')}</option>
-        </select>
-      </div>
-      <div class="sfc-ed-row">
-        <label class="sfc-ed-label">${t(c,'ed_img_scene_variant')}</label>
-        <select class="sfc-ed-input" data-key="img_scene_variant">
-          <option value="esc_ev"${(c.img_scene_variant==='esc_ev'?' selected':'')}>${t(c,'ed_img_scene_variant_ev')}</option>
-          <option value="esc_spa"${(c.img_scene_variant==='esc_spa'?' selected':'')}>${t(c,'ed_img_scene_variant_spa')}</option>
-        </select>
-      </div>
-      ${edEntity('img_scene_day',    t(c,'ed_img_scene_day'),    '/local/solar-flow-card/img/scene-day.png', c)}
-      ${edEntity('img_scene_night',  t(c,'ed_img_scene_night'),  '/local/solar-flow-card/img/scene-night.png', c)}
-      ${edEntity('img_scene_day_ev',   t(c,'ed_img_scene_day_ev'),   '/local/solar-flow-card/img/scene-day-ev.png', c)}
-      ${edEntity('img_scene_night_ev', t(c,'ed_img_scene_night_ev'), '/local/solar-flow-card/img/scene-night-ev.png', c)}
-      ${edEntity('img_scene_day_spa',  t(c,'ed_img_scene_day_spa'),  '/local/solar-flow-card/img/scene-day-spa.png', c)}
-      ${edEntity('img_scene_night_spa',t(c,'ed_img_scene_night_spa'),'/local/solar-flow-card/img/scene-night-spa.png', c)}
-      <div class="sfc-ed-label" style="margin-top:8px;color:var(--muted);font-size:10px;">— Overlays optionnels —</div>
-      ${edEntity('img_overlay1',       t(c,'ed_img_overlay1'),       '', c)}
-      ${edEntity('img_overlay1_label', t(c,'ed_img_overlay1_label'), '', c)}
-      ${edEntity('img_overlay2',       t(c,'ed_img_overlay2'),       '', c)}
-      ${edEntity('img_overlay2_label', t(c,'ed_img_overlay2_label'), '', c)}
-    `)}
-
     <!-- SECTION: Économies & Tarification -->
     ${edSection('savings', t(c,'ed_savings'), false, `
       <div class="sfc-ed-row">
-        <label class="sfc-ed-label">${t(c,'ed_elec_price')}</label>
-        <label class="sfc-ed-desc">Prix fixe utilisé si aucune entité ni Tempo configuré</label>
-        <input class="sfc-ed-input sfc-ed-number" data-key="electricity_price" type="number" step="0.0001" placeholder="0.23" value="${c.electricity_price||''}"/>
+        <label class="sfc-ed-label">${t(c,'ed_price_mode')}</label>
+        <select class="sfc-ed-input" data-key="price_mode" style="cursor:pointer;">
+          <option value="fixed"  ${(c.price_mode||'fixed')==='fixed' ?'selected':''}>${t(c,'ed_price_mode_fixed')}</option>
+          <option value="hphc"   ${(c.price_mode||'fixed')==='hphc'  ?'selected':''}>${t(c,'ed_price_mode_hphc')}</option>
+          <option value="tempo"  ${(c.price_mode||'fixed')==='tempo' ?'selected':''}>${t(c,'ed_price_mode_tempo')}</option>
+          <option value="entity" ${(c.price_mode||'fixed')==='entity'?'selected':''}>${t(c,'ed_price_mode_entity')}</option>
+        </select>
       </div>
+
+      ${(c.price_mode||'fixed')==='fixed' ? `
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_elec_price')}</label>
+        <input class="sfc-ed-input sfc-ed-number" data-key="electricity_price" type="number" step="0.0001" placeholder="0.23" value="${c.electricity_price||''}"/>
+      </div>` : ''}
+
+      ${c.price_mode==='hphc' ? `
+      <div class="sfc-ed-grid">
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_hp_price')}</label>
+          <input class="sfc-ed-input sfc-ed-number" data-key="hp_price" type="number" step="0.0001" placeholder="0.27" value="${c.hp_price||''}"/>
+        </div>
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_hc_price')}</label>
+          <input class="sfc-ed-input sfc-ed-number" data-key="hc_price" type="number" step="0.0001" placeholder="0.20" value="${c.hc_price||''}"/>
+        </div>
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_hc_start')}</label>
+          <input class="sfc-ed-input sfc-ed-number" data-key="hc_start" type="number" min="0" max="23" placeholder="22" value="${(c.hc_start!==undefined&&c.hc_start!=='')?c.hc_start:''}"/>
+        </div>
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_hc_end')}</label>
+          <input class="sfc-ed-input sfc-ed-number" data-key="hc_end" type="number" min="0" max="23" placeholder="6" value="${(c.hc_end!==undefined&&c.hc_end!=='')?c.hc_end:''}"/>
+        </div>
+      </div>` : ''}
+
+      ${c.price_mode==='entity' ? `
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,'ed_price_entity')}</label>
-        <label class="sfc-ed-desc">Entité HA retournant le prix €/kWh en temps réel (priorité 2)</label>
+        <label class="sfc-ed-desc">Entité HA retournant le prix €/kWh en temps réel</label>
         <input class="sfc-ed-input" data-key="price_entity" placeholder="sensor.prix_kwh" value="${c.price_entity||''}"/>
-      </div>
+      </div>` : ''}
+
+      ${c.price_mode==='tempo' ? `
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,'ed_tempo_color')}</label>
-        <label class="sfc-ed-desc">Entité couleur Tempo (BLUE/WHITE/RED) — priorité 1</label>
+        <label class="sfc-ed-desc">Entité couleur Tempo (BLUE/WHITE/RED)</label>
         <input class="sfc-ed-input" data-key="tempo_color" placeholder="sensor.rte_tempo_color" value="${c.tempo_color||''}"/>
       </div>
       <div class="sfc-ed-row">
@@ -2514,7 +2580,7 @@ function buildEditorHTML(cfg) {
             <input class="sfc-ed-input sfc-ed-number" data-key="tempo_red_hp" type="number" step="0.0001" placeholder="0.7562" value="${c.tempo_red_hp||''}"/>
           </div>
         </div>
-      </div>
+      </div>` : ''}
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,'ed_grid_export')}</label>
         <input class="sfc-ed-input" data-key="grid_export_today" placeholder="sensor.energie_injectee" value="${c.grid_export_today||''}"/>
@@ -2984,15 +3050,21 @@ class SolarFlowCard extends HTMLElement {
   }
 
   // ── Prix électricité ─────────────────────────────────────────────────────
+  // Période heures creuses, selon hc_start / hc_end (gère le passage de minuit)
   _isHCPeriod() {
+    const c = this._cfg;
     const h = new Date().getHours();
-    return h >= 22 || h < 6;
+    let s = parseInt(c.hc_start); if (isNaN(s)) s = 22;
+    let e = parseInt(c.hc_end);   if (isNaN(e)) e = 6;
+    return s <= e ? (h >= s && h < e) : (h >= s || h < e);
   }
 
   _getCurrentPrice() {
     const c = this._cfg;
-    // Priorité 1 : Tempo EDF
-    if (c.tempo_color) {
+    const mode = c.price_mode || 'fixed';
+
+    // Tempo EDF : couleur du jour × HC/HP
+    if (mode === 'tempo' && c.tempo_color) {
       const raw = (this._getState(c.tempo_color) || '').toLowerCase();
       const isHC = this._isHCPeriod();
       const map = {
@@ -3003,9 +3075,21 @@ class SolarFlowCard extends HTMLElement {
       const keys = map[raw];
       if (keys) return parseFloat(c[isHC ? keys[0] : keys[1]]) || (isHC ? 0.1296 : 0.1609);
     }
-    // Priorité 2 : entité dynamique
-    if (c.price_entity) { const p = this._getNum(c.price_entity); if (p > 0) return p; }
-    // Priorité 3 : prix fixe
+
+    // Heures Pleines / Heures Creuses
+    if (mode === 'hphc') {
+      return this._isHCPeriod()
+        ? (parseFloat(c.hc_price) || 0.20)
+        : (parseFloat(c.hp_price) || 0.27);
+    }
+
+    // Entité dynamique
+    if (mode === 'entity' && c.price_entity) {
+      const p = this._getNum(c.price_entity);
+      if (p > 0) return p;
+    }
+
+    // Prix fixe (défaut / fallback)
     return parseFloat(c.electricity_price) || 0.23;
   }
 
@@ -3052,7 +3136,7 @@ class SolarFlowCard extends HTMLElement {
 
     // Badge Tempo
     const tempoBadge = this._el('sfcTempoBadge');
-    if (tempoBadge && c.tempo_color) {
+    if (tempoBadge && c.price_mode === 'tempo' && c.tempo_color) {
       const raw = (this._getState(c.tempo_color) || '').toLowerCase();
       const isHC = this._isHCPeriod();
       const colorMap = { blue:'blue',bleu:'blue',white:'white',blanc:'white',red:'red',rouge:'red' };
@@ -3877,7 +3961,20 @@ class SolarFlowCardEditor extends HTMLElement {
     this.shadowRoot.querySelectorAll('[data-key]').forEach(el => {
       const k = el.dataset.key;
       if (el.tagName === 'SELECT') {
-        el.addEventListener('change', () => { this._draft = { ...this._draft, [k]: el.value }; this._buildDOM(); this._apply(); });
+        el.addEventListener('change', () => {
+          this._draft = { ...this._draft, [k]: el.value };
+          // Mémoriser les sections ouvertes avant le rebuild (sinon elles se referment)
+          const openSecs = [...this.shadowRoot.querySelectorAll('.sfc-ed-body.open')].map(b => b.id);
+          this._buildDOM();
+          openSecs.forEach(id => {
+            const body = this.shadowRoot.getElementById(id);
+            if (!body) return;
+            body.classList.add('open');
+            const hdr = this.shadowRoot.querySelector(`[data-section="${id.replace('sfc-sec-','')}"]`);
+            if (hdr) { hdr.classList.add('active'); const chev = hdr.querySelector('.sfc-ed-chevron'); if (chev) chev.classList.add('open'); }
+          });
+          this._apply();
+        });
       } else if (el.dataset.toggle) {
         el.addEventListener('click', () => { el.classList.toggle('on'); this._draft = { ...this._draft, [k]: el.classList.contains('on') }; this._apply(); });
       } else if (el.type === 'color') {

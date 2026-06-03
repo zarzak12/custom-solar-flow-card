@@ -1,5 +1,7 @@
 # ☀️ Solar Flow Card
 
+**🇫🇷 Français** · [🇬🇧 English](README.en.md)
+
 > Carte Lovelace pour Home Assistant qui transforme vos données solaires en une visualisation vivante, animée et enrichie d'économies en temps réel.
 
 ---
@@ -13,9 +15,11 @@ Solar Flow Card affiche en temps réel **tous vos flux d'énergie** sur une scè
 - 🔋 **Batterie liquide** avec physique élastique GSAP, bulles de charge ascendantes et halo coloré
 - 🌦️ **Météo dynamique** — ciel bleu → partiellement nuageux → couvert → pluie → neige → orage avec effets de particules
 - 💰 **Économies & ROI** — calcul delta en temps réel avec prix au moment exact de la production
+- 💶 **4 modes de tarification** : prix fixe, Heures Pleines/Creuses, Tempo EDF, ou entité dynamique
+- 🔮 **Prévision de production** affichée en haut du ciel (Solcast / Forecast.Solar)
+- 🚗 **Véhicule électrique** avec flux bidirectionnel charge / V2H et SOC
 - 🎨 **Deux modes de scène** : vue séparée (icônes) ou scène immersive (photo réaliste 1536×1024)
 - 🌙 **Mode nuit** automatique avec lune, étoiles et phase lunaire
-- 🔌 **Tarif Tempo EDF** supporté nativement avec badge coloré HP/HC
 
 ---
 
@@ -149,6 +153,23 @@ batt_soc: sensor.battery_soc
 | `sun_set` | Heure de coucher (optionnel) |
 | `moon_phase` | Phase lunaire (`sensor.moon_phase`) — affiche l'emoji de phase la nuit |
 
+### Entités — Prévision de production
+
+| Option | Description |
+|---|---|
+| `pv_forecast_today` | Production prévue aujourd'hui (kWh) — affichée en haut à gauche du ciel |
+| `pv_forecast_tomorrow` | Production prévue demain (kWh) — optionnel |
+
+### Entités — Véhicule électrique (EV)
+
+| Option | Description |
+|---|---|
+| `ev_enabled` | Active la section EV (true/false) |
+| `ev_label` | Nom affiché du véhicule |
+| `ev_power` | Puissance charge/V2H (W) — positif = charge, négatif = V2H (décharge vers maison) |
+| `ev_soc` | SOC batterie du véhicule (%) — optionnel |
+| `ev_max_kwh` | Capacité batterie du véhicule (kWh) — optionnel |
+
 ---
 
 ## 🌤️ Météo dynamique
@@ -238,6 +259,7 @@ router1_power: sensor.spa_power  # en mode 'power'
 | `router_N_resistance_w` | Puissance nominale de la résistance (mode `calc`) |
 | `router_N_opening` | Entité % ouverture 0-100 (mode `calc`) |
 | `router_N_energy` | Entité énergie du jour en kWh |
+| `router_N_temp` | Entité température eau (routeur 1, mode single) — ex. spa |
 | `router_N_position` | Position : `left`, `center`, `right` |
 
 ---
@@ -256,26 +278,36 @@ Chaque rafraîchissement (5s) :
 
 Ainsi, si le prix Tempo passe de HC à HP à 6h00, chaque kWh produit est valorisé au bon tarif.
 
-### Système de prix — 3 niveaux de priorité
+### 4 modes de tarification (`price_mode`)
 
-```
-1. Tempo EDF  ──→  couleur du jour × HC/HP selon l'heure
-2. Entité HA  ──→  sensor.prix_kwh_actuel (prix dynamique)
-3. Prix fixe  ──→  electricity_price: 0.23
-```
+Choisissez **un seul mode** dans l'éditeur. Selon le mode, seuls les champs concernés s'affichent.
 
-La priorité la plus haute configurée est automatiquement utilisée.
+| Mode | `price_mode` | Champs utilisés |
+|---|---|---|
+| 💶 Prix fixe | `fixed` | `electricity_price` |
+| 🕐 Heures Pleines / Creuses | `hphc` | `hp_price`, `hc_price`, `hc_start`, `hc_end` |
+| 🌈 Tempo EDF | `tempo` | `tempo_color` + 6 prix (Bleu/Blanc/Rouge × HC/HP) |
+| 🔗 Entité dynamique | `entity` | `price_entity` |
 
 ### Configuration
 
 ```yaml
-# Prix fixe (fallback si rien d'autre)
-electricity_price: 0.23       # €/kWh
+# ── Mode de tarification ──
+price_mode: hphc          # 'fixed' | 'hphc' | 'tempo' | 'entity'
 
-# Prix dynamique (priorité 2)
+# Mode 'fixed'
+electricity_price: 0.23   # €/kWh
+
+# Mode 'hphc' (Heures Pleines / Creuses)
+hp_price: 0.27            # €/kWh heures pleines
+hc_price: 0.20            # €/kWh heures creuses
+hc_start: 22             # heure de début des HC (0-23)
+hc_end:   6              # heure de fin des HC (0-23)
+
+# Mode 'entity' (prix dynamique)
 price_entity: sensor.prix_kwh_actuel
 
-# Tempo EDF (priorité 1)
+# Mode 'tempo' (Tempo EDF)
 tempo_color: sensor.rte_tempo_color   # entité retournant BLUE/WHITE/RED
 tempo_blue_hc:  0.1296    # Prix Tempo Bleu HC  (modifiables chaque année)
 tempo_blue_hp:  0.1609    # Prix Tempo Bleu HP
@@ -284,7 +316,7 @@ tempo_white_hp: 0.1894    # Prix Tempo Blanc HP
 tempo_red_hc:   0.1568    # Prix Tempo Rouge HC
 tempo_red_hp:   0.7562    # Prix Tempo Rouge HP ← attention au choc !
 
-# Données de production
+# ── Données de production (communes à tous les modes) ──
 grid_export_today: sensor.energie_injectee   # affine l'autoconsommation
 pv_month_kwh: sensor.pv_energie_mois
 pv_year_kwh:  sensor.pv_energie_annee
@@ -295,6 +327,8 @@ install_cost: 8000        # € coût de l'installation
 # CO₂
 co2_factor: 0.4           # kg CO₂/kWh évités (mix français 2024)
 ```
+
+> Les modes **HP/HC** et **Tempo** utilisent la plage `hc_start`/`hc_end` (défaut 22h→6h, gère le passage de minuit) pour déterminer HC vs HP.
 
 ### Ce qui s'affiche
 
@@ -344,7 +378,7 @@ img_overlay2_label: Piscine
 show_progress_bars: true   # Barres PV / PWR / BAT en bas de scène
 show_mode:         true    # Badge mode (Veille / Charge / Décharge)
 show_bms_temp:     true    # Température BMS
-show_total_pv:     true    # Énergie totale produite
+show_total_pv:     true    # Carte CO₂ évité du jour
 show_cells:        true    # Tensions min/max cellules + delta
 show_endurance:    true    # Autonomie estimée de la batterie
 show_inverter:     true    # Section Onduleur (PV jour, Chg/Dch, Restant, Conso jour)
@@ -408,11 +442,16 @@ weather:    weather.maison
 ext_temp:   sensor.temperature_exterieure
 moon_phase: sensor.moon_phase
 
+# ── Prévision de production ──
+pv_forecast_today:    sensor.solcast_pv_aujourdhui
+pv_forecast_tomorrow: sensor.solcast_pv_demain
+
 # ── Scène ──
 img_scene_mode:    single
 img_scene_variant: esc_ev
 
 # ── Tarification Tempo EDF ──
+price_mode:     tempo
 tempo_color:    sensor.rte_tempo_color
 tempo_blue_hc:  0.1296
 tempo_blue_hp:  0.1609
@@ -423,12 +462,13 @@ tempo_red_hp:   0.7562
 install_cost:   12000
 co2_factor:     0.4
 
-# ── Routeur 1 : Spa ──
+# ── Routeur 1 : Spa (avec température eau) ──
 router1_enabled: true
 router1_label:   Spa
 router1_img:     /local/solar-flow-card/img/spa.png
 router1_mode:    power
 router1_power:   sensor.puissance_spa
+router1_temp:    sensor.temperature_spa
 
 # ── Routeur 2 : Chauffe-eau ──
 router2_enabled:      true
@@ -437,6 +477,12 @@ router2_img:          /local/solar-flow-card/img/water_tank.png
 router2_mode:         calc
 router2_resistance_w: 2000
 router2_opening:      sensor.routeur_ouverture
+
+# ── Véhicule électrique ──
+ev_enabled: true
+ev_label:   Voiture
+ev_power:   sensor.puissance_ev
+ev_soc:     sensor.soc_ev
 
 # ── Couleurs personnalisées ──
 color_solar:   '#FFD700'
