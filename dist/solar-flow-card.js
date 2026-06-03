@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.67';
+const VERSION = '1.0.68';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -261,6 +261,7 @@ const I18N = {
     ed_price_mode_hphc:   '🕐 Heures Pleines / Creuses',
     ed_price_mode_tempo:  '🌈 Tempo EDF',
     ed_price_mode_entity: '🔗 Entité dynamique',
+    ed_tempo_price_entity:'Entité prix dynamique (optionnel)',
     ed_hp_price:          'Prix Heures Pleines (€/kWh)',
     ed_hc_price:          'Prix Heures Creuses (€/kWh)',
     ed_hc_start:          'Début HC (heure 0-23)',
@@ -429,6 +430,7 @@ const I18N = {
     ed_price_mode_hphc:   '🕐 Peak / Off-peak',
     ed_price_mode_tempo:  '🌈 EDF Tempo',
     ed_price_mode_entity: '🔗 Dynamic entity',
+    ed_tempo_price_entity:'Dynamic price entity (optional)',
     ed_hp_price:          'Peak price (€/kWh)',
     ed_hc_price:          'Off-peak price (€/kWh)',
     ed_hc_start:          'Off-peak start (hour 0-23)',
@@ -2543,6 +2545,12 @@ function buildEditorHTML(cfg) {
         <input class="sfc-ed-input" data-key="tempo_color" placeholder="sensor.rte_tempo_color" value="${c.tempo_color||''}"/>
       </div>
       <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_tempo_price_entity')}</label>
+        <label class="sfc-ed-desc">Si renseigné, ce prix temps réel est utilisé à la place des tables ci-dessous (le badge couleur reste affiché)</label>
+        <input class="sfc-ed-input" data-key="price_entity" placeholder="sensor.tarif_actuel" value="${c.price_entity||''}"/>
+      </div>
+      ${!c.price_entity ? `
+      <div class="sfc-ed-row">
         <label class="sfc-ed-label" style="color:#7ad;">${t(c,'ed_tempo_prices')} — 🔵 Bleu</label>
         <div class="sfc-ed-grid">
           <div class="sfc-ed-row">
@@ -2580,7 +2588,8 @@ function buildEditorHTML(cfg) {
             <input class="sfc-ed-input sfc-ed-number" data-key="tempo_red_hp" type="number" step="0.0001" placeholder="0.7562" value="${c.tempo_red_hp||''}"/>
           </div>
         </div>
-      </div>` : ''}
+      </div>
+      ` : ''}` : ''}
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,'ed_grid_export')}</label>
         <input class="sfc-ed-input" data-key="grid_export_today" placeholder="sensor.energie_injectee" value="${c.grid_export_today||''}"/>
@@ -3063,17 +3072,25 @@ class SolarFlowCard extends HTMLElement {
     const c = this._cfg;
     const mode = c.price_mode || 'fixed';
 
-    // Tempo EDF : couleur du jour × HC/HP
-    if (mode === 'tempo' && c.tempo_color) {
-      const raw = (this._getState(c.tempo_color) || '').toLowerCase();
-      const isHC = this._isHCPeriod();
-      const map = {
-        blue: ['tempo_blue_hc','tempo_blue_hp'], bleu:  ['tempo_blue_hc','tempo_blue_hp'],
-        white:['tempo_white_hc','tempo_white_hp'],blanc: ['tempo_white_hc','tempo_white_hp'],
-        red:  ['tempo_red_hc','tempo_red_hp'],   rouge: ['tempo_red_hc','tempo_red_hp'],
-      };
-      const keys = map[raw];
-      if (keys) return parseFloat(c[isHC ? keys[0] : keys[1]]) || (isHC ? 0.1296 : 0.1609);
+    // Tempo EDF : couleur du jour pour le badge + prix
+    if (mode === 'tempo') {
+      // Si une entité prix dynamique est fournie, elle a priorité sur les tables fixes
+      if (c.price_entity) {
+        const p = this._getNum(c.price_entity);
+        if (p > 0) return p;
+      }
+      // Sinon, tables de prix fixes selon la couleur + HC/HP
+      if (c.tempo_color) {
+        const raw = (this._getState(c.tempo_color) || '').toLowerCase();
+        const isHC = this._isHCPeriod();
+        const map = {
+          blue: ['tempo_blue_hc','tempo_blue_hp'], bleu:  ['tempo_blue_hc','tempo_blue_hp'],
+          white:['tempo_white_hc','tempo_white_hp'],blanc: ['tempo_white_hc','tempo_white_hp'],
+          red:  ['tempo_red_hc','tempo_red_hp'],   rouge: ['tempo_red_hc','tempo_red_hp'],
+        };
+        const keys = map[raw];
+        if (keys) return parseFloat(c[isHC ? keys[0] : keys[1]]) || (isHC ? 0.1296 : 0.1609);
+      }
     }
 
     // Heures Pleines / Heures Creuses
