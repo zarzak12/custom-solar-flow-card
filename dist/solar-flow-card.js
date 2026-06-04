@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.79';
+const VERSION = '1.0.80';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -3196,12 +3196,19 @@ class SolarFlowCard extends HTMLElement {
       const el = this._el(wv.id); if (!el) return;
       const half = wv.amp / 2;
       const sY   = surface + wv.dy;
-      let d = '';
+      // Coordonnées des points
+      const pts = [];
       for (let i = 0; i <= SEG; i++) {
-        const x = x0 + w * i / SEG;
-        const y = sY + wv.points[i].y * half;   // point.y ∈ [-1,1] tweené sine.inOut
-        d += (i ? ' L ' : 'M ') + x.toFixed(1) + ' ' + y.toFixed(1);
+        pts.push([x0 + w * i / SEG, sY + wv.points[i].y * half]);   // point.y ∈ [-1,1] tweené sine.inOut
       }
+      // Surface lissée : Bézier quadratiques (point = contrôle, milieu = arrivée) → courbes organiques
+      let d = `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const xc = (pts[i][0] + pts[i + 1][0]) / 2;
+        const yc = (pts[i][1] + pts[i + 1][1]) / 2;
+        d += ` Q ${pts[i][0].toFixed(1)} ${pts[i][1].toFixed(1)} ${xc.toFixed(1)} ${yc.toFixed(1)}`;
+      }
+      d += ` L ${pts[pts.length - 1][0].toFixed(1)} ${pts[pts.length - 1][1].toFixed(1)}`;
       // Vague A = corps (rejoint le rect) ; B/C = bandes plus fines par-dessus
       const bottomY = wv.id === 'sfcSVWaveA' ? rectTop + 14
                     : wv.id === 'sfcSVWaveB' ? surface + 9
