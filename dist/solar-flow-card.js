@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.81';
+const VERSION = '1.0.82';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -3125,8 +3125,8 @@ class SolarFlowCard extends HTMLElement {
     // 3 vagues : fréquences BASSES = ondulations longues et douces (réf. 0.5–2.5)
     this._waves = [
       { id:'sfcSVWaveA', freq:0.5, dur:4.5, light:0,    alpha:0.92, dy:0,  amp:7,  ampTo:7,  ampDur:3.0 },
-      { id:'sfcSVWaveB', freq:1.0, dur:3.6, light:0.30, alpha:0.85, dy:-2, amp:5,  ampTo:9,  ampDur:3.6 },
-      { id:'sfcSVWaveC', freq:1.5, dur:5.2, light:0.55, alpha:0.80, dy:-3, amp:4,  ampTo:8,  ampDur:4.6 },
+      { id:'sfcSVWaveB', freq:1.0, dur:3.6, light:0.30, alpha:0.85, dy:-2, amp:5,  ampTo:7,  ampDur:3.6 },
+      { id:'sfcSVWaveC', freq:0.8, dur:5.2, light:0.55, alpha:0.80, dy:-3, amp:4,  ampTo:7,  ampDur:4.0 },
     ];
     this._waveTweens = [];
     this._waves.forEach(wv => {
@@ -3211,8 +3211,8 @@ class SolarFlowCard extends HTMLElement {
       d += ` L ${pts[pts.length - 1][0].toFixed(1)} ${pts[pts.length - 1][1].toFixed(1)}`;
       // Vague A = corps (rejoint le rect) ; B/C = bandes plus fines par-dessus
       const bottomY = wv.id === 'sfcSVWaveA' ? rectTop + 14
-                    : wv.id === 'sfcSVWaveB' ? surface + 9
-                    :                          surface + 4;
+                    : wv.id === 'sfcSVWaveB' ? surface + 10
+                    :                          surface + 8;
       d += ` L ${x0 + w} ${bottomY} L ${x0} ${bottomY} Z`;
       el.setAttribute('d', d);
       el.setAttribute('fill', `rgba(${this._lighten(rgb, wv.light)},${wv.alpha})`);
