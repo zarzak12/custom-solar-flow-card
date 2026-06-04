@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.72';
+const VERSION = '1.0.73';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -95,6 +95,7 @@ const DEFAULTS = {
   batt_cycles:      '',   // entité nombre de cycles direct (prioritaire si fournie)
   batt_cycles_energy: '', // entité énergie déchargée cumulée (kWh) → EFC = énergie / capacité
   batt_cycles_base:   0,  // offset de cycles initial (théorique) ajouté à l'EFC calculé
+  batt_cycles_max:    0,  // nombre de cycles max constructeur (0 = masqué) → affiche "N / max"
   grid_power: '',
   home_power: '',
   pwr_percent: '',
@@ -266,6 +267,7 @@ const I18N = {
     ed_batt_cycles:    'Entité cycles directe (si dispo)',
     ed_batt_cycles_energy: 'Entité énergie déchargée cumulée (kWh)',
     ed_batt_cycles_base:   'Cycles de base (offset initial)',
+    ed_batt_cycles_max:    'Cycles max constructeur (ex. 6000)',
     // Savings block
     section_savings:   'Économies & ROI',
     sav_today:         "Aujourd'hui",
@@ -448,6 +450,7 @@ const I18N = {
     ed_batt_cycles:    'Direct cycle entity (if available)',
     ed_batt_cycles_energy: 'Cumulative discharged energy entity (kWh)',
     ed_batt_cycles_base:   'Base cycles (initial offset)',
+    ed_batt_cycles_max:    'Rated max cycles (e.g. 6000)',
     section_savings:   'Savings & ROI',
     sav_today:         'Today',
     sav_month:         'This month',
@@ -2470,9 +2473,15 @@ function buildEditorHTML(cfg) {
       ${edEntity('batt_cycles', t(c,'ed_batt_cycles'), 'sensor.battery_cycles', c)}
       <div class="sfc-ed-info">Pas de capteur de cycles ? Estimation : énergie déchargée cumulée ÷ capacité, + un offset de base.</div>
       ${edEntity('batt_cycles_energy', t(c,'ed_batt_cycles_energy'), 'sensor.solarflow_2400_ac_total_decharges', c)}
-      <div class="sfc-ed-row">
-        <label class="sfc-ed-label">${t(c,'ed_batt_cycles_base')}</label>
-        <input class="sfc-ed-input sfc-ed-number" data-key="batt_cycles_base" type="number" step="1" placeholder="0" value="${(c.batt_cycles_base!==undefined&&c.batt_cycles_base!=='')?c.batt_cycles_base:''}"/>
+      <div class="sfc-ed-grid">
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_batt_cycles_base')}</label>
+          <input class="sfc-ed-input sfc-ed-number" data-key="batt_cycles_base" type="number" step="1" placeholder="0" value="${(c.batt_cycles_base!==undefined&&c.batt_cycles_base!=='')?c.batt_cycles_base:''}"/>
+        </div>
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_batt_cycles_max')}</label>
+          <input class="sfc-ed-input sfc-ed-number" data-key="batt_cycles_max" type="number" step="1" placeholder="6000" value="${(c.batt_cycles_max!==undefined&&c.batt_cycles_max!=='')?c.batt_cycles_max:''}"/>
+        </div>
       </div>
     `)}
 
@@ -3257,7 +3266,14 @@ class SolarFlowCard extends HTMLElement {
         const base  = parseFloat(c.batt_cycles_base) || 0;
         if (disch > 0) cyc = base + disch / design;
       }
-      cycEl.textContent = (cyc !== null && cyc > 0) ? '↻ ' + Math.round(cyc) : '';
+      const cycMax = parseFloat(c.batt_cycles_max) || 0;
+      if (cyc !== null && cyc > 0) {
+        cycEl.textContent = cycMax > 0
+          ? '↻ ' + Math.round(cyc) + ' / ' + Math.round(cycMax)
+          : '↻ ' + Math.round(cyc);
+      } else {
+        cycEl.textContent = '';
+      }
     }
   }
 

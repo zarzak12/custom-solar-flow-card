@@ -146,6 +146,7 @@ batt_soc: sensor.battery_soc
 | `batt_cycles` | — | Direct cycle count (if the BMS exposes it) |
 | `batt_cycles_energy` | kWh | Cumulative discharged energy → EFC cycle estimation |
 | `batt_cycles_base` | number | Initial cycle offset added to the computed EFC |
+| `batt_cycles_max` | number | Rated max cycles (e.g. 6000) → shows `↻ N / max` |
 
 > The design capacity used for SOH = `batt_capacity_kwh` (General section).
 
@@ -271,6 +272,7 @@ batt_capacity_kwh:  5.76                                      # nominal capacity
 batt_full_kwh:      sensor.solarflow_2400_ac_battery_capacity # "Total Battery Capacity"
 batt_cycles_energy: sensor.solarflow_2400_ac_total_decharges  # cumulative discharged kWh
 batt_cycles_base:   0                                          # offset if cycles already done
+batt_cycles_max:    6000                                       # rated max cycles → "↻ 78 / 6000"
 ```
 
 > EFC counts the energy actually discharged relative to capacity (the standard wear method), more accurate than counting each partial charge.
