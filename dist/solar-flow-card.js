@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.70';
+const VERSION = '1.0.71';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -259,8 +259,8 @@ const I18N = {
     lbl_cycles:        'Cycles',
     ed_health:         '🩺 État de santé batterie',
     ed_show_health:    'Bloc état de santé',
-    ed_batt_soh:       'Entité SOH (%) — directe',
-    ed_batt_full:      'Entité capacité actuelle à 100% (kWh)',
+    ed_batt_soh:       'Méthode A — Entité SOH (%) directe',
+    ed_batt_full:      'Méthode B — Entité capacité totale réelle (kWh)',
     ed_batt_cycles:    'Entité nombre de cycles',
     // Savings block
     section_savings:   'Économies & ROI',
@@ -439,8 +439,8 @@ const I18N = {
     lbl_cycles:        'Cycles',
     ed_health:         '🩺 Battery health',
     ed_show_health:    'Health block',
-    ed_batt_soh:       'SOH entity (%) — direct',
-    ed_batt_full:      'Current full capacity entity (kWh)',
+    ed_batt_soh:       'Method A — Direct SOH entity (%)',
+    ed_batt_full:      'Method B — Real total capacity entity (kWh)',
     ed_batt_cycles:    'Cycle count entity',
     section_savings:   'Savings & ROI',
     sav_today:         'Today',
@@ -2455,9 +2455,11 @@ function buildEditorHTML(cfg) {
     <!-- SECTION: État de santé batterie -->
     ${edSection('health', t(c,'ed_health'), false, `
       ${edToggle('show_health', t(c,'ed_show_health'), c)}
-      <div class="sfc-ed-info">SOH = capacité actuelle ÷ capacité théorique (= <b>Capacité batterie</b> de la section Général). Renseignez soit une entité SOH directe, soit la capacité actuelle.</div>
+      <div class="sfc-ed-info">SOH = capacité réelle ÷ capacité théorique (= <b>Capacité batterie</b> de la section Général).<br>
+      • <b>Méthode A</b> : entité SOH directe (si votre BMS l'expose en %).<br>
+      • <b>Méthode B</b> : entité <b>capacité totale réelle</b> (ex. Zendure « Total Battery Capacity »). Lue en continu.</div>
       ${edEntity('batt_soh', t(c,'ed_batt_soh'), 'sensor.battery_soh', c)}
-      ${edEntity('batt_full_kwh', t(c,'ed_batt_full'), 'sensor.full_capacity', c)}
+      ${edEntity('batt_full_kwh', t(c,'ed_batt_full'), 'sensor.solarflow_2400_ac_battery_capacity', c)}
       ${edEntity('batt_cycles', t(c,'ed_batt_cycles'), 'sensor.battery_cycles', c)}
     `)}
 
@@ -3201,13 +3203,14 @@ class SolarFlowCard extends HTMLElement {
 
     const design = parseFloat(c.batt_capacity_kwh) || 0;
     let soh = null;
+    // Capacité réelle actuelle — lecture directe (ex. "Total Battery Capacity" Zendure)
     let fullKwh = c.batt_full_kwh ? this._getNum(c.batt_full_kwh) : 0;
 
     // SOH : entité directe prioritaire
     if (c.batt_soh) { const v = this._getNum(c.batt_soh); if (v > 0) soh = v; }
-    // Sinon calcul capacité actuelle / théorique
+    // Sinon calcul capacité réelle / théorique
     if (soh === null && fullKwh > 0 && design > 0) soh = (fullKwh / design) * 100;
-    // Déduire la capacité actuelle si on a le SOH mais pas l'entité capacité
+    // Déduire la capacité réelle si on a le SOH mais pas l'entité capacité
     if (fullKwh <= 0 && soh !== null && design > 0) fullKwh = design * soh / 100;
 
     const cls = soh === null ? '' : soh >= 90 ? 'good' : soh >= 80 ? 'mid' : 'low';
