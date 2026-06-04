@@ -2,6 +2,14 @@
 
 **🇫🇷 Français** · [🇬🇧 English](README.en.md)
 
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
+![Version](https://img.shields.io/badge/version-1.0.73-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+
+[![Ouvrir dans Home Assistant et ajouter ce dépôt à HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
+
+[install]: https://my.home-assistant.io/redirect/hacs_repository/?owner=zarzak12&repository=custom-solar-flow-card&category=frontend
+
 > Carte Lovelace pour Home Assistant qui transforme vos données solaires en une visualisation vivante, animée et enrichie d'économies en temps réel.
 >
 > <img width="804" height="2158" alt="image" src="https://github.com/user-attachments/assets/43ded533-957e-4d71-b6fe-82d897793668" />
@@ -41,7 +49,7 @@ Solar Flow Card affiche en temps réel **tous vos flux d'énergie** sur une scè
 
 1. Ouvrez HACS dans Home Assistant
 2. Allez dans **Tableau de bord → ⋮ → Dépôts personnalisés**
-3. Ajoutez l'URL du dépôt, catégorie **Tableau de bord**
+3. Ajoutez l'URL `https://github.com/zarzak12/custom-solar-flow-card`, catégorie **Tableau de bord**
 4. Installez **Solar Flow Card**
 5. Rechargez le cache navigateur (Ctrl+Shift+R)
 
