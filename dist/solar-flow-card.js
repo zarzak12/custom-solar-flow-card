@@ -88,6 +88,11 @@ const DEFAULTS = {
   min_cell: '',
   max_cell: '',
   remaining: '',
+  // ── État de santé batterie (SOH) ──
+  show_health:      true,
+  batt_soh:         '',   // entité SOH % directe (prioritaire si fournie)
+  batt_full_kwh:    '',   // entité capacité actuelle à 100% (kWh) → SOH = full / batt_capacity_kwh
+  batt_cycles:      '',   // entité nombre de cycles (optionnel)
   grid_power: '',
   home_power: '',
   pwr_percent: '',
@@ -247,6 +252,16 @@ const I18N = {
     ed_ev_power:    'Puissance charge/V2H (W)',
     ed_ev_soc:      'SOC batterie EV (%)',
     ed_ev_max_kwh:  'Capacité batterie EV (kWh)',
+    // Santé batterie
+    section_health:    'État de santé batterie',
+    lbl_soh:           'SOH',
+    lbl_capacity:      'Capacité',
+    lbl_cycles:        'Cycles',
+    ed_health:         '🩺 État de santé batterie',
+    ed_show_health:    'Bloc état de santé',
+    ed_batt_soh:       'Entité SOH (%) — directe',
+    ed_batt_full:      'Entité capacité actuelle à 100% (kWh)',
+    ed_batt_cycles:    'Entité nombre de cycles',
     // Savings block
     section_savings:   'Économies & ROI',
     sav_today:         "Aujourd'hui",
@@ -418,6 +433,15 @@ const I18N = {
     ed_ev_power:    'Charge/V2H power (W)',
     ed_ev_soc:      'EV battery SOC (%)',
     ed_ev_max_kwh:  'EV battery capacity (kWh)',
+    section_health:    'Battery health',
+    lbl_soh:           'SOH',
+    lbl_capacity:      'Capacity',
+    lbl_cycles:        'Cycles',
+    ed_health:         '🩺 Battery health',
+    ed_show_health:    'Health block',
+    ed_batt_soh:       'SOH entity (%) — direct',
+    ed_batt_full:      'Current full capacity entity (kWh)',
+    ed_batt_cycles:    'Cycle count entity',
     section_savings:   'Savings & ROI',
     sav_today:         'Today',
     sav_month:         'This month',
@@ -1384,6 +1408,38 @@ const CARD_CSS = `
     white-space:nowrap;min-width:50px;text-align:right;
   }
 
+  /* ── État de santé batterie ── */
+  .sfc-health {
+    background:var(--card);border:1px solid var(--border);border-radius:11px;
+    padding:9px 9px;margin:0 10px;
+    display:flex;flex-direction:column;gap:7px;
+  }
+  .sfc-health-row { display:flex;align-items:center;gap:8px; }
+  .sfc-health-lbl {
+    font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+    width:70px;flex-shrink:0;
+  }
+  .sfc-health-bar-wrap {
+    flex:1;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;
+  }
+  .sfc-health-bar {
+    height:100%;width:0%;border-radius:3px;transition:width 1.5s ease,background .4s;
+  }
+  .sfc-health-val {
+    font-family:monospace;font-size:14px;font-weight:700;
+    white-space:nowrap;min-width:48px;text-align:right;
+  }
+  .sfc-health-sub {
+    font-family:monospace;font-size:13px;font-weight:700;color:#e8f4fd;flex:1;
+  }
+  .sfc-health-cycles { font-family:monospace;font-size:13px;font-weight:700;color:#7ecfff;text-align:right; }
+  .soh-good { color:#69FF47; }
+  .soh-mid  { color:#FFD700; }
+  .soh-low  { color:#FF6B6B; }
+  .soh-good-bg { background:linear-gradient(90deg,#3fae2a,#69FF47); }
+  .soh-mid-bg  { background:linear-gradient(90deg,#caa000,#FFD700); }
+  .soh-low-bg  { background:linear-gradient(90deg,#c0392b,#FF6B6B); }
+
   /* ── Section title ── */
   .sfc-section { font-size:8px;letter-spacing:2px;text-transform:uppercase;
     color:var(--muted);font-weight:700;display:flex;align-items:center;gap:5px;
@@ -1579,6 +1635,7 @@ function buildCardHTML(cfg) {
   const showInv     = c.show_inverter;
   const showEnd     = c.show_endurance;
   const showSavings = c.show_savings !== false;
+  const showHealth  = c.show_health !== false;
   const showCells= c.show_cells;
 
   return `
@@ -2232,6 +2289,24 @@ function buildCardHTML(cfg) {
       </div>
     </div>` : ''}
 
+    <!-- ÉTAT DE SANTÉ BATTERIE -->
+    ${showHealth ? `
+    <div class="sfc-gap"></div>
+    <div class="sfc-section">🩺 ${t(c,'section_health')}</div>
+    <div class="sfc-gap" style="height:6px;"></div>
+    <div class="sfc-health" id="sfcHealth">
+      <div class="sfc-health-row">
+        <span class="sfc-health-lbl">${t(c,'lbl_soh')}</span>
+        <div class="sfc-health-bar-wrap"><div class="sfc-health-bar" id="sfcSohBar"></div></div>
+        <span class="sfc-health-val" id="sfcSohVal">— %</span>
+      </div>
+      <div class="sfc-health-row">
+        <span class="sfc-health-lbl">${t(c,'lbl_capacity')}</span>
+        <span class="sfc-health-sub" id="sfcCapVal">— kWh</span>
+        <span class="sfc-health-cycles" id="sfcCyclesVal"></span>
+      </div>
+    </div>` : ''}
+
     <!-- ÉCONOMIES & ROI -->
     ${showSavings ? `
     <div class="sfc-gap"></div>
@@ -2375,6 +2450,15 @@ function buildEditorHTML(cfg) {
       ${edEntity('min_cell', t(c,'ed_min_cell'), 'sensor.zendure_min_cell_voltage', c)}
       ${edEntity('max_cell', t(c,'ed_max_cell'), 'sensor.zendure_max_cell_voltage', c)}
       ${edEntity('remaining', t(c,'ed_remaining'), 'sensor.zendure_remaining_energy', c)}
+    `)}
+
+    <!-- SECTION: État de santé batterie -->
+    ${edSection('health', t(c,'ed_health'), false, `
+      ${edToggle('show_health', t(c,'ed_show_health'), c)}
+      <div class="sfc-ed-info">SOH = capacité actuelle ÷ capacité théorique (= <b>Capacité batterie</b> de la section Général). Renseignez soit une entité SOH directe, soit la capacité actuelle.</div>
+      ${edEntity('batt_soh', t(c,'ed_batt_soh'), 'sensor.battery_soh', c)}
+      ${edEntity('batt_full_kwh', t(c,'ed_batt_full'), 'sensor.full_capacity', c)}
+      ${edEntity('batt_cycles', t(c,'ed_batt_cycles'), 'sensor.battery_cycles', c)}
     `)}
 
     <!-- SECTION: Réseau & Maison -->
@@ -3110,6 +3194,49 @@ class SolarFlowCard extends HTMLElement {
     return parseFloat(c.electricity_price) || 0.23;
   }
 
+  // ── État de santé batterie (SOH) ──────────────────────────────────────────
+  _updateHealth() {
+    const c = this._cfg;
+    if (c.show_health === false) return;
+
+    const design = parseFloat(c.batt_capacity_kwh) || 0;
+    let soh = null;
+    let fullKwh = c.batt_full_kwh ? this._getNum(c.batt_full_kwh) : 0;
+
+    // SOH : entité directe prioritaire
+    if (c.batt_soh) { const v = this._getNum(c.batt_soh); if (v > 0) soh = v; }
+    // Sinon calcul capacité actuelle / théorique
+    if (soh === null && fullKwh > 0 && design > 0) soh = (fullKwh / design) * 100;
+    // Déduire la capacité actuelle si on a le SOH mais pas l'entité capacité
+    if (fullKwh <= 0 && soh !== null && design > 0) fullKwh = design * soh / 100;
+
+    const cls = soh === null ? '' : soh >= 90 ? 'good' : soh >= 80 ? 'mid' : 'low';
+
+    const sohEl = this._el('sfcSohVal');
+    const barEl = this._el('sfcSohBar');
+    if (sohEl) {
+      sohEl.textContent = soh !== null ? Math.round(soh) + ' %' : '— %';
+      sohEl.className = 'sfc-health-val' + (cls ? ' soh-' + cls : '');
+    }
+    if (barEl) {
+      barEl.style.width = soh !== null ? Math.min(100, soh).toFixed(0) + '%' : '0%';
+      barEl.className = 'sfc-health-bar' + (cls ? ' soh-' + cls + '-bg' : '');
+    }
+
+    const capEl = this._el('sfcCapVal');
+    if (capEl) {
+      if (fullKwh > 0 && design > 0) capEl.textContent = fullKwh.toFixed(1) + ' / ' + design.toFixed(1) + ' kWh';
+      else if (design > 0)          capEl.textContent = '— / ' + design.toFixed(1) + ' kWh';
+      else                          capEl.textContent = '— kWh';
+    }
+
+    const cycEl = this._el('sfcCyclesVal');
+    if (cycEl) {
+      const cyc = c.batt_cycles ? this._getNum(c.batt_cycles) : 0;
+      cycEl.textContent = cyc > 0 ? '↻ ' + Math.round(cyc) : '';
+    }
+  }
+
   // ── Bloc Économies ────────────────────────────────────────────────────────
   _updateSavingsBlock(pvTodayKwh) {
     const c = this._cfg;
@@ -3533,6 +3660,9 @@ class SolarFlowCard extends HTMLElement {
         svFill.setAttribute('class', battState === 'low' ? 'sv-low' : battState === 'charging' ? 'sv-charging' : '');
       }
     }
+
+    // État de santé batterie
+    this._updateHealth();
 
     // Économies
     this._updateSavingsBlock(todayPv || 0);
