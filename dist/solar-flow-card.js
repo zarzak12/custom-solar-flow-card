@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.71';
+const VERSION = '1.0.72';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
