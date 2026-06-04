@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.78';
+const VERSION = '1.0.79';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -3110,10 +3110,42 @@ class SolarFlowCard extends HTMLElement {
     this._prevBattSVGSoc   = -1;
     this._svgBubbleTls     = null;
 
-    // Vagues de surface — points sinusoïdaux animés via gsap.ticker (inspiré canvas)
-    this._battWavePhase = 0;
+    // Vagues de surface — chaque point oscille via un tween GSAP sine.inOut (logique canvas de réf.)
+    this._initWaveTweens();
     this._battWaveTick = () => this._drawBattWaves();
     gsap.ticker.add(this._battWaveTick);
+  }
+
+  // Crée les points oscillants (tweens sine.inOut décalés) + respiration d'amplitude
+  _initWaveTweens() {
+    if (!window.gsap) return;
+    if (this._waveTweens) { this._waveTweens.forEach(t => t.kill()); }
+    const SEG = 16;
+    this._waveSeg = SEG;
+    // 3 vagues : largeur (freq), vitesse (dur), teinte (light), niveau (dy), amplitude qui respire
+    this._waves = [
+      { id:'sfcSVWaveA', freq:0.8, dur:4.5, light:0,    alpha:0.92, dy:0,  amp:8,  ampTo:8,  ampDur:3.0 },
+      { id:'sfcSVWaveB', freq:1.4, dur:3.6, light:0.30, alpha:0.85, dy:-2, amp:6,  ampTo:13, ampDur:3.6 },
+      { id:'sfcSVWaveC', freq:2.2, dur:5.2, light:0.55, alpha:0.80, dy:-4, amp:5,  ampTo:11, ampDur:4.6 },
+    ];
+    this._waveTweens = [];
+    this._waves.forEach(wv => {
+      wv.points = [];
+      for (let i = 0; i <= SEG; i++) {
+        const norm = i / SEG;
+        const pt = { y: 1 };
+        const tw = gsap.to(pt, { y: -1, duration: wv.dur, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+        tw.progress((norm * wv.freq) % 1);   // décalage de phase spatial
+        wv.points.push(pt);
+        this._waveTweens.push(tw);
+      }
+      // Respiration de l'amplitude (comme gsap.to(wave,{amplitude...}) dans la réf.)
+      if (wv.ampTo !== wv.amp) {
+        this._waveTweens.push(
+          gsap.to(wv, { amp: wv.ampTo, duration: wv.ampDur, repeat: -1, yoyo: true, ease: 'sine.inOut' })
+        );
+      }
+    });
   }
 
   // Éclaircit une couleur "r,g,b" vers le blanc (t : 0 = inchangé, 1 = blanc)
@@ -3147,51 +3179,37 @@ class SolarFlowCard extends HTMLElement {
     return stops[stops.length - 1][1].join(',');
   }
 
-  // Dessine 3 vagues superposées (nuances de la couleur d'état) sur la surface du liquide
+  // Dessine 3 vagues (points oscillants via tweens GSAP) sur la surface du liquide
   _drawBattWaves() {
     const fill = this._el('sfcSVBattFill');
-    const wA = this._el('sfcSVWaveA');
-    const wB = this._el('sfcSVWaveB');
-    const wC = this._el('sfcSVWaveC');
-    if (!fill || !wA) return;
-    const AMP = 5;
-    const rectTop = parseFloat(fill.getAttribute('y'));   // le rect est descendu de AMP
+    if (!fill || !this._waves) return;
+    const rectTop = parseFloat(fill.getAttribute('y'));   // le rect est descendu de 5
     const h       = parseFloat(fill.getAttribute('height'));
     if (isNaN(rectTop) || isNaN(h) || h < 2) {
-      wA.setAttribute('d', ''); if (wB) wB.setAttribute('d', ''); if (wC) wC.setAttribute('d', '');
+      this._waves.forEach(wv => { const el = this._el(wv.id); if (el) el.setAttribute('d', ''); });
       return;
     }
-    const surface = rectTop - AMP;   // niveau moyen réel du liquide
-    this._battWavePhase += 0.05;
-    const x0 = 1422, w = 71, steps = 24;
-    // Bande pleine : surface sinusoïdale (autour de surfaceY) en haut, bord plat en bas
-    const band = (amp, phase, wl, surfaceY, bottomY) => {
-      const k = Math.PI * 2 * wl / w;
+    const surface = rectTop - 5;       // niveau moyen réel du liquide
+    const SEG = this._waveSeg, x0 = 1422, w = 71;
+    const rgb = this._battWaveColor || '0,220,255';
+    this._waves.forEach(wv => {
+      const el = this._el(wv.id); if (!el) return;
+      const half = wv.amp / 2;
+      const sY   = surface + wv.dy;
       let d = '';
-      for (let i = 0; i <= steps; i++) {
-        const x = x0 + w * i / steps;
-        const y = surfaceY + Math.sin(phase + (x - x0) * k) * amp;
+      for (let i = 0; i <= SEG; i++) {
+        const x = x0 + w * i / SEG;
+        const y = sY + wv.points[i].y * half;   // point.y ∈ [-1,1] tweené sine.inOut
         d += (i ? ' L ' : 'M ') + x.toFixed(1) + ' ' + y.toFixed(1);
       }
+      // Vague A = corps (rejoint le rect) ; B/C = bandes plus fines par-dessus
+      const bottomY = wv.id === 'sfcSVWaveA' ? rectTop + 14
+                    : wv.id === 'sfcSVWaveB' ? surface + 9
+                    :                          surface + 4;
       d += ` L ${x0 + w} ${bottomY} L ${x0} ${bottomY} Z`;
-      return d;
-    };
-    const ph  = this._battWavePhase;
-    const rgb = this._battWaveColor || '0,220,255';
-    // 3 niveaux décalés, amplitudes/largeurs/déphasages différents, du foncé (fond) au clair (avant)
-    // Vague A — foncée, large, lente : corps de surface qui rejoint le rect
-    wA.setAttribute('fill', `rgba(${rgb},0.92)`);
-    wA.setAttribute('d', band(AMP,        ph,              0.8, surface,     rectTop + 14));
-    // Vague B — rouge plus claire, niveau légèrement plus haut, autre largeur/phase
-    if (wB) {
-      wB.setAttribute('fill', `rgba(${this._lighten(rgb, 0.30)},0.85)`);
-      wB.setAttribute('d', band(AMP * 0.8, -ph * 1.25 + 2.1, 1.3, surface - 2, surface + 9));
-    }
-    // Vague C — rouge encore plus claire, niveau le plus haut, petite amplitude rapide
-    if (wC) {
-      wC.setAttribute('fill', `rgba(${this._lighten(rgb, 0.55)},0.8)`);
-      wC.setAttribute('d', band(AMP * 0.55, ph * 1.7 + 4.2, 2.0, surface - 4, surface + 4));
-    }
+      el.setAttribute('d', d);
+      el.setAttribute('fill', `rgba(${this._lighten(rgb, wv.light)},${wv.alpha})`);
+    });
   }
 
   // Couleur RGB des vagues selon l'état de charge/décharge
@@ -3531,6 +3549,7 @@ class SolarFlowCard extends HTMLElement {
     if (this._bubbleTls)    { this._bubbleTls.forEach(t => t.kill()); this._bubbleTls = null; }
     if (this._svgBubbleTls) { this._svgBubbleTls.forEach(t => t.kill()); this._svgBubbleTls = null; }
     if (this._battWaveTick && window.gsap) { gsap.ticker.remove(this._battWaveTick); this._battWaveTick = null; }
+    if (this._waveTweens) { this._waveTweens.forEach(t => t.kill()); this._waveTweens = null; }
   }
 
   connectedCallback() {
@@ -3538,6 +3557,7 @@ class SolarFlowCard extends HTMLElement {
     if (!this._cfg || !Object.keys(this._cfg).length) return;
     if (!this._sunTimer) this._startSunTimer();
     if (window.gsap && this._battSVGAnimReady && !this._battWaveTick) {
+      if (!this._waveTweens) this._initWaveTweens();   // recréer les tweens des points
       this._battWaveTick = () => this._drawBattWaves();
       gsap.ticker.add(this._battWaveTick);
     }
