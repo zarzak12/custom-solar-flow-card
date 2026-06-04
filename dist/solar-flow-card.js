@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.80';
+const VERSION = '1.0.77';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -3116,7 +3116,7 @@ class SolarFlowCard extends HTMLElement {
     const wA = this._el('sfcSVWaveA');
     const wB = this._el('sfcSVWaveB');
     if (!fill || !wA) return;
-    const AMP = 6;
+    const AMP = 5;
     const rectTop = parseFloat(fill.getAttribute('y'));   // le rect est descendu de AMP
     const h       = parseFloat(fill.getAttribute('height'));
     if (isNaN(rectTop) || isNaN(h) || h < 2) {
@@ -3140,11 +3140,11 @@ class SolarFlowCard extends HTMLElement {
     };
     const rgb = this._battWaveColor || '0,220,255';
     // Vague A : corps de surface (couleur du niveau) qui rejoint le rect en dessous
-    wA.setAttribute('d', band(AMP, this._battWavePhase, 2, rectTop + 12));
+    wA.setAttribute('d', band(AMP, this._battWavePhase, 1, rectTop + 12));
     wA.setAttribute('fill', `rgba(${rgb},0.9)`);
     // Vague B : reflet clair déphasé par-dessus (effet de profondeur)
     if (wB) {
-      wB.setAttribute('d', band(AMP * 0.7, this._battWavePhase * 1.35 + 1.6, 1.5, surface + 10));
+      wB.setAttribute('d', band(AMP * 0.7, this._battWavePhase * 1.35 + 1.6, 0.8, surface + 10));
       wB.setAttribute('fill', 'rgba(255,255,255,0.20)');
     }
   }
@@ -3176,8 +3176,8 @@ class SolarFlowCard extends HTMLElement {
     const ease = rising ? 'elastic.out(1, 0.38)' : 'power2.out';
     const dur  = rising ? 2.8 : 1.6;
 
-    // Rect descendu de 6 (AMP) pour laisser les creux de vague visibles au-dessus
-    if (svFill) gsap.to(svFill, { attr: { y: fillY + 6, height: Math.max(0, fillH - 6) }, duration: dur, ease, overwrite: 'auto' });
+    // Rect descendu de 5 (AMP) pour laisser les creux de vague visibles au-dessus
+    if (svFill) gsap.to(svFill, { attr: { y: fillY + 5, height: Math.max(0, fillH - 5) }, duration: dur, ease, overwrite: 'auto' });
 
     // ── 3. Gradient + classe CSS ──────────────────────────────────────────
     if (svFill) {
@@ -3487,6 +3487,16 @@ class SolarFlowCard extends HTMLElement {
     if (this._battWaveTick && window.gsap) { gsap.ticker.remove(this._battWaveTick); this._battWaveTick = null; }
   }
 
+  connectedCallback() {
+    // Restaurer les animations si la carte est reconnectée (édition dashboard, scroll virtualisé…)
+    if (!this._cfg || !Object.keys(this._cfg).length) return;
+    if (!this._sunTimer) this._startSunTimer();
+    if (window.gsap && this._battSVGAnimReady && !this._battWaveTick) {
+      this._battWaveTick = () => this._drawBattWaves();
+      gsap.ticker.add(this._battWaveTick);
+    }
+  }
+
   _getNum(entityId, fallback = 0) {
     if (!entityId || !this._hass) return fallback;
     const s = this._hass.states[entityId];
@@ -3780,8 +3790,8 @@ class SolarFlowCard extends HTMLElement {
         const maxH  = 110;
         const fillH = Math.round(maxH * battSoc / 100);
         const fillY = 502 + (maxH - fillH);
-        svFill.setAttribute('y', String(fillY + 6));
-        svFill.setAttribute('height', String(Math.max(0, fillH - 6)));
+        svFill.setAttribute('y', String(fillY + 5));
+        svFill.setAttribute('height', String(Math.max(0, fillH - 5)));
         const grad = battState === 'low'         ? 'url(#sfcSVGradLow)'
                    : battState === 'charging'    ? 'url(#sfcSVGradCharge)'
                    : battState === 'discharging' ? 'url(#sfcSVGradDischarge)'
