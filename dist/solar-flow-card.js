@@ -92,7 +92,9 @@ const DEFAULTS = {
   show_health:      true,
   batt_soh:         '',   // entité SOH % directe (prioritaire si fournie)
   batt_full_kwh:    '',   // entité capacité actuelle à 100% (kWh) → SOH = full / batt_capacity_kwh
-  batt_cycles:      '',   // entité nombre de cycles (optionnel)
+  batt_cycles:      '',   // entité nombre de cycles direct (prioritaire si fournie)
+  batt_cycles_energy: '', // entité énergie déchargée cumulée (kWh) → EFC = énergie / capacité
+  batt_cycles_base:   0,  // offset de cycles initial (théorique) ajouté à l'EFC calculé
   grid_power: '',
   home_power: '',
   pwr_percent: '',
@@ -261,7 +263,9 @@ const I18N = {
     ed_show_health:    'Bloc état de santé',
     ed_batt_soh:       'Méthode A — Entité SOH (%) directe',
     ed_batt_full:      'Méthode B — Entité capacité totale réelle (kWh)',
-    ed_batt_cycles:    'Entité nombre de cycles',
+    ed_batt_cycles:    'Entité cycles directe (si dispo)',
+    ed_batt_cycles_energy: 'Entité énergie déchargée cumulée (kWh)',
+    ed_batt_cycles_base:   'Cycles de base (offset initial)',
     // Savings block
     section_savings:   'Économies & ROI',
     sav_today:         "Aujourd'hui",
@@ -441,7 +445,9 @@ const I18N = {
     ed_show_health:    'Health block',
     ed_batt_soh:       'Method A — Direct SOH entity (%)',
     ed_batt_full:      'Method B — Real total capacity entity (kWh)',
-    ed_batt_cycles:    'Cycle count entity',
+    ed_batt_cycles:    'Direct cycle entity (if available)',
+    ed_batt_cycles_energy: 'Cumulative discharged energy entity (kWh)',
+    ed_batt_cycles_base:   'Base cycles (initial offset)',
     section_savings:   'Savings & ROI',
     sav_today:         'Today',
     sav_month:         'This month',
@@ -2460,7 +2466,14 @@ function buildEditorHTML(cfg) {
       • <b>Méthode B</b> : entité <b>capacité totale réelle</b> (ex. Zendure « Total Battery Capacity »). Lue en continu.</div>
       ${edEntity('batt_soh', t(c,'ed_batt_soh'), 'sensor.battery_soh', c)}
       ${edEntity('batt_full_kwh', t(c,'ed_batt_full'), 'sensor.solarflow_2400_ac_battery_capacity', c)}
+      <div class="sfc-ed-label" style="margin-top:8px;color:var(--muted);font-size:10px;">— Cycles —</div>
       ${edEntity('batt_cycles', t(c,'ed_batt_cycles'), 'sensor.battery_cycles', c)}
+      <div class="sfc-ed-info">Pas de capteur de cycles ? Estimation : énergie déchargée cumulée ÷ capacité, + un offset de base.</div>
+      ${edEntity('batt_cycles_energy', t(c,'ed_batt_cycles_energy'), 'sensor.solarflow_2400_ac_total_decharges', c)}
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_batt_cycles_base')}</label>
+        <input class="sfc-ed-input sfc-ed-number" data-key="batt_cycles_base" type="number" step="1" placeholder="0" value="${(c.batt_cycles_base!==undefined&&c.batt_cycles_base!=='')?c.batt_cycles_base:''}"/>
+      </div>
     `)}
 
     <!-- SECTION: Réseau & Maison -->
@@ -3235,8 +3248,16 @@ class SolarFlowCard extends HTMLElement {
 
     const cycEl = this._el('sfcCyclesVal');
     if (cycEl) {
-      const cyc = c.batt_cycles ? this._getNum(c.batt_cycles) : 0;
-      cycEl.textContent = cyc > 0 ? '↻ ' + Math.round(cyc) : '';
+      let cyc = null;
+      // Capteur cycles direct (prioritaire)
+      if (c.batt_cycles) { const v = this._getNum(c.batt_cycles); if (v > 0) cyc = v; }
+      // Sinon estimation EFC = base + énergie déchargée cumulée / capacité
+      if (cyc === null && c.batt_cycles_energy && design > 0) {
+        const disch = this._getNum(c.batt_cycles_energy);
+        const base  = parseFloat(c.batt_cycles_base) || 0;
+        if (disch > 0) cyc = base + disch / design;
+      }
+      cycEl.textContent = (cyc !== null && cyc > 0) ? '↻ ' + Math.round(cyc) : '';
     }
   }
 
