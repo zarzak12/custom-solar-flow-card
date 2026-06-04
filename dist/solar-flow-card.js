@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.83';
+const VERSION = '1.0.84';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -112,6 +112,7 @@ const DEFAULTS = {
   color_grid: '#4FC3F7',
   color_battery: '#69FF47',
   color_home: '#FF6B6B',
+  color_ev: '#4FC3F7',
   color_bg: '#060d1a',
   // Options
   show_cells: true,
@@ -121,6 +122,7 @@ const DEFAULTS = {
   show_bms_temp: true,
   show_total_pv: true,
   show_mode: true,
+  show_autoconso: true,   // taux d'autoconsommation / autoproduction
   title: 'Solar Flow',
   // ── Échelles d'affichage (curseurs) ──
   scale_flux:  1.0,   // épaisseur des flux d'énergie (0.5–2)
@@ -145,6 +147,10 @@ const DEFAULTS = {
   pv_month_kwh:      '',      // sensor.pv_energie_mois
   pv_year_kwh:       '',      // sensor.pv_energie_annee
   grid_export_today: '',      // sensor.energie_injectee (affine autoconso)
+  export_paid:       false,   // l'export est-il rémunéré (revente) ?
+  export_price:      0.10,    // €/kWh prix de revente du surplus
+  grid_export_month: '',      // sensor export ce mois (revenu mensuel)
+  grid_export_year:  '',      // sensor export cette année (revenu annuel + ROI)
   install_cost:      0,       // € coût installation (0 = ROI masqué)
   co2_factor:        0.4,     // kg CO₂/kWh évités
   // ── Prévision de production ──
@@ -241,6 +247,7 @@ const I18N = {
     ed_col_grid:      'Couleur réseau',
     ed_col_batt:      'Couleur batterie',
     ed_col_home:      'Couleur maison',
+    ed_col_ev:        'Couleur flux voiture (EV)',
     ed_col_bg:        'Couleur fond',
     ed_show_bars:     'Barres de progression',
     ed_show_mode:     'Mode batterie',
@@ -263,6 +270,11 @@ const I18N = {
     ed_ev_power:    'Puissance charge/V2H (W)',
     ed_ev_soc:      'SOC batterie EV (%)',
     ed_ev_max_kwh:  'Capacité batterie EV (kWh)',
+    // Autoconsommation
+    section_autoconso: 'Autoconsommation',
+    lbl_selfconso:     'Autoconso.',
+    lbl_selfprod:      'Autoprod.',
+    ed_show_autoconso: 'Bloc autoconsommation',
     // Santé batterie
     section_health:    'État de santé batterie',
     lbl_soh:           'SOH',
@@ -302,6 +314,10 @@ const I18N = {
     ed_pv_month:        'PV ce mois (entité kWh)',
     ed_pv_year:         'PV cette année (entité kWh)',
     ed_grid_export:     "Export réseau auj. (entité kWh)",
+    ed_export_paid:     "Export rémunéré (revente du surplus)",
+    ed_export_price:    "Prix de revente (€/kWh)",
+    ed_export_month:    "Export ce mois (entité kWh)",
+    ed_export_year:     "Export cette année (entité kWh)",
     ed_install_cost:    "Coût installation (€)",
     ed_co2_factor:      'Facteur CO₂ (kg/kWh)',
     ed_apply:         '💾 Appliquer les modifications',
@@ -430,6 +446,7 @@ const I18N = {
     ed_col_grid:      'Grid color',
     ed_col_batt:      'Battery color',
     ed_col_home:      'Home color',
+    ed_col_ev:        'EV flow color',
     ed_col_bg:        'Background color',
     ed_show_bars:     'Progress bars',
     ed_show_mode:     'Battery mode',
@@ -451,6 +468,10 @@ const I18N = {
     ed_ev_power:    'Charge/V2H power (W)',
     ed_ev_soc:      'EV battery SOC (%)',
     ed_ev_max_kwh:  'EV battery capacity (kWh)',
+    section_autoconso: 'Self-consumption',
+    lbl_selfconso:     'Self-cons.',
+    lbl_selfprod:      'Self-suff.',
+    ed_show_autoconso: 'Self-consumption block',
     section_health:    'Battery health',
     lbl_soh:           'SOH',
     lbl_capacity:      'Capacity',
@@ -487,6 +508,10 @@ const I18N = {
     ed_pv_month:       'PV this month (kWh entity)',
     ed_pv_year:        'PV this year (kWh entity)',
     ed_grid_export:    'Grid export today (kWh entity)',
+    ed_export_paid:    'Export remunerated (sell surplus)',
+    ed_export_price:   'Sell price (€/kWh)',
+    ed_export_month:   'Export this month (kWh entity)',
+    ed_export_year:    'Export this year (kWh entity)',
     ed_install_cost:   'Install cost (€)',
     ed_co2_factor:     'CO₂ factor (kg/kWh)',
     ed_apply:         '💾 Apply changes',
@@ -1657,6 +1682,7 @@ function buildCardHTML(cfg) {
   const showEnd     = c.show_endurance;
   const showSavings = c.show_savings !== false;
   const showHealth  = c.show_health !== false;
+  const showAuto    = c.show_autoconso !== false && c.pv_today;
   const showCells= c.show_cells;
 
   return `
@@ -1665,6 +1691,7 @@ function buildCardHTML(cfg) {
     --sfc-grid:${c.color_grid};
     --sfc-batt:${c.color_battery};
     --sfc-home:${c.color_home};
+    --sfc-ev:${c.color_ev || '#4FC3F7'};
     --sfc-bg:${c.color_bg};
     --sfc-sf:${c.scale_flux  || 1};
     --sfc-sl:${c.scale_label || 1};
@@ -1927,10 +1954,10 @@ function buildCardHTML(cfg) {
 
           <!-- ── FLUX Maison ↔ EV (bidirectionnel : charge / V2H) ── -->
           ${c.ev_enabled ? `
-          <path id="sfcLEV_s"         class="sfc-flow-core"      stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:calc(3*var(--sfc-sf,1))"   d="M916.5 597.5 H1140"/>
-          <path id="sfcLEVTailLong_s" class="sfc-flow-tail-long" stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:calc(6.5*var(--sfc-sf,1))" d="M916.5 597.5 H1140"/>
-          <path id="sfcLEVTailMid_s"  class="sfc-flow-tail-mid"  stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:calc(4.8*var(--sfc-sf,1))" d="M916.5 597.5 H1140"/>
-          <path id="sfcLEVGlow_s"     class="sfc-flow-neon"      stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:calc(3.6*var(--sfc-sf,1))" d="M916.5 597.5 H1140"/>
+          <path id="sfcLEV_s"         class="sfc-flow-core"      stroke="var(--sfc-ev,#4FC3F7)" style="--flow-color:var(--sfc-ev,#4FC3F7);stroke-width:calc(3*var(--sfc-sf,1))"   d="M916.5 597.5 H1140"/>
+          <path id="sfcLEVTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-ev,#4FC3F7)" style="--flow-color:var(--sfc-ev,#4FC3F7);stroke-width:calc(6.5*var(--sfc-sf,1))" d="M916.5 597.5 H1140"/>
+          <path id="sfcLEVTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-ev,#4FC3F7)" style="--flow-color:var(--sfc-ev,#4FC3F7);stroke-width:calc(4.8*var(--sfc-sf,1))" d="M916.5 597.5 H1140"/>
+          <path id="sfcLEVGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-ev,#4FC3F7)" style="--flow-color:var(--sfc-ev,#4FC3F7);stroke-width:calc(3.6*var(--sfc-sf,1))" d="M916.5 597.5 H1140"/>
           ` : ''}
 
           <!-- ══════════════════════════════════════════════════════════
@@ -2322,6 +2349,24 @@ function buildCardHTML(cfg) {
       </div>
     </div>` : ''}
 
+    <!-- AUTOCONSOMMATION -->
+    ${showAuto ? `
+    <div class="sfc-gap"></div>
+    <div class="sfc-section">📈 ${t(c,'section_autoconso')}</div>
+    <div class="sfc-gap" style="height:6px;"></div>
+    <div class="sfc-health" id="sfcAuto">
+      <div class="sfc-health-row">
+        <span class="sfc-health-lbl">${t(c,'lbl_selfconso')}</span>
+        <div class="sfc-health-bar-wrap"><div class="sfc-health-bar" id="sfcSelfConsoBar"></div></div>
+        <span class="sfc-health-val" id="sfcSelfConsoVal">— %</span>
+      </div>
+      <div class="sfc-health-row">
+        <span class="sfc-health-lbl">${t(c,'lbl_selfprod')}</span>
+        <div class="sfc-health-bar-wrap"><div class="sfc-health-bar" id="sfcSelfProdBar"></div></div>
+        <span class="sfc-health-val" id="sfcSelfProdVal">— %</span>
+      </div>
+    </div>` : ''}
+
     <!-- ÉTAT DE SANTÉ BATTERIE -->
     ${showHealth ? `
     <div class="sfc-gap"></div>
@@ -2537,6 +2582,7 @@ function buildEditorHTML(cfg) {
       ${edColor('color_grid', t(c,'ed_col_grid'),  '#4FC3F7', c)}
       ${edColor('color_battery', t(c,'ed_col_batt'),'#69FF47', c)}
       ${edColor('color_home', t(c,'ed_col_home'),  '#FF6B6B', c)}
+      ${edColor('color_ev', t(c,'ed_col_ev'),    '#4FC3F7', c)}
       ${edColor('color_bg', t(c,'ed_col_bg'),    '#060d1a', c)}
     `)}
 
@@ -2726,6 +2772,22 @@ function buildEditorHTML(cfg) {
         <label class="sfc-ed-label">${t(c,'ed_grid_export')}</label>
         <input class="sfc-ed-input" data-key="grid_export_today" placeholder="sensor.energie_injectee" value="${c.grid_export_today||''}"/>
       </div>
+      ${edToggle('export_paid', t(c,'ed_export_paid'), c)}
+      ${c.export_paid ? `
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_export_price')}</label>
+        <input class="sfc-ed-input sfc-ed-number" data-key="export_price" type="number" step="0.0001" placeholder="0.10" value="${c.export_price||''}"/>
+      </div>
+      <div class="sfc-ed-grid">
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_export_month')}</label>
+          <input class="sfc-ed-input" data-key="grid_export_month" placeholder="sensor.export_mois" value="${c.grid_export_month||''}"/>
+        </div>
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_export_year')}</label>
+          <input class="sfc-ed-input" data-key="grid_export_year" placeholder="sensor.export_annee" value="${c.grid_export_year||''}"/>
+        </div>
+      </div>` : ''}
       <div class="sfc-ed-grid">
         <div class="sfc-ed-row">
           <label class="sfc-ed-label">${t(c,'ed_pv_month')}</label>
@@ -2799,6 +2861,7 @@ function buildEditorHTML(cfg) {
       ${edToggle('show_cells', t(c,'ed_show_cells'), c)}
       ${edToggle('show_endurance', t(c,'ed_show_endurance'), c)}
       ${edToggle('show_inverter', t(c,'ed_show_inverter'), c)}
+      ${edToggle('show_autoconso', t(c,'ed_show_autoconso'), c)}
       ${edToggle('show_savings',  t(c,'ed_show_savings'),  c)}
     `)}
 
@@ -3314,10 +3377,11 @@ class SolarFlowCard extends HTMLElement {
       const abs  = Math.abs(evW);
       const sign = isV2H ? '−' : evW > 50 ? '+' : '';
       pwrEl.textContent = abs >= 1000 ? sign + (abs/1000).toFixed(2) + ' kW' : sign + Math.round(abs) + ' W';
-      pwrEl.style.fill  = isV2H ? '#69FF47' : '#4FC3F7';
+      const evCol = c.color_ev || '#4FC3F7';
+      pwrEl.style.fill  = isV2H ? '#69FF47' : evCol;
       pwrEl.style.filter= isV2H
         ? 'drop-shadow(0 0 4px #69FF47)'
-        : 'drop-shadow(0 0 4px #4FC3F7)';
+        : `drop-shadow(0 0 4px ${evCol})`;
     }
 
     const socEl = this._el('sfcSGEVSoc');
@@ -3376,6 +3440,33 @@ class SolarFlowCard extends HTMLElement {
 
     // Prix fixe (défaut / fallback)
     return parseFloat(c.electricity_price) || 0.23;
+  }
+
+  // ── Taux d'autoconsommation / autoproduction ──────────────────────────────
+  _updateAutoConso() {
+    const c = this._cfg;
+    if (c.show_autoconso === false || !c.pv_today) return;
+    const pv   = this._getNum(c.pv_today);
+    const exp  = c.grid_export_today ? Math.max(0, this._getNum(c.grid_export_today)) : null;
+    const load = c.today_load ? this._getNum(c.today_load) : 0;
+    // PV consommé sur place = produit − exporté (nécessite l'entité d'export)
+    const selfUsed  = exp === null ? null : Math.max(0, pv - exp);
+    const selfConso = (selfUsed !== null && pv > 0)   ? Math.min(100, selfUsed / pv * 100)   : null;
+    const selfProd  = (selfUsed !== null && load > 0) ? Math.min(100, selfUsed / load * 100) : null;
+    this._setAutoBar('sfcSelfConsoBar', 'sfcSelfConsoVal', selfConso);
+    this._setAutoBar('sfcSelfProdBar',  'sfcSelfProdVal',  selfProd);
+  }
+
+  _setAutoBar(barId, valId, pct) {
+    const bar = this._el(barId), val = this._el(valId);
+    if (pct === null) {
+      if (val) { val.textContent = '— %'; val.className = 'sfc-health-val'; }
+      if (bar) { bar.style.width = '0%'; bar.className = 'sfc-health-bar'; }
+      return;
+    }
+    const cls = pct >= 70 ? 'good' : pct >= 40 ? 'mid' : 'low';   // + c'est haut, mieux c'est
+    if (val) { val.textContent = Math.round(pct) + ' %'; val.className = 'sfc-health-val soh-' + cls; }
+    if (bar) { bar.style.width = pct.toFixed(0) + '%'; bar.className = 'sfc-health-bar soh-' + cls + '-bg'; }
   }
 
   // ── État de santé batterie (SOH) ──────────────────────────────────────────
@@ -3493,32 +3584,49 @@ class SolarFlowCard extends HTMLElement {
       }
     }
 
-    // Aujourd'hui
+    // Revenu de revente (export rémunéré)
+    const exportPrice = parseFloat(c.export_price) || 0;
+    const revToday = c.export_paid ? exportKwh * exportPrice : 0;
+
+    // Aujourd'hui : économies (autoconso) + revenu (export)
     const savDay = this._el('sfcSavDay');
     const co2Day = this._el('sfcCo2Day');
-    if (savDay) savDay.textContent = fmtEur(this._savAccum || 0);
+    if (savDay) savDay.textContent = fmtEur((this._savAccum || 0) + revToday);
     if (co2Day) co2Day.textContent = fmtCo2(Math.max(0, pvTodayKwh - exportKwh) * co2k);
 
-    // Mois
+    // Mois : autoconso (× prix évité) + revente (export × prix revente)
     const pvMonth = c.pv_month_kwh ? this._getNum(c.pv_month_kwh) : 0;
     if (pvMonth > 0) {
-      const sm = this._el('sfcSavMonth'); if (sm) sm.textContent = fmtEur(pvMonth * price);
+      let monthTotal;
+      if (c.export_paid && c.grid_export_month) {
+        const expM = Math.max(0, this._getNum(c.grid_export_month));
+        monthTotal = Math.max(0, pvMonth - expM) * price + expM * exportPrice;
+      } else {
+        monthTotal = pvMonth * price;
+      }
+      const sm = this._el('sfcSavMonth'); if (sm) sm.textContent = fmtEur(monthTotal);
       const cm = this._el('sfcCo2Month'); if (cm) cm.textContent = fmtCo2(pvMonth * co2k);
     }
 
     // Année
     const pvYear = c.pv_year_kwh ? this._getNum(c.pv_year_kwh) : 0;
+    let yearTotal = 0;
     if (pvYear > 0) {
-      const sy = this._el('sfcSavYear'); if (sy) sy.textContent = fmtEur(pvYear * price);
+      if (c.export_paid && c.grid_export_year) {
+        const expY = Math.max(0, this._getNum(c.grid_export_year));
+        yearTotal = Math.max(0, pvYear - expY) * price + expY * exportPrice;
+      } else {
+        yearTotal = pvYear * price;
+      }
+      const sy = this._el('sfcSavYear'); if (sy) sy.textContent = fmtEur(yearTotal);
       const cy = this._el('sfcCo2Year'); if (cy) cy.textContent = fmtCo2(pvYear * co2k);
     }
 
-    // ROI
+    // ROI — basé sur le bénéfice annuel total (économies + revente)
     const cost = parseFloat(c.install_cost) || 0;
-    if (cost > 0 && pvYear > 0) {
-      const annualSav = pvYear * price;
-      const roiYrs    = cost / annualSav;
-      const pct       = Math.min(100, annualSav / cost * 100);
+    if (cost > 0 && yearTotal > 0) {
+      const roiYrs = cost / yearTotal;
+      const pct    = Math.min(100, yearTotal / cost * 100);
       const bar = this._el('sfcRoiBar'); if (bar) bar.style.width = pct.toFixed(1) + '%';
       const val = this._el('sfcRoiVal');
       const lang = c.language === 'en' ? 'yrs' : 'ans';
@@ -3876,6 +3984,9 @@ class SolarFlowCard extends HTMLElement {
     }
     // Couleur des vagues = couleur du niveau de charge (%)
     this._battWaveColor = this._battLevelRGB(battSoc);
+
+    // Autoconsommation / autoproduction
+    this._updateAutoConso();
 
     // État de santé batterie
     this._updateHealth();
@@ -4311,6 +4422,19 @@ class SolarFlowCardEditor extends HTMLElement {
     });
   }
 
+  // Reconstruit l'éditeur en gardant les sections ouvertes (pour les champs conditionnels)
+  _rebuildKeepOpen() {
+    const openSecs = [...this.shadowRoot.querySelectorAll('.sfc-ed-body.open')].map(b => b.id);
+    this._buildDOM();
+    openSecs.forEach(id => {
+      const body = this.shadowRoot.getElementById(id);
+      if (!body) return;
+      body.classList.add('open');
+      const hdr = this.shadowRoot.querySelector(`[data-section="${id.replace('sfc-sec-','')}"]`);
+      if (hdr) { hdr.classList.add('active'); const chev = hdr.querySelector('.sfc-ed-chevron'); if (chev) chev.classList.add('open'); }
+    });
+  }
+
   _attachListeners() {
     this.shadowRoot.querySelectorAll('.sfc-ed-section-header').forEach(h => {
       h.addEventListener('click', () => {
@@ -4328,20 +4452,16 @@ class SolarFlowCardEditor extends HTMLElement {
       if (el.tagName === 'SELECT') {
         el.addEventListener('change', () => {
           this._draft = { ...this._draft, [k]: el.value };
-          // Mémoriser les sections ouvertes avant le rebuild (sinon elles se referment)
-          const openSecs = [...this.shadowRoot.querySelectorAll('.sfc-ed-body.open')].map(b => b.id);
-          this._buildDOM();
-          openSecs.forEach(id => {
-            const body = this.shadowRoot.getElementById(id);
-            if (!body) return;
-            body.classList.add('open');
-            const hdr = this.shadowRoot.querySelector(`[data-section="${id.replace('sfc-sec-','')}"]`);
-            if (hdr) { hdr.classList.add('active'); const chev = hdr.querySelector('.sfc-ed-chevron'); if (chev) chev.classList.add('open'); }
-          });
+          this._rebuildKeepOpen();   // certains selects révèlent des champs conditionnels
           this._apply();
         });
       } else if (el.dataset.toggle) {
-        el.addEventListener('click', () => { el.classList.toggle('on'); this._draft = { ...this._draft, [k]: el.classList.contains('on') }; this._apply(); });
+        el.addEventListener('click', () => {
+          el.classList.toggle('on');
+          this._draft = { ...this._draft, [k]: el.classList.contains('on') };
+          this._rebuildKeepOpen();   // certains toggles révèlent des champs (ex. export rémunéré)
+          this._apply();
+        });
       } else if (el.type === 'range') {
         el.addEventListener('input', () => {
           const v = parseFloat(el.value);

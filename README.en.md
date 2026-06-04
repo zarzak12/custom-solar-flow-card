@@ -28,6 +28,7 @@ Solar Flow Card displays **all your energy flows** in real time on an immersive 
 - 💰 **Savings & ROI** — real-time delta calculation using the exact price at the moment of production
 - 🎨 **Two scene modes**: separate view (icons) or immersive scene (photorealistic 1536×1024)
 - 🩺 **Battery health (SOH)** with a colored bar and cycle estimation
+- 📈 **Self-consumption & self-sufficiency rates** with colored gauges
 - 🔎 **Adjustable sizes** via sliders: flow thickness, label size and value size
 - 🌙 **Night mode** automatic, with moon, stars and lunar phase
 - 🔌 **EDF Tempo tariff** natively supported with a colored HP/HC badge
@@ -265,6 +266,19 @@ The battery uses GSAP animations for a professional look:
 
 ---
 
+## 📈 Self-consumption & self-sufficiency
+
+Two colored gauges computed from already-configured entities (no new entity):
+
+| Indicator | Formula | Meaning |
+|---|---|---|
+| **Self-consumption** | `(pv_today − grid_export_today) / pv_today` | share of produced solar you use (vs sold) |
+| **Self-sufficiency** | `(pv_today − grid_export_today) / today_load` | share of your consumption covered by solar |
+
+> Requires `pv_today` + `grid_export_today` (+ `today_load` for self-sufficiency). Color: 🟢 ≥ 70% · 🟡 40-70% · 🔴 < 40%. Hideable via `show_autoconso`.
+
+---
+
 ## 🩺 Battery health (SOH)
 
 Shows the **State of Health** with a colored bar, real vs design capacity, and a cycle estimate.
@@ -393,6 +407,12 @@ grid_export_today: sensor.energy_exported   # refines self-consumption
 pv_month_kwh: sensor.pv_energy_month
 pv_year_kwh:  sensor.pv_energy_year
 
+# ── Surplus sell-back (remunerated export) ──
+export_paid:  true                      # enable sell-back
+export_price: 0.10                      # €/kWh surplus buy-back price
+grid_export_month: sensor.export_month  # (optional) monthly revenue
+grid_export_year:  sensor.export_year   # (optional) yearly revenue + ROI
+
 # ROI (shown only if install_cost > 0 AND pv_year_kwh configured)
 install_cost: 8000        # € installation cost
 
@@ -404,10 +424,12 @@ co2_factor: 0.4           # kg CO₂/kWh avoided (French grid mix 2024)
 
 ### What is displayed
 
-- **Today**: savings accumulated since midnight + kg CO₂ avoided
-- **This month**: savings × current price (if `pv_month_kwh` is configured)
-- **This year**: savings × current price + CO₂ in kg or tonnes (if `pv_year_kwh`)
-- **ROI**: progress bar + payback time in years
+- **Today**: savings (self-consumption) **+ sell-back revenue** (if `export_paid`) + kg CO₂ avoided
+- **This month**: savings × price + sell-back (if `grid_export_month`)
+- **This year**: savings × price + sell-back (if `grid_export_year`) + CO₂
+- **ROI**: based on **total annual benefit** (savings + sell-back)
+
+> 💶 **Savings vs revenue**: self-consumption is valued at the price you **avoid paying** (`electricity_price`/Tempo/peak-offpeak), exported surplus at the **sell-back** price (`export_price`). Both are summed in the totals.
 
 > **Tempo note**: the HP/HC windows used are the standard EDF hours (off-peak: 10pm–6am, peak: 6am–10pm). Since solar production is 100% diurnal, it almost always falls during peak hours — so the calculation stays very accurate even after a page reload.
 
@@ -422,6 +444,7 @@ color_solar:   '#FFD700'   # Solar yellow (PV flow)
 color_grid:    '#4FC3F7'   # Cyan blue (grid)
 color_battery: '#69FF47'   # Neon green (battery)
 color_home:    '#FF6B6B'   # Pink-red (home consumption)
+color_ev:      '#4FC3F7'   # Electric vehicle (EV) flow
 color_bg:      '#060d1a'   # Card background
 ```
 
@@ -466,6 +489,7 @@ show_total_pv:     true    # CO₂ avoided today (card repurposed)
 show_cells:        true    # Min/max cell voltages + delta
 show_endurance:    true    # Estimated battery endurance
 show_inverter:     true    # Inverter section (today PV, Chg/Dch, Remaining, Today load)
+show_autoconso:    true    # Self-consumption / self-sufficiency section
 show_savings:      true    # Savings & ROI section
 show_health:       true    # Battery health section (SOH + cycles)
 show_images:       true    # Images (false = emoji fallback)

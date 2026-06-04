@@ -30,6 +30,7 @@ Solar Flow Card affiche en temps réel **tous vos flux d'énergie** sur une scè
 - 🔮 **Prévision de production** affichée en haut du ciel (Solcast / Forecast.Solar)
 - 🚗 **Véhicule électrique** avec flux bidirectionnel charge / V2H et SOC
 - 🩺 **État de santé batterie (SOH)** avec barre colorée et estimation des cycles
+- 📈 **Taux d'autoconsommation & autoproduction** avec jauges colorées
 - 🔎 **Tailles ajustables** par curseurs : épaisseur des flux, taille des libellés et des valeurs
 - 🎨 **Deux modes de scène** : vue séparée (icônes) ou scène immersive (photo réaliste 1536×1024)
 - 🌙 **Mode nuit** automatique avec lune, étoiles et phase lunaire
@@ -270,6 +271,19 @@ La batterie utilise des animations GSAP pour un rendu professionnel :
 
 ---
 
+## 📈 Autoconsommation & autoproduction
+
+Deux jauges colorées calculées à partir des entités déjà configurées (aucune nouvelle entité) :
+
+| Indicateur | Formule | Sens |
+|---|---|---|
+| **Autoconsommation** | `(pv_today − grid_export_today) / pv_today` | part du solaire produit que tu consommes (vs revendu) |
+| **Autoproduction** (autosuffisance) | `(pv_today − grid_export_today) / today_load` | part de ta conso couverte par le solaire |
+
+> Nécessite `pv_today` + `grid_export_today` (+ `today_load` pour l'autoproduction). Couleur : 🟢 ≥ 70 % · 🟡 40-70 % · 🔴 < 40 %. Masquable via `show_autoconso`.
+
+---
+
 ## 🩺 État de santé batterie (SOH)
 
 Affiche le **State of Health** (santé de la batterie) avec une barre colorée, la capacité réelle vs théorique, et une estimation des cycles.
@@ -397,6 +411,12 @@ grid_export_today: sensor.energie_injectee   # affine l'autoconsommation
 pv_month_kwh: sensor.pv_energie_mois
 pv_year_kwh:  sensor.pv_energie_annee
 
+# ── Revente du surplus (export rémunéré) ──
+export_paid:  true                      # active la revente
+export_price: 0.10                      # €/kWh prix de rachat du surplus
+grid_export_month: sensor.export_mois   # (optionnel) revenu mensuel
+grid_export_year:  sensor.export_annee  # (optionnel) revenu annuel + ROI
+
 # ROI (visible uniquement si install_cost > 0 ET pv_year_kwh configuré)
 install_cost: 8000        # € coût de l'installation
 
@@ -408,10 +428,12 @@ co2_factor: 0.4           # kg CO₂/kWh évités (mix français 2024)
 
 ### Ce qui s'affiche
 
-- **Aujourd'hui** : économies accumulées depuis minuit + kg CO₂ évités
-- **Ce mois** : économies × prix actuel (si `pv_month_kwh` configuré)
-- **Cette année** : économies × prix actuel + CO₂ en kg ou tonnes (si `pv_year_kwh`)
-- **ROI** : barre de progression + années de retour sur investissement
+- **Aujourd'hui** : économies (autoconsommation) **+ revenu de revente** (si `export_paid`) + kg CO₂ évités
+- **Ce mois** : économies × prix + revente (si `grid_export_month`)
+- **Cette année** : économies × prix + revente (si `grid_export_year`) + CO₂
+- **ROI** : basé sur le **bénéfice annuel total** (économies + revente)
+
+> 💶 **Économies vs revenu** : l'autoconsommation est valorisée au prix que tu **évites de payer** (`electricity_price`/Tempo/HP-HC), le surplus exporté au prix de **revente** (`export_price`). Les deux sont additionnés dans les totaux.
 
 > **Note Tempo** : les plages HC/HP utilisées sont les heures standard EDF (HC : 22h–6h, HP : 6h–22h). La production solaire étant 100% diurne, elle tombe quasi-toujours en HP — le calcul est donc très fidèle même après un rechargement de page.
 
@@ -426,6 +448,7 @@ color_solar:   '#FFD700'   # Jaune solaire (flux PV)
 color_grid:    '#4FC3F7'   # Bleu cyan (réseau)
 color_battery: '#69FF47'   # Vert néon (batterie)
 color_home:    '#FF6B6B'   # Rouge-rose (consommation maison)
+color_ev:      '#4FC3F7'   # Flux voiture électrique (EV)
 color_bg:      '#060d1a'   # Fond de la carte
 ```
 
@@ -470,6 +493,7 @@ show_total_pv:     true    # Carte CO₂ évité du jour
 show_cells:        true    # Tensions min/max cellules + delta
 show_endurance:    true    # Autonomie estimée de la batterie
 show_inverter:     true    # Section Onduleur (PV jour, Chg/Dch, Restant, Conso jour)
+show_autoconso:    true    # Section Autoconsommation / Autoproduction
 show_savings:      true    # Section Économies & ROI
 show_health:       true    # Section État de santé batterie (SOH + cycles)
 show_images:       true    # Images (false = fallback émojis)
