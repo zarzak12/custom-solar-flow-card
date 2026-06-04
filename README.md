@@ -18,6 +18,7 @@ Solar Flow Card affiche en temps réel **tous vos flux d'énergie** sur une scè
 - 💶 **4 modes de tarification** : prix fixe, Heures Pleines/Creuses, Tempo EDF, ou entité dynamique
 - 🔮 **Prévision de production** affichée en haut du ciel (Solcast / Forecast.Solar)
 - 🚗 **Véhicule électrique** avec flux bidirectionnel charge / V2H et SOC
+- 🩺 **État de santé batterie (SOH)** avec barre colorée et estimation des cycles
 - 🎨 **Deux modes de scène** : vue séparée (icônes) ou scène immersive (photo réaliste 1536×1024)
 - 🌙 **Mode nuit** automatique avec lune, étoiles et phase lunaire
 
@@ -141,6 +142,18 @@ batt_soc: sensor.battery_soc
 | `max_cell` | V | Tension de la cellule la plus haute |
 | `remaining` | kWh | Énergie restante (si exposée par l'onduleur) |
 
+### Entités — État de santé batterie (SOH)
+
+| Option | Unité | Description |
+|---|---|---|
+| `batt_soh` | % | État de santé direct (si le BMS l'expose) — **Méthode A** |
+| `batt_full_kwh` | kWh | Capacité totale réelle (ex. Zendure « Total Battery Capacity ») — **Méthode B** |
+| `batt_cycles` | — | Nombre de cycles direct (si le BMS l'expose) |
+| `batt_cycles_energy` | kWh | Énergie déchargée cumulée → estimation EFC des cycles |
+| `batt_cycles_base` | nombre | Offset de cycles initial ajouté à l'EFC calculé |
+
+> La capacité théorique utilisée pour le SOH = `batt_capacity_kwh` (section Général).
+
 ### Entités — Météo & Soleil
 
 | Option | Description |
@@ -229,6 +242,43 @@ La batterie utilise des animations GSAP pour un rendu professionnel :
 | **Charge** | Vert néon | Montée avec rebond élastique | 💚 Halo vert pulsé (0.8s) | ✅ Bulles vertes ascendantes |
 | **Décharge** | Orange | Descente fluide | 🟠 Halo orange lent (1.1s) | — |
 | **Critique** (<15%) | Rouge | — | 🔴 Flash rouge urgent (0.3s) | — |
+
+---
+
+## 🩺 État de santé batterie (SOH)
+
+Affiche le **State of Health** (santé de la batterie) avec une barre colorée, la capacité réelle vs théorique, et une estimation des cycles.
+
+```
+🩺 ÉTAT DE SANTÉ BATTERIE
+SOH       [████████░░] 95 %
+Capacité  5.6 / 5.9 kWh        ↻ 78
+```
+
+### SOH — deux méthodes
+
+| Méthode | Config | Calcul |
+|---|---|---|
+| **A — entité directe** | `batt_soh` | utilise le % renvoyé par le BMS |
+| **B — capacité réelle** | `batt_full_kwh` | `SOH = capacité_réelle ÷ batt_capacity_kwh × 100` |
+
+> Couleur de la barre : 🟢 ≥ 90 % · 🟡 80–90 % · 🔴 < 80 %
+
+### Cycles — trois cas (par priorité)
+
+1. **Capteur direct** : `batt_cycles`
+2. **Estimation EFC** (Equivalent Full Cycles) : `cycles = batt_cycles_base + énergie_déchargée_cumulée ÷ batt_capacity_kwh`
+3. Rien configuré → ligne masquée
+
+```yaml
+# Exemple Zendure (pas de capteur SOH/cycles direct)
+batt_capacity_kwh:  5.76                                      # capacité nominale (section Général)
+batt_full_kwh:      sensor.solarflow_2400_ac_battery_capacity # "Total Battery Capacity"
+batt_cycles_energy: sensor.solarflow_2400_ac_total_decharges  # "Total décharges" (kWh cumulés)
+batt_cycles_base:   0                                          # offset si cycles déjà effectués
+```
+
+> L'EFC compte l'énergie réellement déchargée rapportée à la capacité (méthode standard d'usure), plus juste que compter chaque charge partielle.
 
 ---
 
@@ -383,6 +433,7 @@ show_cells:        true    # Tensions min/max cellules + delta
 show_endurance:    true    # Autonomie estimée de la batterie
 show_inverter:     true    # Section Onduleur (PV jour, Chg/Dch, Restant, Conso jour)
 show_savings:      true    # Section Économies & ROI
+show_health:       true    # Section État de santé batterie (SOH + cycles)
 show_images:       true    # Images (false = fallback émojis)
 ```
 
@@ -436,6 +487,11 @@ batt_chg_today: sensor.charge_batt_jour
 batt_dis_today: sensor.decharge_batt_jour
 min_cell:       sensor.cellule_min
 max_cell:       sensor.cellule_max
+
+# ── État de santé batterie ──
+batt_full_kwh:      sensor.capacite_totale_reelle   # ou entité SOH directe via batt_soh
+batt_cycles_energy: sensor.decharge_totale_cumulee
+batt_cycles_base:   0
 
 # ── Météo ──
 weather:    weather.maison

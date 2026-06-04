@@ -16,6 +16,7 @@ Solar Flow Card displays **all your energy flows** in real time on an immersive 
 - 🌦️ **Dynamic weather** — blue sky → partly cloudy → overcast → rain → snow → storm, with particle effects
 - 💰 **Savings & ROI** — real-time delta calculation using the exact price at the moment of production
 - 🎨 **Two scene modes**: separate view (icons) or immersive scene (photorealistic 1536×1024)
+- 🩺 **Battery health (SOH)** with a colored bar and cycle estimation
 - 🌙 **Night mode** automatic, with moon, stars and lunar phase
 - 🔌 **EDF Tempo tariff** natively supported with a colored HP/HC badge
 
@@ -136,6 +137,18 @@ batt_soc: sensor.battery_soc
 | `max_cell` | V | Highest cell voltage |
 | `remaining` | kWh | Remaining energy (if exposed by the inverter) |
 
+### Entities — Battery health (SOH)
+
+| Option | Unit | Description |
+|---|---|---|
+| `batt_soh` | % | Direct State of Health (if the BMS exposes it) — **Method A** |
+| `batt_full_kwh` | kWh | Real total capacity (e.g. Zendure "Total Battery Capacity") — **Method B** |
+| `batt_cycles` | — | Direct cycle count (if the BMS exposes it) |
+| `batt_cycles_energy` | kWh | Cumulative discharged energy → EFC cycle estimation |
+| `batt_cycles_base` | number | Initial cycle offset added to the computed EFC |
+
+> The design capacity used for SOH = `batt_capacity_kwh` (General section).
+
 ### Entities — Weather & Sun
 
 | Option | Description |
@@ -224,6 +237,43 @@ The battery uses GSAP animations for a professional look:
 | **Charging** | Neon green | Rise with elastic rebound | 💚 Pulsing green halo (0.8s) | ✅ Rising green bubbles |
 | **Discharging** | Orange | Smooth fall | 🟠 Slow orange halo (1.1s) | — |
 | **Critical** (<15%) | Red | — | 🔴 Urgent red flash (0.3s) | — |
+
+---
+
+## 🩺 Battery health (SOH)
+
+Shows the **State of Health** with a colored bar, real vs design capacity, and a cycle estimate.
+
+```
+🩺 BATTERY HEALTH
+SOH       [████████░░] 95 %
+Capacity  5.6 / 5.9 kWh        ↻ 78
+```
+
+### SOH — two methods
+
+| Method | Config | Calculation |
+|---|---|---|
+| **A — direct entity** | `batt_soh` | uses the % returned by the BMS |
+| **B — real capacity** | `batt_full_kwh` | `SOH = real_capacity ÷ batt_capacity_kwh × 100` |
+
+> Bar color: 🟢 ≥ 90 % · 🟡 80–90 % · 🔴 < 80 %
+
+### Cycles — three cases (by priority)
+
+1. **Direct sensor**: `batt_cycles`
+2. **EFC estimation** (Equivalent Full Cycles): `cycles = batt_cycles_base + cumulative_discharged_energy ÷ batt_capacity_kwh`
+3. Nothing configured → row hidden
+
+```yaml
+# Zendure example (no direct SOH/cycle sensor)
+batt_capacity_kwh:  5.76                                      # nominal capacity (General section)
+batt_full_kwh:      sensor.solarflow_2400_ac_battery_capacity # "Total Battery Capacity"
+batt_cycles_energy: sensor.solarflow_2400_ac_total_decharges  # cumulative discharged kWh
+batt_cycles_base:   0                                          # offset if cycles already done
+```
+
+> EFC counts the energy actually discharged relative to capacity (the standard wear method), more accurate than counting each partial charge.
 
 ---
 
@@ -379,6 +429,7 @@ show_cells:        true    # Min/max cell voltages + delta
 show_endurance:    true    # Estimated battery endurance
 show_inverter:     true    # Inverter section (today PV, Chg/Dch, Remaining, Today load)
 show_savings:      true    # Savings & ROI section
+show_health:       true    # Battery health section (SOH + cycles)
 show_images:       true    # Images (false = emoji fallback)
 ```
 
@@ -432,6 +483,11 @@ batt_chg_today: sensor.battery_charge_today
 batt_dis_today: sensor.battery_discharge_today
 min_cell:       sensor.cell_min
 max_cell:       sensor.cell_max
+
+# ── Battery health ──
+batt_full_kwh:      sensor.real_total_capacity   # or direct SOH entity via batt_soh
+batt_cycles_energy: sensor.cumulative_discharge
+batt_cycles_base:   0
 
 # ── Weather ──
 weather:    weather.home
