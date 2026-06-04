@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.77';
+const VERSION = '1.0.80';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -1690,7 +1690,7 @@ function buildCardHTML(cfg) {
          SCÈNE UNIFIÉE : ciel + soleil + énergie
     ════════════════════════════════════════════ -->
     <div class="sfc-unified-scene ${c.img_scene_mode === 'single' ? 'sfc-scene-mode-single-scene' : ''}" id="sfcUnifiedScene"
-         style="${c.show_images === false ? 'height:200px' : (c.img_scene_mode === 'single' ? 'aspect-ratio:9/8;max-height:475px' : 'height:355px')};">
+         style="${c.show_images === false ? 'height:200px' : (c.img_scene_mode === 'single' ? 'aspect-ratio:11/10;max-height:490px' : 'height:355px')};">
 
       <!-- Fond ciel dynamique -->
       <div class="sfc-sky" id="sfcSky"></div>
@@ -1882,9 +1882,9 @@ function buildCardHTML(cfg) {
 
           <!-- Lever / coucher — extrémités de l'arc -->
           <text id="sfcSGSunrise" text-anchor="start" x="120" y="225"
-            style="font-family:monospace;font-size:calc(36px*var(--sfc-sl,1));font-weight:600;fill:rgba(232,244,253,0.65)">🌅 —</text>
+            style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:600;fill:rgba(232,244,253,0.65)">🌅 —</text>
           <text id="sfcSGSunset"  text-anchor="end"   x="1416" y="200"
-            style="font-family:monospace;font-size:calc(36px*var(--sfc-sl,1));font-weight:600;fill:rgba(232,244,253,0.65)">— 🌇</text>
+            style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:600;fill:rgba(232,244,253,0.65)">— 🌇</text>
 
           <!-- ── FLUX Soleil → Maison (rayon ciel, coords Figma M790 15.5 V224.5) ── -->
           <path id="sfcSunFlowLine_s"     class="sfc-sun-flow-core"     stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:calc(3*var(--sfc-sf,1))"   d="M 790,15.5 L 790,224.5"/>
@@ -1943,10 +1943,8 @@ function buildCardHTML(cfg) {
           <rect id="sfcSVBattFill" x="1422" y="562" width="71" height="63"
             fill="url(#sfcSVGradNeutral)" clip-path="url(#sfcSVBattClip)"/>
           <!-- Vagues de surface animées (gsap.ticker) — suivent le niveau du liquide -->
-          <path id="sfcSVWaveA" clip-path="url(#sfcSVBattClip)" fill="none"
-            stroke="rgba(255,255,255,0.45)" stroke-width="2.5" stroke-linecap="round"/>
-          <path id="sfcSVWaveB" clip-path="url(#sfcSVBattClip)" fill="none"
-            stroke="rgba(255,255,255,0.22)" stroke-width="2" stroke-linecap="round"/>
+          <path id="sfcSVWaveA" clip-path="url(#sfcSVBattClip)" stroke="none"/>
+          <path id="sfcSVWaveB" clip-path="url(#sfcSVBattClip)" stroke="none"/>
           <!-- Vague 1 (lente) — positionnée par GSAP sur la surface du liquide -->
           <rect id="sfcSVBattWave1" x="1392" y="610" width="131" height="14" rx="7"
             fill="rgba(255,255,255,0.28)" clip-path="url(#sfcSVBattClip)" opacity="0"/>
@@ -3118,26 +3116,46 @@ class SolarFlowCard extends HTMLElement {
     const wA = this._el('sfcSVWaveA');
     const wB = this._el('sfcSVWaveB');
     if (!fill || !wA) return;
-    const topY = parseFloat(fill.getAttribute('y'));
-    const h    = parseFloat(fill.getAttribute('height'));
-    if (isNaN(topY) || isNaN(h) || h < 6) {
+    const AMP = 6;
+    const rectTop = parseFloat(fill.getAttribute('y'));   // le rect est descendu de AMP
+    const h       = parseFloat(fill.getAttribute('height'));
+    if (isNaN(rectTop) || isNaN(h) || h < 2) {
       wA.setAttribute('d', ''); if (wB) wB.setAttribute('d', '');
       return;
     }
+    const surface = rectTop - AMP;   // niveau moyen réel du liquide
     this._battWavePhase += 0.05;
-    const x0 = 1422, w = 71, steps = 16;
-    const build = (amp, phase, wl) => {
+    const x0 = 1422, w = 71, steps = 20;
+    // Bande pleine : surface sinusoïdale en haut, bord plat en bas (bottomY)
+    const band = (amp, phase, wl, bottomY) => {
       const k = Math.PI * 2 * wl / w;
       let d = '';
       for (let i = 0; i <= steps; i++) {
         const x = x0 + w * i / steps;
-        const y = topY + Math.sin(phase + (x - x0) * k) * amp;
+        const y = surface + Math.sin(phase + (x - x0) * k) * amp;
         d += (i ? ' L ' : 'M ') + x.toFixed(1) + ' ' + y.toFixed(1);
       }
+      d += ` L ${x0 + w} ${bottomY} L ${x0} ${bottomY} Z`;
       return d;
     };
-    wA.setAttribute('d', build(4, this._battWavePhase,        2));
-    if (wB) wB.setAttribute('d', build(3, this._battWavePhase * 1.3 + 1, 1.5));
+    const rgb = this._battWaveColor || '0,220,255';
+    // Vague A : corps de surface (couleur du niveau) qui rejoint le rect en dessous
+    wA.setAttribute('d', band(AMP, this._battWavePhase, 2, rectTop + 12));
+    wA.setAttribute('fill', `rgba(${rgb},0.9)`);
+    // Vague B : reflet clair déphasé par-dessus (effet de profondeur)
+    if (wB) {
+      wB.setAttribute('d', band(AMP * 0.7, this._battWavePhase * 1.35 + 1.6, 1.5, surface + 10));
+      wB.setAttribute('fill', 'rgba(255,255,255,0.20)');
+    }
+  }
+
+  // Couleur RGB des vagues selon l'état de charge/décharge
+  _battWaveRGB(state) {
+    // = couleur du stop 0% des gradients du liquide → raccord sans couture
+    return state === 'charging'    ? '105,255,71'
+         : state === 'discharging' ? '255,180,0'
+         : state === 'low'         ? '255,80,80'
+         :                           '0,220,255';
   }
 
   _updateBatterySVGGSAP(battSoc, state) {
@@ -3158,7 +3176,8 @@ class SolarFlowCard extends HTMLElement {
     const ease = rising ? 'elastic.out(1, 0.38)' : 'power2.out';
     const dur  = rising ? 2.8 : 1.6;
 
-    if (svFill) gsap.to(svFill, { attr: { y: fillY, height: fillH }, duration: dur, ease, overwrite: 'auto' });
+    // Rect descendu de 6 (AMP) pour laisser les creux de vague visibles au-dessus
+    if (svFill) gsap.to(svFill, { attr: { y: fillY + 6, height: Math.max(0, fillH - 6) }, duration: dur, ease, overwrite: 'auto' });
 
     // ── 3. Gradient + classe CSS ──────────────────────────────────────────
     if (svFill) {
@@ -3169,6 +3188,8 @@ class SolarFlowCard extends HTMLElement {
       svFill.setAttribute('fill', grad);
       svFill.setAttribute('class', state === 'low' ? 'sv-low' : state === 'charging' ? 'sv-charging' : '');
     }
+    // Couleur des vagues selon l'état
+    this._battWaveColor = this._battWaveRGB(state);
 
     // ── 4. Bulles de charge ascendantes ──────────────────────────────────
     if (this._svgBubbles) {
@@ -3759,8 +3780,8 @@ class SolarFlowCard extends HTMLElement {
         const maxH  = 110;
         const fillH = Math.round(maxH * battSoc / 100);
         const fillY = 502 + (maxH - fillH);
-        svFill.setAttribute('y', String(fillY));
-        svFill.setAttribute('height', String(fillH));
+        svFill.setAttribute('y', String(fillY + 6));
+        svFill.setAttribute('height', String(Math.max(0, fillH - 6)));
         const grad = battState === 'low'         ? 'url(#sfcSVGradLow)'
                    : battState === 'charging'    ? 'url(#sfcSVGradCharge)'
                    : battState === 'discharging' ? 'url(#sfcSVGradDischarge)'
@@ -3769,6 +3790,7 @@ class SolarFlowCard extends HTMLElement {
         svFill.setAttribute('class', battState === 'low' ? 'sv-low' : battState === 'charging' ? 'sv-charging' : '');
       }
     }
+    this._battWaveColor = this._battWaveRGB(battState);
 
     // État de santé batterie
     this._updateHealth();
