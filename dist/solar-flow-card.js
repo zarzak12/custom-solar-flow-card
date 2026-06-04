@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.74';
+const VERSION = '1.0.76';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -813,7 +813,7 @@ const CARD_CSS = `
     background:rgba(0,0,0,.5);border:1px solid rgba(255,215,0,.3);border-radius:20px;
     padding:4px 14px;display:flex;align-items:center;gap:6px;backdrop-filter:blur(8px);z-index:3;
   }
-  .sfc-pv-val { font-family:monospace;font-size:15px;font-weight:700;color:var(--solar);text-shadow:0 0 10px rgba(255,215,0,.6); }
+  .sfc-pv-val { font-family:monospace;font-size:calc(15px*var(--sfc-sv,1));font-weight:700;color:var(--solar);text-shadow:0 0 10px rgba(255,215,0,.6); }
   .sfc-sun-time { position:absolute;top:8px;right:10px;font-family:monospace;font-size:13px;font-weight:600;
     color:var(--solar);background:rgba(0,0,0,.4);padding:2px 7px;border-radius:7px;border:1px solid rgba(255,215,0,.2);z-index:3; }
   .sfc-forecast-badge {
@@ -1135,7 +1135,7 @@ const CARD_CSS = `
     top:50%; left:50%;
     transform:translate(-50%,-50%);
     font-family:monospace;
-    font-size:15px; font-weight:900;
+    font-size:calc(15px*var(--sfc-sv,1)); font-weight:900;
     color:#fff;
     text-shadow:0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(0,200,255,0.6);
     z-index:4;
@@ -1156,9 +1156,9 @@ const CARD_CSS = `
   @keyframes sfc-batt-low    { 0%,100%{opacity:1} 50%{opacity:0.55} }
 
   /* Labels */
-  .sfc-img-label { font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:700; }
-  .sfc-img-val   { font-family:monospace;font-size:12px;font-weight:700;text-shadow:0 0 6px currentColor;transition:all .5s; }
-  .sfc-img-sub   { font-size:9px;color:var(--muted); }
+  .sfc-img-label { font-size:calc(8px*var(--sfc-sl,1));letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:700; }
+  .sfc-img-val   { font-family:monospace;font-size:calc(12px*var(--sfc-sv,1));font-weight:700;text-shadow:0 0 6px currentColor;transition:all .5s; }
+  .sfc-img-sub   { font-size:calc(9px*var(--sfc-sv,1));color:var(--muted); }
 
   /* ── Routeurs solaires ── */
   /* Les routeurs sont maintenant intégrés dans .sfc-energy-row */
@@ -1181,12 +1181,12 @@ const CARD_CSS = `
     50%      { filter: drop-shadow(0 0 18px rgba(255,165,0,1)); }
   }
   .sfc-router-label {
-    font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+    font-size: calc(8px*var(--sfc-sl,1)); letter-spacing: 1px; text-transform: uppercase;
     color: var(--muted); font-weight: 700;
     background: rgba(6,13,26,0.6); padding: 1px 5px; border-radius: 4px;
   }
   .sfc-router-val {
-    font-family: monospace; font-size: 11px; font-weight: 700;
+    font-family: monospace; font-size: calc(11px*var(--sfc-sv,1)); font-weight: 700;
     color: #FFA040; text-shadow: 0 0 6px rgba(255,160,64,0.6);
     background: rgba(6,13,26,0.55); padding: 1px 5px; border-radius: 4px;
   }
@@ -1327,9 +1327,9 @@ const CARD_CSS = `
   @keyframes sfc-dash { to{stroke-dashoffset:-28} }
   .sfc-node { display:flex;flex-direction:column;align-items:center;gap:3px;z-index:2;min-width:60px; }
   .sfc-node-icon { font-size:28px; }
-  .sfc-node-label { font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:700; }
-  .sfc-node-val { font-family:monospace;font-size:12px;font-weight:700;text-shadow:0 0 6px currentColor;transition:all .5s; }
-  .sfc-node-sub { font-size:9px;color:var(--muted); }
+  .sfc-node-label { font-size:calc(8px*var(--sfc-sl,1));letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:700; }
+  .sfc-node-val { font-family:monospace;font-size:calc(12px*var(--sfc-sv,1));font-weight:700;text-shadow:0 0 6px currentColor;transition:all .5s; }
+  .sfc-node-sub { font-size:calc(9px*var(--sfc-sv,1));color:var(--muted); }
   .c-solar  { color:var(--solar); }
   .c-grid   { color:var(--grid); }
   .c-batt   { color:var(--batt); }
@@ -1340,13 +1340,13 @@ const CARD_CSS = `
   .sfc-progress { display:flex;flex-direction:column;gap:7px;padding:10px 14px;
     background:var(--card);border-bottom:1px solid var(--border); }
   .sfc-prow { display:flex;align-items:center;gap:8px; }
-  .sfc-plabel { width:26px;font-size:8px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);font-weight:700; }
+  .sfc-plabel { width:26px;font-size:calc(8px*var(--sfc-sl,1));letter-spacing:.5px;text-transform:uppercase;color:var(--muted);font-weight:700; }
   .sfc-ptrack { flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:10px;overflow:hidden; }
   .sfc-pfill { height:100%;border-radius:10px;transition:width 1.5s cubic-bezier(.4,0,.2,1); }
   .sfc-pfill.pv   { background:linear-gradient(90deg,#A8FF3E,#FFD700); }
   .sfc-pfill.pwr  { background:linear-gradient(90deg,#4FC3F7,#0099FF); }
   .sfc-pfill.batt { background:linear-gradient(90deg,#69FF47,#00D4AA); }
-  .sfc-ppct { width:32px;text-align:right;font-family:monospace;font-size:9px;font-weight:600; }
+  .sfc-ppct { width:32px;text-align:right;font-family:monospace;font-size:calc(9px*var(--sfc-sv,1));font-weight:600; }
 
   /* ── Metric cards ── */
   .sfc-metrics { display:grid;gap:7px;padding:0 10px; }
@@ -1358,11 +1358,11 @@ const CARD_CSS = `
     transition:background .2s;cursor:default;
   }
   .sfc-mc:hover { background:rgba(255,255,255,.07); }
-  .sfc-mc-header { display:flex;align-items:center;gap:5px;font-size:8px;letter-spacing:1px;
+  .sfc-mc-header { display:flex;align-items:center;gap:5px;font-size:calc(8px*var(--sfc-sl,1));letter-spacing:1px;
     text-transform:uppercase;color:var(--muted);font-weight:700; }
-  .sfc-mc-val { font-family:monospace;font-size:14px;font-weight:700;
+  .sfc-mc-val { font-family:monospace;font-size:calc(14px*var(--sfc-sv,1));font-weight:700;
     text-shadow:0 0 6px currentColor;transition:all .5s; }
-  .sfc-mc-sub { font-size:9px;color:var(--muted);font-family:monospace; }
+  .sfc-mc-sub { font-size:calc(9px*var(--sfc-sv,1));color:var(--muted);font-family:monospace; }
 
   /* ── Mode badge ── */
   .sfc-mode { display:inline-flex;align-items:center;gap:4px;padding:2px 8px;
@@ -1377,10 +1377,10 @@ const CARD_CSS = `
     background:var(--card);border:1px solid var(--border);border-radius:11px;
     padding:9px 12px;margin:0 10px;
   }
-  .sfc-end-left { display:flex;align-items:center;gap:7px;font-size:9px;
+  .sfc-end-left { display:flex;align-items:center;gap:7px;font-size:calc(9px*var(--sfc-sl,1));
     letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:700; }
-  .sfc-end-val { font-family:monospace;font-size:13px;font-weight:700;color:var(--batt);text-shadow:0 0 6px rgba(105,255,71,.4); }
-  .sfc-end-sub { font-size:9px;color:var(--muted);margin-left:4px; }
+  .sfc-end-val { font-family:monospace;font-size:calc(13px*var(--sfc-sv,1));font-weight:700;color:var(--batt);text-shadow:0 0 6px rgba(105,255,71,.4); }
+  .sfc-end-sub { font-size:calc(9px*var(--sfc-sv,1));color:var(--muted);margin-left:4px; }
 
   /* ── Économies & ROI ── */
   .sfc-savings {
@@ -1392,29 +1392,29 @@ const CARD_CSS = `
     display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:1px;
   }
   .sfc-savings-title {
-    font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);flex:1;
+    font-size:calc(9px*var(--sfc-sl,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);flex:1;
   }
   .sfc-savings-price {
-    font-family:monospace;font-size:11px;font-weight:700;color:#FFD700;
+    font-family:monospace;font-size:calc(11px*var(--sfc-sv,1));font-weight:700;color:#FFD700;
     background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.22);
     border-radius:6px;padding:2px 7px;white-space:nowrap;
   }
   .sfc-tempo-badge {
-    font-family:monospace;font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap;
+    font-family:monospace;font-size:calc(11px*var(--sfc-sv,1));font-weight:700;border-radius:6px;padding:2px 8px;white-space:nowrap;
   }
   .sfc-tempo-blue  { background:rgba(30,120,255,0.18);color:#7ad;border:1px solid rgba(30,120,255,0.35); }
   .sfc-tempo-white { background:rgba(200,210,230,0.18);color:#cce;border:1px solid rgba(200,210,230,0.35); }
   .sfc-tempo-red   { background:rgba(255,40,40,0.20);color:#f88;border:1px solid rgba(255,40,40,0.40); }
   .sfc-savings-row { display:flex;align-items:center;gap:4px; }
   .sfc-sav-lbl {
-    font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+    font-size:calc(9px*var(--sfc-sl,1));letter-spacing:1px;text-transform:uppercase;color:var(--muted);
     width:76px;flex-shrink:0;
   }
   .sfc-sav-val {
-    font-family:monospace;font-size:14px;font-weight:700;
+    font-family:monospace;font-size:calc(14px*var(--sfc-sv,1));font-weight:700;
     color:#69FF47;text-shadow:0 0 6px rgba(105,255,71,0.35);flex:1;
   }
-  .sfc-sav-co2 { font-family:monospace;font-size:10px;color:#6af;text-align:right;white-space:nowrap; }
+  .sfc-sav-co2 { font-family:monospace;font-size:calc(10px*var(--sfc-sv,1));color:#6af;text-align:right;white-space:nowrap; }
   .sfc-savings-sep { height:1px;background:var(--border);margin:1px 0; }
   .sfc-roi-row { display:flex;align-items:center;gap:8px; }
   .sfc-roi-bar-wrap {
@@ -1425,7 +1425,7 @@ const CARD_CSS = `
     border-radius:3px;transition:width 1.5s ease;
   }
   .sfc-roi-val {
-    font-family:monospace;font-size:11px;font-weight:700;color:#FFD700;
+    font-family:monospace;font-size:calc(11px*var(--sfc-sv,1));font-weight:700;color:#FFD700;
     white-space:nowrap;min-width:50px;text-align:right;
   }
 
@@ -1437,7 +1437,7 @@ const CARD_CSS = `
   }
   .sfc-health-row { display:flex;align-items:center;gap:8px; }
   .sfc-health-lbl {
-    font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+    font-size:calc(9px*var(--sfc-sl,1));letter-spacing:1px;text-transform:uppercase;color:var(--muted);
     width:70px;flex-shrink:0;
   }
   .sfc-health-bar-wrap {
@@ -1447,13 +1447,13 @@ const CARD_CSS = `
     height:100%;width:0%;border-radius:3px;transition:width 1.5s ease,background .4s;
   }
   .sfc-health-val {
-    font-family:monospace;font-size:14px;font-weight:700;
+    font-family:monospace;font-size:calc(14px*var(--sfc-sv,1));font-weight:700;
     white-space:nowrap;min-width:48px;text-align:right;
   }
   .sfc-health-sub {
-    font-family:monospace;font-size:13px;font-weight:700;color:#e8f4fd;flex:1;
+    font-family:monospace;font-size:calc(13px*var(--sfc-sv,1));font-weight:700;color:#e8f4fd;flex:1;
   }
-  .sfc-health-cycles { font-family:monospace;font-size:13px;font-weight:700;color:#7ecfff;text-align:right; }
+  .sfc-health-cycles { font-family:monospace;font-size:calc(13px*var(--sfc-sv,1));font-weight:700;color:#7ecfff;text-align:right; }
   .soh-good { color:#69FF47; }
   .soh-mid  { color:#FFD700; }
   .soh-low  { color:#FF6B6B; }
@@ -1462,7 +1462,7 @@ const CARD_CSS = `
   .soh-low-bg  { background:linear-gradient(90deg,#c0392b,#FF6B6B); }
 
   /* ── Section title ── */
-  .sfc-section { font-size:8px;letter-spacing:2px;text-transform:uppercase;
+  .sfc-section { font-size:calc(8px*var(--sfc-sl,1));letter-spacing:2px;text-transform:uppercase;
     color:var(--muted);font-weight:700;display:flex;align-items:center;gap:5px;
     padding:0 10px; }
   .sfc-section::before { content:'';width:12px;height:2px;background:var(--solar);border-radius:1px; }
@@ -1476,9 +1476,9 @@ const CARD_CSS = `
   }
   .sfc-inv-card:hover { background:rgba(255,255,255,.07); }
   .sfc-inv-icon { font-size:18px; }
-  .sfc-inv-label { font-size:7px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:700; }
-  .sfc-inv-val { font-family:monospace;font-size:10px;font-weight:700;text-shadow:0 0 5px currentColor; }
-  .sfc-inv-sub { font-family:monospace;font-size:8px;color:var(--batt); }
+  .sfc-inv-label { font-size:calc(7px*var(--sfc-sl,1));letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:700; }
+  .sfc-inv-val { font-family:monospace;font-size:calc(10px*var(--sfc-sv,1));font-weight:700;text-shadow:0 0 5px currentColor; }
+  .sfc-inv-sub { font-family:monospace;font-size:calc(8px*var(--sfc-sv,1));color:var(--batt); }
 
   /* ── Spacer ── */
   .sfc-gap { height:8px; }
@@ -1942,6 +1942,11 @@ function buildCardHTML(cfg) {
           <!-- Liquide (bottom-up) — y et height mis à jour par JS -->
           <rect id="sfcSVBattFill" x="1422" y="562" width="71" height="63"
             fill="url(#sfcSVGradNeutral)" clip-path="url(#sfcSVBattClip)"/>
+          <!-- Vagues de surface animées (gsap.ticker) — suivent le niveau du liquide -->
+          <path id="sfcSVWaveA" clip-path="url(#sfcSVBattClip)" fill="none"
+            stroke="rgba(255,255,255,0.45)" stroke-width="2.5" stroke-linecap="round"/>
+          <path id="sfcSVWaveB" clip-path="url(#sfcSVBattClip)" fill="none"
+            stroke="rgba(255,255,255,0.22)" stroke-width="2" stroke-linecap="round"/>
           <!-- Vague 1 (lente) — positionnée par GSAP sur la surface du liquide -->
           <rect id="sfcSVBattWave1" x="1392" y="610" width="131" height="14" rx="7"
             fill="rgba(255,255,255,0.28)" clip-path="url(#sfcSVBattClip)" opacity="0"/>
@@ -3100,6 +3105,39 @@ class SolarFlowCard extends HTMLElement {
     this._battSVGAnimReady = true;
     this._prevBattSVGSoc   = -1;
     this._svgBubbleTls     = null;
+
+    // Vagues de surface — points sinusoïdaux animés via gsap.ticker (inspiré canvas)
+    this._battWavePhase = 0;
+    this._battWaveTick = () => this._drawBattWaves();
+    gsap.ticker.add(this._battWaveTick);
+  }
+
+  // Dessine 2 vagues sinusoïdales déphasées sur la surface du liquide (mode single)
+  _drawBattWaves() {
+    const fill = this._el('sfcSVBattFill');
+    const wA = this._el('sfcSVWaveA');
+    const wB = this._el('sfcSVWaveB');
+    if (!fill || !wA) return;
+    const topY = parseFloat(fill.getAttribute('y'));
+    const h    = parseFloat(fill.getAttribute('height'));
+    if (isNaN(topY) || isNaN(h) || h < 6) {
+      wA.setAttribute('d', ''); if (wB) wB.setAttribute('d', '');
+      return;
+    }
+    this._battWavePhase += 0.05;
+    const x0 = 1422, w = 71, steps = 16;
+    const build = (amp, phase, wl) => {
+      const k = Math.PI * 2 * wl / w;
+      let d = '';
+      for (let i = 0; i <= steps; i++) {
+        const x = x0 + w * i / steps;
+        const y = topY + Math.sin(phase + (x - x0) * k) * amp;
+        d += (i ? ' L ' : 'M ') + x.toFixed(1) + ' ' + y.toFixed(1);
+      }
+      return d;
+    };
+    wA.setAttribute('d', build(4, this._battWavePhase,        2));
+    if (wB) wB.setAttribute('d', build(3, this._battWavePhase * 1.3 + 1, 1.5));
   }
 
   _updateBatterySVGGSAP(battSoc, state) {
@@ -3425,6 +3463,7 @@ class SolarFlowCard extends HTMLElement {
     if (this._battGlowTl)   { this._battGlowTl.kill(); this._battGlowTl = null; }
     if (this._bubbleTls)    { this._bubbleTls.forEach(t => t.kill()); this._bubbleTls = null; }
     if (this._svgBubbleTls) { this._svgBubbleTls.forEach(t => t.kill()); this._svgBubbleTls = null; }
+    if (this._battWaveTick && window.gsap) { gsap.ticker.remove(this._battWaveTick); this._battWaveTick = null; }
   }
 
   _getNum(entityId, fallback = 0) {

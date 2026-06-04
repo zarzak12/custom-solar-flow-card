@@ -3,7 +3,7 @@
 **🇫🇷 Français** · [🇬🇧 English](README.en.md)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.0.74-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.76-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Ouvrir dans Home Assistant et ajouter ce dépôt à HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -30,6 +30,7 @@ Solar Flow Card affiche en temps réel **tous vos flux d'énergie** sur une scè
 - 🔮 **Prévision de production** affichée en haut du ciel (Solcast / Forecast.Solar)
 - 🚗 **Véhicule électrique** avec flux bidirectionnel charge / V2H et SOC
 - 🩺 **État de santé batterie (SOH)** avec barre colorée et estimation des cycles
+- 🔎 **Tailles ajustables** par curseurs : épaisseur des flux, taille des libellés et des valeurs
 - 🎨 **Deux modes de scène** : vue séparée (icônes) ou scène immersive (photo réaliste 1536×1024)
 - 🌙 **Mode nuit** automatique avec lune, étoiles et phase lunaire
 
@@ -265,6 +266,8 @@ La batterie utilise des animations GSAP pour un rendu professionnel :
 | **Décharge** | Orange | Descente fluide | 🟠 Halo orange lent (1.1s) | — |
 | **Critique** (<15%) | Rouge | — | 🔴 Flash rouge urgent (0.3s) | — |
 
+> 🌊 En mode single, la surface du liquide ondule avec de vraies **vagues sinusoïdales animées** (`gsap.ticker`) qui suivent le niveau de charge/décharge.
+
 ---
 
 ## 🩺 État de santé batterie (SOH)
@@ -444,6 +447,18 @@ img_overlay1_label: Voiture
 img_overlay2: /local/solar-flow-card/img/piscine.png
 img_overlay2_label: Piscine
 ```
+
+### Tailles d'affichage (curseurs)
+
+Trois curseurs dans l'éditeur (section **🔎 Tailles d'affichage**) ajustent l'échelle de toute la carte :
+
+```yaml
+scale_flux:  1.0   # épaisseur des flux d'énergie (0.5 → 2.0)
+scale_label: 1.0   # taille des libellés : RÉSEAU, MAISON, SOH… (0.6 → 1.8)
+scale_value: 1.0   # taille des valeurs chiffrées : 547 W, 95 %… (0.6 → 1.8)
+```
+
+> Ces échelles s'appliquent partout : scène (mode single), batterie, onduleur, économies, état de santé, barres de progression.
 
 ### Options d'affichage
 

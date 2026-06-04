@@ -3,7 +3,7 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.0.74-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.76-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -28,6 +28,7 @@ Solar Flow Card displays **all your energy flows** in real time on an immersive 
 - 💰 **Savings & ROI** — real-time delta calculation using the exact price at the moment of production
 - 🎨 **Two scene modes**: separate view (icons) or immersive scene (photorealistic 1536×1024)
 - 🩺 **Battery health (SOH)** with a colored bar and cycle estimation
+- 🔎 **Adjustable sizes** via sliders: flow thickness, label size and value size
 - 🌙 **Night mode** automatic, with moon, stars and lunar phase
 - 🔌 **EDF Tempo tariff** natively supported with a colored HP/HC badge
 
@@ -260,6 +261,8 @@ The battery uses GSAP animations for a professional look:
 | **Discharging** | Orange | Smooth fall | 🟠 Slow orange halo (1.1s) | — |
 | **Critical** (<15%) | Red | — | 🔴 Urgent red flash (0.3s) | — |
 
+> 🌊 In single mode, the liquid surface ripples with real animated **sine waves** (`gsap.ticker`) that follow the charge/discharge level.
+
 ---
 
 ## 🩺 Battery health (SOH)
@@ -440,6 +443,18 @@ img_overlay1_label: Car
 img_overlay2: /local/solar-flow-card/img/pool.png
 img_overlay2_label: Pool
 ```
+
+### Display sizes (sliders)
+
+Three sliders in the editor (**🔎 Display sizes** section) scale the whole card:
+
+```yaml
+scale_flux:  1.0   # energy flow thickness (0.5 → 2.0)
+scale_label: 1.0   # label size: GRID, HOME, SOH… (0.6 → 1.8)
+scale_value: 1.0   # numeric value size: 547 W, 95 %… (0.6 → 1.8)
+```
+
+> These scales apply everywhere: scene (single mode), battery, inverter, savings, health, progress bars.
 
 ### Display options
 
