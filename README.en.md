@@ -3,7 +3,7 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.0.77-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.78-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -261,7 +261,7 @@ The battery uses GSAP animations for a professional look:
 | **Discharging** | Orange | Smooth fall | 🟠 Slow orange halo (1.1s) | — |
 | **Critical** (<15%) | Red | — | 🔴 Urgent red flash (0.3s) | — |
 
-> 🌊 In single mode, the liquid surface ripples with real animated **sine waves** (`gsap.ticker`) that follow the charge/discharge level.
+> 🌊 In single mode, the liquid surface ripples with **3 animated sine waves** (`gsap.ticker`). The **color follows the charge level** continuously: 🔴 red → 🟠 orange → 🟡 yellow → 🟢 green.
 
 ---
 

@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.77';
+const VERSION = '1.0.78';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -1865,6 +1865,11 @@ function buildCardHTML(cfg) {
               <stop offset="0%"   stop-color="rgba(255,80,80,0.9)"/>
               <stop offset="100%" stop-color="rgba(200,20,20,1)"/>
             </linearGradient>
+            <!-- Gradient dynamique : couleur selon le niveau de batterie (stops mis à jour en JS) -->
+            <linearGradient id="sfcSVGradLevel"     x1="0" y1="0" x2="0" y2="1">
+              <stop id="sfcSVGradLevelTop" offset="0%"   stop-color="rgba(0,220,255,0.92)"/>
+              <stop id="sfcSVGradLevelBot" offset="100%" stop-color="rgb(0,90,150)"/>
+            </linearGradient>
             <!-- Halo solaire (mode single) -->
             <radialGradient id="sfcGlowGradS" cx="50%" cy="50%" r="50%">
               <stop offset="0%"   stop-color="rgba(255,200,0,0.28)"/>
@@ -1945,6 +1950,7 @@ function buildCardHTML(cfg) {
           <!-- Vagues de surface animées (gsap.ticker) — suivent le niveau du liquide -->
           <path id="sfcSVWaveA" clip-path="url(#sfcSVBattClip)" stroke="none"/>
           <path id="sfcSVWaveB" clip-path="url(#sfcSVBattClip)" stroke="none"/>
+          <path id="sfcSVWaveC" clip-path="url(#sfcSVBattClip)" stroke="none"/>
           <!-- Vague 1 (lente) — positionnée par GSAP sur la surface du liquide -->
           <rect id="sfcSVBattWave1" x="1392" y="610" width="131" height="14" rx="7"
             fill="rgba(255,255,255,0.28)" clip-path="url(#sfcSVBattClip)" opacity="0"/>
@@ -3110,42 +3116,81 @@ class SolarFlowCard extends HTMLElement {
     gsap.ticker.add(this._battWaveTick);
   }
 
-  // Dessine 2 vagues sinusoïdales déphasées sur la surface du liquide (mode single)
+  // Éclaircit une couleur "r,g,b" vers le blanc (t : 0 = inchangé, 1 = blanc)
+  _lighten(rgb, t) {
+    const p = rgb.split(',').map(Number);
+    return p.map(c => Math.round(c + (255 - c) * t)).join(',');
+  }
+  // Assombrit une couleur "r,g,b" vers le noir
+  _darken(rgb, t) {
+    return rgb.split(',').map(c => Math.round(Number(c) * (1 - t))).join(',');
+  }
+  // Couleur "r,g,b" selon le niveau de charge (%) : rouge → orange → jaune → vert (continu)
+  _battLevelRGB(soc) {
+    const stops = [
+      [0,   [225, 45, 45]],   // rouge
+      [20,  [255, 95, 35]],   // rouge-orangé
+      [40,  [255, 160, 0]],   // orange
+      [60,  [255, 215, 0]],   // jaune
+      [80,  [150, 220, 40]],  // vert-jaune
+      [100, [60, 210, 70]],   // vert
+    ];
+    soc = Math.max(0, Math.min(100, soc || 0));
+    for (let i = 1; i < stops.length; i++) {
+      if (soc <= stops[i][0]) {
+        const p0 = stops[i-1][0], c0 = stops[i-1][1];
+        const p1 = stops[i][0],   c1 = stops[i][1];
+        const t = (soc - p0) / (p1 - p0);
+        return c0.map((c, j) => Math.round(c + (c1[j] - c) * t)).join(',');
+      }
+    }
+    return stops[stops.length - 1][1].join(',');
+  }
+
+  // Dessine 3 vagues superposées (nuances de la couleur d'état) sur la surface du liquide
   _drawBattWaves() {
     const fill = this._el('sfcSVBattFill');
     const wA = this._el('sfcSVWaveA');
     const wB = this._el('sfcSVWaveB');
+    const wC = this._el('sfcSVWaveC');
     if (!fill || !wA) return;
     const AMP = 5;
     const rectTop = parseFloat(fill.getAttribute('y'));   // le rect est descendu de AMP
     const h       = parseFloat(fill.getAttribute('height'));
     if (isNaN(rectTop) || isNaN(h) || h < 2) {
-      wA.setAttribute('d', ''); if (wB) wB.setAttribute('d', '');
+      wA.setAttribute('d', ''); if (wB) wB.setAttribute('d', ''); if (wC) wC.setAttribute('d', '');
       return;
     }
     const surface = rectTop - AMP;   // niveau moyen réel du liquide
     this._battWavePhase += 0.05;
-    const x0 = 1422, w = 71, steps = 20;
-    // Bande pleine : surface sinusoïdale en haut, bord plat en bas (bottomY)
-    const band = (amp, phase, wl, bottomY) => {
+    const x0 = 1422, w = 71, steps = 24;
+    // Bande pleine : surface sinusoïdale (autour de surfaceY) en haut, bord plat en bas
+    const band = (amp, phase, wl, surfaceY, bottomY) => {
       const k = Math.PI * 2 * wl / w;
       let d = '';
       for (let i = 0; i <= steps; i++) {
         const x = x0 + w * i / steps;
-        const y = surface + Math.sin(phase + (x - x0) * k) * amp;
+        const y = surfaceY + Math.sin(phase + (x - x0) * k) * amp;
         d += (i ? ' L ' : 'M ') + x.toFixed(1) + ' ' + y.toFixed(1);
       }
       d += ` L ${x0 + w} ${bottomY} L ${x0} ${bottomY} Z`;
       return d;
     };
+    const ph  = this._battWavePhase;
     const rgb = this._battWaveColor || '0,220,255';
-    // Vague A : corps de surface (couleur du niveau) qui rejoint le rect en dessous
-    wA.setAttribute('d', band(AMP, this._battWavePhase, 1, rectTop + 12));
-    wA.setAttribute('fill', `rgba(${rgb},0.9)`);
-    // Vague B : reflet clair déphasé par-dessus (effet de profondeur)
+    // 3 niveaux décalés, amplitudes/largeurs/déphasages différents, du foncé (fond) au clair (avant)
+    // Vague A — foncée, large, lente : corps de surface qui rejoint le rect
+    wA.setAttribute('fill', `rgba(${rgb},0.92)`);
+    wA.setAttribute('d', band(AMP,        ph,              0.8, surface,     rectTop + 14));
+    // Vague B — rouge plus claire, niveau légèrement plus haut, autre largeur/phase
     if (wB) {
-      wB.setAttribute('d', band(AMP * 0.7, this._battWavePhase * 1.35 + 1.6, 0.8, surface + 10));
-      wB.setAttribute('fill', 'rgba(255,255,255,0.20)');
+      wB.setAttribute('fill', `rgba(${this._lighten(rgb, 0.30)},0.85)`);
+      wB.setAttribute('d', band(AMP * 0.8, -ph * 1.25 + 2.1, 1.3, surface - 2, surface + 9));
+    }
+    // Vague C — rouge encore plus claire, niveau le plus haut, petite amplitude rapide
+    if (wC) {
+      wC.setAttribute('fill', `rgba(${this._lighten(rgb, 0.55)},0.8)`);
+      wC.setAttribute('d', band(AMP * 0.55, ph * 1.7 + 4.2, 2.0, surface - 4, surface + 4));
     }
   }
 
@@ -3179,17 +3224,18 @@ class SolarFlowCard extends HTMLElement {
     // Rect descendu de 5 (AMP) pour laisser les creux de vague visibles au-dessus
     if (svFill) gsap.to(svFill, { attr: { y: fillY + 5, height: Math.max(0, fillH - 5) }, duration: dur, ease, overwrite: 'auto' });
 
-    // ── 3. Gradient + classe CSS ──────────────────────────────────────────
+    // ── 3. Couleur selon le NIVEAU de charge (%) + classe CSS pour le pulse ──
     if (svFill) {
-      const grad = state === 'low'         ? 'url(#sfcSVGradLow)'
-                 : state === 'charging'    ? 'url(#sfcSVGradCharge)'
-                 : state === 'discharging' ? 'url(#sfcSVGradDischarge)'
-                 :                           'url(#sfcSVGradNeutral)';
-      svFill.setAttribute('fill', grad);
+      const levelRGB = this._battLevelRGB(battSoc);
+      this._battWaveColor = levelRGB;               // vagues = couleur du niveau
+      const gTop = this._el('sfcSVGradLevelTop');
+      const gBot = this._el('sfcSVGradLevelBot');
+      if (gTop) gTop.setAttribute('stop-color', `rgba(${levelRGB},0.92)`);
+      if (gBot) gBot.setAttribute('stop-color', `rgb(${this._darken(levelRGB, 0.4)})`);
+      svFill.setAttribute('fill', 'url(#sfcSVGradLevel)');
+      // Classe = pulse charge / clignotement faible (le sens du flux garde son indication)
       svFill.setAttribute('class', state === 'low' ? 'sv-low' : state === 'charging' ? 'sv-charging' : '');
     }
-    // Couleur des vagues selon l'état
-    this._battWaveColor = this._battWaveRGB(state);
 
     // ── 4. Bulles de charge ascendantes ──────────────────────────────────
     if (this._svgBubbles) {
@@ -3792,15 +3838,17 @@ class SolarFlowCard extends HTMLElement {
         const fillY = 502 + (maxH - fillH);
         svFill.setAttribute('y', String(fillY + 5));
         svFill.setAttribute('height', String(Math.max(0, fillH - 5)));
-        const grad = battState === 'low'         ? 'url(#sfcSVGradLow)'
-                   : battState === 'charging'    ? 'url(#sfcSVGradCharge)'
-                   : battState === 'discharging' ? 'url(#sfcSVGradDischarge)'
-                   :                               'url(#sfcSVGradNeutral)';
-        svFill.setAttribute('fill', grad);
+        const levelRGB = this._battLevelRGB(battSoc);
+        const gTop = this._el('sfcSVGradLevelTop');
+        const gBot = this._el('sfcSVGradLevelBot');
+        if (gTop) gTop.setAttribute('stop-color', `rgba(${levelRGB},0.92)`);
+        if (gBot) gBot.setAttribute('stop-color', `rgb(${this._darken(levelRGB, 0.4)})`);
+        svFill.setAttribute('fill', 'url(#sfcSVGradLevel)');
         svFill.setAttribute('class', battState === 'low' ? 'sv-low' : battState === 'charging' ? 'sv-charging' : '');
       }
     }
-    this._battWaveColor = this._battWaveRGB(battState);
+    // Couleur des vagues = couleur du niveau de charge (%)
+    this._battWaveColor = this._battLevelRGB(battSoc);
 
     // État de santé batterie
     this._updateHealth();

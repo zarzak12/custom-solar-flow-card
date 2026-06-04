@@ -3,7 +3,7 @@
 **🇫🇷 Français** · [🇬🇧 English](README.en.md)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.0.77-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.78-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Ouvrir dans Home Assistant et ajouter ce dépôt à HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -266,7 +266,7 @@ La batterie utilise des animations GSAP pour un rendu professionnel :
 | **Décharge** | Orange | Descente fluide | 🟠 Halo orange lent (1.1s) | — |
 | **Critique** (<15%) | Rouge | — | 🔴 Flash rouge urgent (0.3s) | — |
 
-> 🌊 En mode single, la surface du liquide ondule avec de vraies **vagues sinusoïdales animées** (`gsap.ticker`) qui suivent le niveau de charge/décharge.
+> 🌊 En mode single, la surface du liquide ondule avec **3 vagues sinusoïdales animées** (`gsap.ticker`). La **couleur suit le niveau de charge** en continu : 🔴 rouge → 🟠 orange → 🟡 jaune → 🟢 vert.
 
 ---
 
