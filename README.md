@@ -79,8 +79,18 @@ type: module
 
 ## ⚙️ Configuration minimale
 
+> 🖱️ **Tout se configure depuis l'interface de Home Assistant — aucun YAML nécessaire.**
+>
+> 1. Ouvrez votre tableau de bord → **Modifier le tableau de bord** → **＋ Ajouter une carte**
+> 2. Cherchez **Solar Flow Card** dans la liste des cartes
+> 3. Renseignez vos entités directement dans l'**éditeur visuel** (sections dépliables : Général, Images, Production PV, Batterie, État de santé, Économies, EV…)
+>
+> L'aperçu se met à jour en direct, et la sauvegarde se fait avec le bouton **Enregistrer** natif de HA.
+
 <img width="1206" height="2284" alt="image" src="https://github.com/user-attachments/assets/821e7388-cbb7-4f52-a7c3-77508afd2a31" />
 
+
+Vous préférez le YAML ? L'équivalent minimal :
 
 ```yaml
 type: custom:solar-flow-card

@@ -77,6 +77,16 @@ type: module
 
 ## ⚙️ Minimal configuration
 
+> 🖱️ **Everything is configured from the Home Assistant UI — no YAML required.**
+>
+> 1. Open your dashboard → **Edit dashboard** → **＋ Add card**
+> 2. Search for **Solar Flow Card** in the card list
+> 3. Fill in your entities directly in the **visual editor** (collapsible sections: General, Images, PV production, Battery, Health, Savings, EV…)
+>
+> The preview updates live, and saving is done with Home Assistant's native **Save** button.
+
+Prefer YAML? The minimal equivalent:
+
 ```yaml
 type: custom:solar-flow-card
 latitude: 48.85       # Your latitude (sun position calculation)
