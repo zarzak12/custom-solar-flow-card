@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.73';
+const VERSION = '1.0.74';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -122,6 +122,10 @@ const DEFAULTS = {
   show_total_pv: true,
   show_mode: true,
   title: 'Solar Flow',
+  // ── Échelles d'affichage (curseurs) ──
+  scale_flux:  1.0,   // épaisseur des flux d'énergie (0.5–2)
+  scale_label: 1.0,   // taille des libellés (RÉSEAU, MAISON…) (0.6–1.8)
+  scale_value: 1.0,   // taille des valeurs chiffrées (0.6–1.8)
   // ── Économies & Tarification ──
   show_savings:      true,
   price_mode:        'fixed', // 'fixed' | 'hphc' | 'tempo' | 'entity'
@@ -246,6 +250,10 @@ const I18N = {
     ed_show_endurance:'Autonomie batterie',
     ed_show_inverter: 'Section Onduleur',
     ed_show_savings:  'Bloc Économies',
+    ed_appearance:    '🔎 Tailles d\'affichage',
+    ed_scale_flux:    'Épaisseur des flux',
+    ed_scale_label:   'Taille des libellés',
+    ed_scale_value:   'Taille des valeurs',
     // EV
     ed_forecast:          '🔮 Prévision de production',
     ed_forecast_today:    "Prévision aujourd'hui (kWh)",
@@ -431,6 +439,10 @@ const I18N = {
     ed_show_endurance:'Battery endurance',
     ed_show_inverter: 'Inverter section',
     ed_show_savings:  'Savings block',
+    ed_appearance:    '🔎 Display sizes',
+    ed_scale_flux:    'Flow thickness',
+    ed_scale_label:   'Label size',
+    ed_scale_value:   'Value size',
     ed_forecast:          '🔮 Production forecast',
     ed_forecast_today:    'Forecast today (kWh)',
     ed_forecast_tomorrow: 'Forecast tomorrow (kWh)',
@@ -1242,8 +1254,8 @@ const CARD_CSS = `
     filter:drop-shadow(0 0 3px currentColor);
     transition:opacity .35s ease;
   }
-  .sfc-flow-core { stroke-width:1; }
-  .sfc-sun-flow-core { stroke-width:2; }
+  .sfc-flow-core { stroke-width:calc(1*var(--sfc-sf,1)); }
+  .sfc-sun-flow-core { stroke-width:calc(2*var(--sfc-sf,1)); }
   .sfc-flow-neon,
   .sfc-flow-tail-mid,
   .sfc-flow-tail-long,
@@ -1283,12 +1295,12 @@ const CARD_CSS = `
     animation: none;
     filter: blur(1.6px) drop-shadow(0 0 18px currentColor);
   }
-  .sfc-flow-neon { stroke-width:1.2; }
-  .sfc-flow-tail-mid { stroke-width:1.6; }
-  .sfc-flow-tail-long { stroke-width:2.2; }
-  .sfc-sun-flow-neon { stroke-width:1.2; }
-  .sfc-sun-flow-tail-mid { stroke-width:1.6; animation-duration:1.65s; }
-  .sfc-sun-flow-tail-long { stroke-width:2.2; animation-duration:1.65s; }
+  .sfc-flow-neon { stroke-width:calc(1.2*var(--sfc-sf,1)); }
+  .sfc-flow-tail-mid { stroke-width:calc(1.6*var(--sfc-sf,1)); }
+  .sfc-flow-tail-long { stroke-width:calc(2.2*var(--sfc-sf,1)); }
+  .sfc-sun-flow-neon { stroke-width:calc(1.2*var(--sfc-sf,1)); }
+  .sfc-sun-flow-tail-mid { stroke-width:calc(1.6*var(--sfc-sf,1)); animation-duration:1.65s; }
+  .sfc-sun-flow-tail-long { stroke-width:calc(2.2*var(--sfc-sf,1)); animation-duration:1.65s; }
   .sfc-flow-core.inactive,
   .sfc-sun-flow-core.inactive { opacity:.08; }
   .sfc-flow-neon.inactive,
@@ -1654,6 +1666,9 @@ function buildCardHTML(cfg) {
     --sfc-batt:${c.color_battery};
     --sfc-home:${c.color_home};
     --sfc-bg:${c.color_bg};
+    --sfc-sf:${c.scale_flux  || 1};
+    --sfc-sl:${c.scale_label || 1};
+    --sfc-sv:${c.scale_value || 1};
   ">
     <!-- HEADER -->
     <div class="sfc-header">
@@ -1867,50 +1882,50 @@ function buildCardHTML(cfg) {
 
           <!-- Lever / coucher — extrémités de l'arc -->
           <text id="sfcSGSunrise" text-anchor="start" x="120" y="225"
-            style="font-family:monospace;font-size:36px;font-weight:600;fill:rgba(232,244,253,0.65)">🌅 —</text>
+            style="font-family:monospace;font-size:calc(36px*var(--sfc-sl,1));font-weight:600;fill:rgba(232,244,253,0.65)">🌅 —</text>
           <text id="sfcSGSunset"  text-anchor="end"   x="1416" y="200"
-            style="font-family:monospace;font-size:36px;font-weight:600;fill:rgba(232,244,253,0.65)">— 🌇</text>
+            style="font-family:monospace;font-size:calc(36px*var(--sfc-sl,1));font-weight:600;fill:rgba(232,244,253,0.65)">— 🌇</text>
 
           <!-- ── FLUX Soleil → Maison (rayon ciel, coords Figma M790 15.5 V224.5) ── -->
-          <path id="sfcSunFlowLine_s"     class="sfc-sun-flow-core"     stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:3"   d="M 790,15.5 L 790,224.5"/>
-          <path id="sfcSunFlowTailLong_s" class="sfc-sun-flow-tail-long" stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:6.5" d="M 790,15.5 L 790,224.5"/>
-          <path id="sfcSunFlowTailMid_s"  class="sfc-sun-flow-tail-mid"  stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:4.8" d="M 790,15.5 L 790,224.5"/>
-          <path id="sfcSunFlowGlow_s"     class="sfc-sun-flow-neon"      stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:3.6" d="M 790,15.5 L 790,224.5"/>
+          <path id="sfcSunFlowLine_s"     class="sfc-sun-flow-core"     stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:calc(3*var(--sfc-sf,1))"   d="M 790,15.5 L 790,224.5"/>
+          <path id="sfcSunFlowTailLong_s" class="sfc-sun-flow-tail-long" stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:calc(6.5*var(--sfc-sf,1))" d="M 790,15.5 L 790,224.5"/>
+          <path id="sfcSunFlowTailMid_s"  class="sfc-sun-flow-tail-mid"  stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:calc(4.8*var(--sfc-sf,1))" d="M 790,15.5 L 790,224.5"/>
+          <path id="sfcSunFlowGlow_s"     class="sfc-sun-flow-neon"      stroke="#FFD700" style="--flow-color:#FFD700;stroke-width:calc(3.6*var(--sfc-sf,1))" d="M 790,15.5 L 790,224.5"/>
 
           <!-- ── FLUX Grid ↔ Maison ── -->
-          <path id="sfcLG_s"         class="sfc-flow-core"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3"   d="M426 915.5 L860.5 704.5 L579 660.5 L748 608"/>
-          <path id="sfcLGTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:6.5" d="M426 915.5 L860.5 704.5 L579 660.5 L748 608"/>
-          <path id="sfcLGTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:4.8" d="M426 915.5 L860.5 704.5 L579 660.5 L748 608"/>
-          <path id="sfcLGGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:3.6" d="M426 915.5 L860.5 704.5 L579 660.5 L748 608"/>
+          <path id="sfcLG_s"         class="sfc-flow-core"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:calc(3*var(--sfc-sf,1))"   d="M426 915.5 L860.5 704.5 L579 660.5 L748 608"/>
+          <path id="sfcLGTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:calc(6.5*var(--sfc-sf,1))" d="M426 915.5 L860.5 704.5 L579 660.5 L748 608"/>
+          <path id="sfcLGTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:calc(4.8*var(--sfc-sf,1))" d="M426 915.5 L860.5 704.5 L579 660.5 L748 608"/>
+          <path id="sfcLGGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-grid,#4FC3F7)" style="--flow-color:var(--sfc-grid,#4FC3F7);stroke-width:calc(3.6*var(--sfc-sf,1))" d="M426 915.5 L860.5 704.5 L579 660.5 L748 608"/>
 
           <!-- ── FLUX Maison ↔ Batterie ── -->
-          <path id="sfcLB_s"         class="sfc-flow-core"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3"   d="M945 623.5 L1402 639.5"/>
-          <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:6.5" d="M945 623.5 L1402 639.5"/>
-          <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:4.8" d="M945 623.5 L1402 639.5"/>
-          <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:3.6" d="M945 623.5 L1402 639.5"/>
+          <path id="sfcLB_s"         class="sfc-flow-core"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:calc(3*var(--sfc-sf,1))"   d="M945 623.5 L1402 639.5"/>
+          <path id="sfcLBTailLong_s" class="sfc-flow-tail-long" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:calc(6.5*var(--sfc-sf,1))" d="M945 623.5 L1402 639.5"/>
+          <path id="sfcLBTailMid_s"  class="sfc-flow-tail-mid"  stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:calc(4.8*var(--sfc-sf,1))" d="M945 623.5 L1402 639.5"/>
+          <path id="sfcLBGlow_s"     class="sfc-flow-neon"      stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47);stroke-width:calc(3.6*var(--sfc-sf,1))" d="M945 623.5 L1402 639.5"/>
 
           <!-- ── FLUX Maison → Spa (router1) ── -->
           ${c.router1_enabled ? `
-          <path id="sfcLSpa_s"         class="sfc-flow-core"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:3"   d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
-          <path id="sfcLSpaTailLong_s" class="sfc-flow-tail-long" stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:6.5" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
-          <path id="sfcLSpaTailMid_s"  class="sfc-flow-tail-mid"  stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:4.8" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
-          <path id="sfcLSpaGlow_s"     class="sfc-flow-neon"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:3.6" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
+          <path id="sfcLSpa_s"         class="sfc-flow-core"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(3*var(--sfc-sf,1))"   d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
+          <path id="sfcLSpaTailLong_s" class="sfc-flow-tail-long" stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(6.5*var(--sfc-sf,1))" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
+          <path id="sfcLSpaTailMid_s"  class="sfc-flow-tail-mid"  stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(4.8*var(--sfc-sf,1))" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
+          <path id="sfcLSpaGlow_s"     class="sfc-flow-neon"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(3.6*var(--sfc-sf,1))" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
           ` : ''}
 
           <!-- ── FLUX Maison → ECS (router2) ── -->
           ${c.router2_enabled ? `
-          <path id="sfcLECS_s"         class="sfc-flow-core"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:3"   d="M865.5 597.5 V514.5 H1333.5"/>
-          <path id="sfcLECSTailLong_s" class="sfc-flow-tail-long" stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:6.5" d="M865.5 597.5 V514.5 H1333.5"/>
-          <path id="sfcLECSTailMid_s"  class="sfc-flow-tail-mid"  stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:4.8" d="M865.5 597.5 V514.5 H1333.5"/>
-          <path id="sfcLECSGlow_s"     class="sfc-flow-neon"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:3.6" d="M865.5 597.5 V514.5 H1333.5"/>
+          <path id="sfcLECS_s"         class="sfc-flow-core"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(3*var(--sfc-sf,1))"   d="M865.5 597.5 V514.5 H1333.5"/>
+          <path id="sfcLECSTailLong_s" class="sfc-flow-tail-long" stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(6.5*var(--sfc-sf,1))" d="M865.5 597.5 V514.5 H1333.5"/>
+          <path id="sfcLECSTailMid_s"  class="sfc-flow-tail-mid"  stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(4.8*var(--sfc-sf,1))" d="M865.5 597.5 V514.5 H1333.5"/>
+          <path id="sfcLECSGlow_s"     class="sfc-flow-neon"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(3.6*var(--sfc-sf,1))" d="M865.5 597.5 V514.5 H1333.5"/>
           ` : ''}
 
           <!-- ── FLUX Maison ↔ EV (bidirectionnel : charge / V2H) ── -->
           ${c.ev_enabled ? `
-          <path id="sfcLEV_s"         class="sfc-flow-core"      stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:3"   d="M916.5 597.5 H1140"/>
-          <path id="sfcLEVTailLong_s" class="sfc-flow-tail-long" stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:6.5" d="M916.5 597.5 H1140"/>
-          <path id="sfcLEVTailMid_s"  class="sfc-flow-tail-mid"  stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:4.8" d="M916.5 597.5 H1140"/>
-          <path id="sfcLEVGlow_s"     class="sfc-flow-neon"      stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:3.6" d="M916.5 597.5 H1140"/>
+          <path id="sfcLEV_s"         class="sfc-flow-core"      stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:calc(3*var(--sfc-sf,1))"   d="M916.5 597.5 H1140"/>
+          <path id="sfcLEVTailLong_s" class="sfc-flow-tail-long" stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:calc(6.5*var(--sfc-sf,1))" d="M916.5 597.5 H1140"/>
+          <path id="sfcLEVTailMid_s"  class="sfc-flow-tail-mid"  stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:calc(4.8*var(--sfc-sf,1))" d="M916.5 597.5 H1140"/>
+          <path id="sfcLEVGlow_s"     class="sfc-flow-neon"      stroke="#4FC3F7" style="--flow-color:#4FC3F7;stroke-width:calc(3.6*var(--sfc-sf,1))" d="M916.5 597.5 H1140"/>
           ` : ''}
 
           <!-- ══════════════════════════════════════════════════════════
@@ -1939,7 +1954,7 @@ function buildCardHTML(cfg) {
           <!-- SOC % centré (Y = top_clip + height/2 = 502 + 55 = 557) -->
           <text id="sfcSVBattSoc" x="1458" y="557"
             text-anchor="middle" dominant-baseline="middle"
-            style="font-family:monospace;font-size:40px;font-weight:900;fill:#fff;
+            style="font-family:monospace;font-size:calc(40px*var(--sfc-sv,1));font-weight:900;fill:#fff;
                    paint-order:stroke fill;stroke:rgba(0,0,0,0.9);stroke-width:6">—%</text>
 
           <!-- ══════════════════════════════════════════════════════════
@@ -1953,14 +1968,14 @@ function buildCardHTML(cfg) {
           <rect x="135" y="562" width="260" height="${c.router1_temp ? '142' : '108'}" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(255,160,64,0.25)" stroke-width="1.5"/>
           <text text-anchor="middle" x="265" y="593"
-            style="font-family:monospace;font-size:30px;font-weight:700;letter-spacing:3px;
+            style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${(c.router1_label||'SPA').toUpperCase()}</text>
           <text id="sfcSGSpaVal" text-anchor="middle" x="265" y="${c.router1_temp ? '638' : '650'}"
-            style="font-family:monospace;font-size:46px;font-weight:700;
+            style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
                    fill:#FFA040;filter:drop-shadow(0 0 4px #FFA040)">0 W</text>
           ${c.router1_temp ? `
           <text id="sfcSGSpaTemp" text-anchor="middle" x="265" y="686"
-            style="font-family:monospace;font-size:34px;font-weight:600;
+            style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));font-weight:600;
                    fill:#7ecfff;filter:drop-shadow(0 0 3px rgba(126,207,255,0.5))">🌡 — °C</text>
           ` : ''}
           ` : ''}
@@ -1970,10 +1985,10 @@ function buildCardHTML(cfg) {
           <rect x="1133" y="460" width="270" height="108" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(255,160,64,0.25)" stroke-width="1.5"/>
           <text text-anchor="middle" x="1268" y="491"
-            style="font-family:monospace;font-size:30px;font-weight:700;letter-spacing:3px;
+            style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${(c.router2_label||'ECS').toUpperCase()}</text>
           <text id="sfcSGECSVal" text-anchor="middle" x="1268" y="548"
-            style="font-family:monospace;font-size:46px;font-weight:700;
+            style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
                    fill:#FFA040;filter:drop-shadow(0 0 4px #FFA040)">0 W</text>
           ` : ''}
 
@@ -1982,48 +1997,48 @@ function buildCardHTML(cfg) {
           <rect x="975" y="618" width="253" height="${c.ev_soc ? '142' : '108'}" rx="9"
             fill="rgba(6,13,26,0.72)" stroke="rgba(79,195,247,0.28)" stroke-width="1.5"/>
           <text text-anchor="middle" x="1101" y="649"
-            style="font-family:monospace;font-size:30px;font-weight:700;letter-spacing:3px;
+            style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${(c.ev_label||'VOITURE').toUpperCase()}</text>
           <text id="sfcSGEVPwr" text-anchor="middle" x="1101" y="706"
-            style="font-family:monospace;font-size:46px;font-weight:700;
+            style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
                    fill:#4FC3F7;filter:drop-shadow(0 0 4px #4FC3F7)">0 W</text>
           ${c.ev_soc ? `<text id="sfcSGEVSoc" text-anchor="middle" x="1101" y="746"
-            style="font-family:monospace;font-size:34px;fill:rgba(232,244,253,0.65)">— %</text>` : ''}
+            style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));fill:rgba(232,244,253,0.65)">— %</text>` : ''}
           ` : ''}
 
           <!-- Réseau — center x=280 -->
           <rect x="128" y="836" width="304" height="143" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(79,195,247,0.20)" stroke-width="1.5"/>
           <text text-anchor="middle" x="280" y="867"
-            style="font-family:monospace;font-size:30px;font-weight:700;letter-spacing:3px;
+            style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">RÉSEAU</text>
           <text id="sfcSGGridVal" text-anchor="middle" x="280" y="921"
-            style="font-family:monospace;font-size:46px;font-weight:700;
+            style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
                    fill:var(--sfc-grid,#4FC3F7);filter:drop-shadow(0 0 4px var(--sfc-grid,#4FC3F7))">0 W</text>
           <text id="sfcSGGridSub" text-anchor="middle" x="280" y="962"
-            style="font-family:monospace;font-size:34px;fill:rgba(232,244,253,0.6)">—</text>
+            style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));fill:rgba(232,244,253,0.6)">—</text>
 
           <!-- Maison — center x=720 -->
           <rect x="577" y="447" width="286" height="108" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(255,107,107,0.20)" stroke-width="1.5"/>
           <text text-anchor="middle" x="720" y="478"
-            style="font-family:monospace;font-size:30px;font-weight:700;letter-spacing:3px;
+            style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">MAISON</text>
           <text id="sfcSGHomeVal" text-anchor="middle" x="720" y="535"
-            style="font-family:monospace;font-size:46px;font-weight:700;
+            style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
                    fill:var(--sfc-home,#FF6B6B);filter:drop-shadow(0 0 4px var(--sfc-home,#FF6B6B))">0 W</text>
 
           <!-- Batterie — center x=1414 -->
           <rect x="1269" y="686" width="290" height="143" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(105,255,71,0.20)" stroke-width="1.5"/>
           <text text-anchor="middle" x="1414" y="717"
-            style="font-family:monospace;font-size:30px;font-weight:700;letter-spacing:3px;
+            style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">BATTERIE</text>
           <text id="sfcSGBattVal" text-anchor="middle" x="1414" y="771"
-            style="font-family:monospace;font-size:46px;font-weight:700;
+            style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
                    fill:var(--sfc-batt,#69FF47);filter:drop-shadow(0 0 4px var(--sfc-batt,#69FF47))">—</text>
           <text id="sfcSGBattSub" text-anchor="middle" x="1414" y="813"
-            style="font-family:monospace;font-size:34px;fill:rgba(232,244,253,0.6)">—</text>
+            style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));fill:rgba(232,244,253,0.6)">—</text>
         </svg>
         <img class="sfc-scene-image" id="sfcSceneImg"
           src="${(c[`img_scene_day_${(c.img_scene_variant||'esc_ev').replace(/^esc_/, '')}`] || c.img_scene_day || '')}"
@@ -2759,6 +2774,13 @@ function buildEditorHTML(cfg) {
       </div>
     `)}
 
+    <!-- SECTION: Tailles d'affichage -->
+    ${edSection('appearance', t(c,'ed_appearance'), false, `
+      ${edRange('scale_flux',  t(c,'ed_scale_flux'),  0.5, 2,   0.05, c)}
+      ${edRange('scale_label', t(c,'ed_scale_label'), 0.6, 1.8, 0.05, c)}
+      ${edRange('scale_value', t(c,'ed_scale_value'), 0.6, 1.8, 0.05, c)}
+    `)}
+
     <!-- SECTION: Affichage -->
     ${edSection('display', t(c,'ed_display'), false, `
       ${edToggle('show_progress_bars', t(c,'ed_show_bars'), c)}
@@ -2816,6 +2838,14 @@ function edToggle(key, label, cfg) {
   return `<div class="sfc-ed-toggle-row">
     <span class="sfc-ed-toggle-label">${label}</span>
     <div class="sfc-toggle ${on}" data-key="${key}" data-toggle="true"></div>
+  </div>`;
+}
+
+function edRange(key, label, min, max, step, cfg) {
+  const v = (cfg && cfg[key] !== undefined && cfg[key] !== '') ? parseFloat(cfg[key]) : 1;
+  return `<div class="sfc-ed-row">
+    <label class="sfc-ed-label">${label} — <span class="sfc-range-val" data-range-for="${key}">${v.toFixed(2)}×</span></label>
+    <input type="range" class="sfc-ed-range" min="${min}" max="${max}" step="${step}" data-key="${key}" value="${v}"/>
   </div>`;
 }
 
@@ -4084,6 +4114,8 @@ class SolarFlowCard extends HTMLElement {
 // ══════════════════════════════════════════════════════════
 const EDITOR_EXTRA_CSS = `
   /* Bouton Appliquer supprimé — sauvegarde via bouton natif HA */
+  .sfc-ed-range { width:100%; accent-color:#14a085; cursor:pointer; margin-top:4px; }
+  .sfc-range-val { font-family:monospace; color:#14a085; font-weight:700; }
 `;
 
 class SolarFlowCardEditor extends HTMLElement {
@@ -4164,6 +4196,14 @@ class SolarFlowCardEditor extends HTMLElement {
         });
       } else if (el.dataset.toggle) {
         el.addEventListener('click', () => { el.classList.toggle('on'); this._draft = { ...this._draft, [k]: el.classList.contains('on') }; this._apply(); });
+      } else if (el.type === 'range') {
+        el.addEventListener('input', () => {
+          const v = parseFloat(el.value);
+          this._draft = { ...this._draft, [k]: v };
+          const span = this.shadowRoot.querySelector(`[data-range-for="${k}"]`);
+          if (span) span.textContent = v.toFixed(2) + '×';
+          this._setDirty();
+        });
       } else if (el.type === 'color') {
         el.addEventListener('change', () => { const txt = this.shadowRoot.querySelector(`[data-color-key="${k}"]`); if (txt) txt.value = el.value; this._draft = { ...this._draft, [k]: el.value }; this._setDirty(); });
       } else if (el.dataset.colorKey) {
