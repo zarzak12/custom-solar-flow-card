@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.82';
+const VERSION = '1.0.83';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -3124,9 +3124,9 @@ class SolarFlowCard extends HTMLElement {
     this._waveSeg = SEG;
     // 3 vagues : fréquences BASSES = ondulations longues et douces (réf. 0.5–2.5)
     this._waves = [
-      { id:'sfcSVWaveA', freq:0.5, dur:4.5, light:0,    alpha:0.92, dy:0,  amp:7,  ampTo:7,  ampDur:3.0 },
-      { id:'sfcSVWaveB', freq:1.0, dur:3.6, light:0.30, alpha:0.85, dy:-2, amp:5,  ampTo:7,  ampDur:3.6 },
-      { id:'sfcSVWaveC', freq:0.8, dur:5.2, light:0.55, alpha:0.80, dy:-3, amp:4,  ampTo:7,  ampDur:4.0 },
+      { id:'sfcSVWaveA', freq:0.5, dur:4.5, light:0.30, alpha:0.92, dy:0,  amp:7,  ampTo:7,  ampDur:3.0 }, // arrière : moyenne
+      { id:'sfcSVWaveB', freq:1.0, dur:3.6, light:0.55, alpha:0.85, dy:-2, amp:5,  ampTo:7,  ampDur:3.6 }, // milieu : claire
+      { id:'sfcSVWaveC', freq:0.8, dur:5.2, light:0,    alpha:0.80, dy:-3, amp:4,  ampTo:7,  ampDur:4.0 }, // avant : foncée
     ];
     this._waveTweens = [];
     this._waves.forEach(wv => {
