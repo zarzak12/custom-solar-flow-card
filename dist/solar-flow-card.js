@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.76';
+const VERSION = '1.0.77';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -1358,11 +1358,11 @@ const CARD_CSS = `
     transition:background .2s;cursor:default;
   }
   .sfc-mc:hover { background:rgba(255,255,255,.07); }
-  .sfc-mc-header { display:flex;align-items:center;gap:5px;font-size:calc(8px*var(--sfc-sl,1));letter-spacing:1px;
+  .sfc-mc-header { display:flex;align-items:center;gap:5px;font-size:calc(9px*var(--sfc-sl,1));letter-spacing:1px;
     text-transform:uppercase;color:var(--muted);font-weight:700; }
   .sfc-mc-val { font-family:monospace;font-size:calc(14px*var(--sfc-sv,1));font-weight:700;
     text-shadow:0 0 6px currentColor;transition:all .5s; }
-  .sfc-mc-sub { font-size:calc(9px*var(--sfc-sv,1));color:var(--muted);font-family:monospace; }
+  .sfc-mc-sub { font-size:calc(10px*var(--sfc-sv,1));color:var(--muted);font-family:monospace; }
 
   /* ── Mode badge ── */
   .sfc-mode { display:inline-flex;align-items:center;gap:4px;padding:2px 8px;
@@ -1379,8 +1379,8 @@ const CARD_CSS = `
   }
   .sfc-end-left { display:flex;align-items:center;gap:7px;font-size:calc(9px*var(--sfc-sl,1));
     letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:700; }
-  .sfc-end-val { font-family:monospace;font-size:calc(13px*var(--sfc-sv,1));font-weight:700;color:var(--batt);text-shadow:0 0 6px rgba(105,255,71,.4); }
-  .sfc-end-sub { font-size:calc(9px*var(--sfc-sv,1));color:var(--muted);margin-left:4px; }
+  .sfc-end-val { font-family:monospace;font-size:calc(14px*var(--sfc-sv,1));font-weight:700;color:var(--batt);text-shadow:0 0 6px rgba(105,255,71,.4); }
+  .sfc-end-sub { font-size:calc(10px*var(--sfc-sv,1));color:var(--muted);margin-left:4px; }
 
   /* ── Économies & ROI ── */
   .sfc-savings {
@@ -1425,7 +1425,7 @@ const CARD_CSS = `
     border-radius:3px;transition:width 1.5s ease;
   }
   .sfc-roi-val {
-    font-family:monospace;font-size:calc(11px*var(--sfc-sv,1));font-weight:700;color:#FFD700;
+    font-family:monospace;font-size:calc(14px*var(--sfc-sv,1));font-weight:700;color:#FFD700;
     white-space:nowrap;min-width:50px;text-align:right;
   }
 
@@ -1451,9 +1451,9 @@ const CARD_CSS = `
     white-space:nowrap;min-width:48px;text-align:right;
   }
   .sfc-health-sub {
-    font-family:monospace;font-size:calc(13px*var(--sfc-sv,1));font-weight:700;color:#e8f4fd;flex:1;
+    font-family:monospace;font-size:calc(14px*var(--sfc-sv,1));font-weight:700;color:#e8f4fd;flex:1;
   }
-  .sfc-health-cycles { font-family:monospace;font-size:calc(13px*var(--sfc-sv,1));font-weight:700;color:#7ecfff;text-align:right; }
+  .sfc-health-cycles { font-family:monospace;font-size:calc(10px*var(--sfc-sv,1));font-weight:700;color:#7ecfff;text-align:right; }
   .soh-good { color:#69FF47; }
   .soh-mid  { color:#FFD700; }
   .soh-low  { color:#FF6B6B; }
@@ -1476,9 +1476,9 @@ const CARD_CSS = `
   }
   .sfc-inv-card:hover { background:rgba(255,255,255,.07); }
   .sfc-inv-icon { font-size:18px; }
-  .sfc-inv-label { font-size:calc(7px*var(--sfc-sl,1));letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:700; }
-  .sfc-inv-val { font-family:monospace;font-size:calc(10px*var(--sfc-sv,1));font-weight:700;text-shadow:0 0 5px currentColor; }
-  .sfc-inv-sub { font-family:monospace;font-size:calc(8px*var(--sfc-sv,1));color:var(--batt); }
+  .sfc-inv-label { font-size:calc(9px*var(--sfc-sl,1));letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:700; }
+  .sfc-inv-val { font-family:monospace;font-size:calc(14px*var(--sfc-sv,1));font-weight:700;text-shadow:0 0 5px currentColor; }
+  .sfc-inv-sub { font-family:monospace;font-size:calc(10px*var(--sfc-sv,1));color:var(--batt); }
 
   /* ── Spacer ── */
   .sfc-gap { height:8px; }
