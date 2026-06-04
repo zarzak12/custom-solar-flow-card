@@ -3,6 +3,9 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 > A Home Assistant Lovelace card that turns your solar data into a living, animated visualization enriched with real-time savings.
+>
+> <img width="804" height="2158" alt="image" src="https://github.com/user-attachments/assets/c79feed3-b232-4411-b530-f4b5c26733f3" />
+
 
 ---
 
