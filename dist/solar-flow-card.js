@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.68';
+const VERSION = '1.0.69';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -1609,7 +1609,7 @@ function buildCardHTML(cfg) {
          SCÈNE UNIFIÉE : ciel + soleil + énergie
     ════════════════════════════════════════════ -->
     <div class="sfc-unified-scene ${c.img_scene_mode === 'single' ? 'sfc-scene-mode-single-scene' : ''}" id="sfcUnifiedScene"
-         style="${c.show_images === false ? 'height:200px' : (c.img_scene_mode === 'single' ? 'aspect-ratio:7/6;max-height:450px' : 'height:355px')};">
+         style="${c.show_images === false ? 'height:200px' : (c.img_scene_mode === 'single' ? 'aspect-ratio:9/8;max-height:475px' : 'height:355px')};">
 
       <!-- Fond ciel dynamique -->
       <div class="sfc-sky" id="sfcSky"></div>
