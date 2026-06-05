@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.84';
+const VERSION = '1.0.85';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -73,6 +73,8 @@ const DEFAULTS = {
   longitude: 2.57,
   pv_max_watts: 2500,
   batt_capacity_kwh: 2.4,
+  pwr_kva: 0,             // puissance souscrite (kVA) — pour le mode 'calc' de la barre PWR
+  pwr_mode: 'direct',     // 'direct' (entité pwr_percent) | 'calc' (réseau ÷ kVA)
   refresh_ms: 5000,
   // Entités (vide = non affiché)
   pv_power: '',
@@ -218,6 +220,10 @@ const I18N = {
     ed_pv_max:        'PV max (W)',
     ed_pv_max_desc:   'Puissance crête installée',
     ed_batt_cap:      'Capacité batterie (kWh)',
+    ed_pwr_kva:       'Puissance souscrite (kVA)',
+    ed_pwr_mode:      'Source barre PWR',
+    ed_pwr_mode_direct:'Valeur directe (entité %)',
+    ed_pwr_mode_calc: 'Calculée (réseau ÷ kVA)',
     ed_language:      'Langue',
     ed_pv_power:      'Puissance PV (W)',
     ed_pv_today:      "PV aujourd'hui (kWh)",
@@ -417,6 +423,10 @@ const I18N = {
     ed_pv_max:        'PV max (W)',
     ed_pv_max_desc:   'Peak installed power',
     ed_batt_cap:      'Battery capacity (kWh)',
+    ed_pwr_kva:       'Subscribed power (kVA)',
+    ed_pwr_mode:      'PWR bar source',
+    ed_pwr_mode_direct:'Direct value (% entity)',
+    ed_pwr_mode_calc: 'Calculated (grid ÷ kVA)',
     ed_language:      'Language',
     ed_pv_power:      'PV power (W)',
     ed_pv_today:      'PV today (kWh)',
@@ -2457,6 +2467,10 @@ function buildEditorHTML(cfg) {
           <label class="sfc-ed-label">${t(c,"ed_batt_cap")}</label>
           <input class="sfc-ed-input sfc-ed-number" data-key="batt_capacity_kwh" type="number" step="0.1" placeholder="2.4" value="${c.batt_capacity_kwh||''}" />
         </div>
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,"ed_pwr_kva")}</label>
+          <input class="sfc-ed-input sfc-ed-number" data-key="pwr_kva" type="number" step="1" placeholder="9" value="${c.pwr_kva||''}" />
+        </div>
       </div>
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,"ed_language")}</label>
@@ -2558,7 +2572,16 @@ function buildEditorHTML(cfg) {
     ${edSection('grid', t(c,'ed_grid'), false, `
       ${edEntity('grid_power', t(c,'ed_grid_power'), 'sensor.linky_power', c)}
       ${edEntity('home_power', t(c,'ed_home_power'), 'sensor.home_consumption', c)}
-      ${edEntity('pwr_percent', t(c,'ed_pwr_pct'), 'sensor.zendure_output_pack_power', c)}
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_pwr_mode')}</label>
+        <select class="sfc-ed-input" data-key="pwr_mode" style="cursor:pointer;">
+          <option value="direct" ${(c.pwr_mode||'direct')==='direct'?'selected':''}>${t(c,'ed_pwr_mode_direct')}</option>
+          <option value="calc"   ${(c.pwr_mode||'direct')==='calc'  ?'selected':''}>${t(c,'ed_pwr_mode_calc')}</option>
+        </select>
+      </div>
+      ${(c.pwr_mode||'direct')==='calc'
+        ? `<div class="sfc-ed-info">Barre PWR = puissance réseau (W) ÷ puissance souscrite (kVA, section Général). Export = 0%.</div>`
+        : edEntity('pwr_percent', t(c,'ed_pwr_pct'), 'sensor.zendure_output_pack_power', c)}
       ${edEntity('today_load', t(c,'ed_today_load'), 'sensor.today_home_consumption', c)}
     `)}
 
@@ -3866,8 +3889,16 @@ class SolarFlowCard extends HTMLElement {
 
     // Progress bars
     const pvPct = Math.min(100, Math.round(pvW / (c.pv_max_watts || 2500) * 100));
+    // Barre PWR : valeur directe (entité %) OU calculée = import réseau ÷ puissance souscrite (kVA)
+    let pwrBar;
+    if (c.pwr_mode === 'calc') {
+      const kva = parseFloat(c.pwr_kva) || 0;
+      pwrBar = kva > 0 ? Math.max(0, gridW) / (kva * 1000) * 100 : 0;  // export (gridW<0) → 0%
+    } else {
+      pwrBar = pwrPct;
+    }
     this._setPct('sfcPvBar',   'sfcPvBarPct',  pvPct);
-    this._setPct('sfcPwrBar',  'sfcPwrBarPct', Math.min(100, Math.max(0, pwrPct)));
+    this._setPct('sfcPwrBar',  'sfcPwrBarPct', Math.min(100, Math.max(0, pwrBar)));
     this._setPct('sfcBattBar', 'sfcBattBarPct',battSoc);
 
     // Mode

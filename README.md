@@ -3,7 +3,7 @@
 **🇫🇷 Français** · [🇬🇧 English](README.en.md)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.0.84-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.85-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Ouvrir dans Home Assistant et ajouter ce dépôt à HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -128,6 +128,8 @@ batt_soc: sensor.battery_soc
 | `longitude` | number | `2.57` | Longitude |
 | `pv_max_watts` | number | `2500` | Puissance crête de l'installation (W) — pour la barre de progression PV |
 | `batt_capacity_kwh` | number | `2.4` | Capacité utile de la batterie (kWh) — pour le calcul d'autonomie |
+| `pwr_kva` | number | `0` | Puissance souscrite (kVA) — pour le mode calculé de la barre PWR |
+| `pwr_mode` | string | `direct` | Source barre PWR : `direct` (entité `pwr_percent`) ou `calc` (réseau ÷ kVA) |
 | `refresh_ms` | number | `5000` | Intervalle de rafraîchissement en ms |
 
 ### Entités — Production solaire

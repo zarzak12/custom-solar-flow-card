@@ -3,7 +3,7 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.0.84-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.85-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -123,6 +123,8 @@ batt_soc: sensor.battery_soc
 | `longitude` | number | `2.57` | Longitude |
 | `pv_max_watts` | number | `2500` | Peak power of the installation (W) — for the PV progress bar |
 | `batt_capacity_kwh` | number | `2.4` | Usable battery capacity (kWh) — for the endurance calculation |
+| `pwr_kva` | number | `0` | Subscribed power (kVA) — for the PWR bar calculated mode |
+| `pwr_mode` | string | `direct` | PWR bar source: `direct` (`pwr_percent` entity) or `calc` (grid ÷ kVA) |
 | `refresh_ms` | number | `5000` | Refresh interval in ms |
 
 ### Entities — Solar production
