@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.88';
+const VERSION = '1.0.89';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -2017,9 +2017,10 @@ function buildCardHTML(cfg) {
           <rect id="sfcSVBattFill" x="1422" y="562" width="71" height="63"
             fill="url(#sfcSVGradNeutral)" clip-path="url(#sfcSVBattClip)"/>
           <!-- Vagues de surface animées (gsap.ticker) — suivent le niveau du liquide -->
-          <path id="sfcSVWaveA" clip-path="url(#sfcSVBattClip)" stroke="none"/>
-          <path id="sfcSVWaveB" clip-path="url(#sfcSVBattClip)" stroke="none"/>
+          <!-- Ordre DOM = empilement : C (fond) → B → A (1er plan) -->
           <path id="sfcSVWaveC" clip-path="url(#sfcSVBattClip)" stroke="none"/>
+          <path id="sfcSVWaveB" clip-path="url(#sfcSVBattClip)" stroke="none"/>
+          <path id="sfcSVWaveA" clip-path="url(#sfcSVBattClip)" stroke="none"/>
           <!-- Vague 1 (lente) — positionnée par GSAP sur la surface du liquide -->
           <rect id="sfcSVBattWave1" x="1392" y="610" width="131" height="14" rx="7"
             fill="rgba(255,255,255,0.28)" clip-path="url(#sfcSVBattClip)" opacity="0"/>
@@ -3264,9 +3265,9 @@ class SolarFlowCard extends HTMLElement {
     this._waveSeg = SEG;
     // 3 vagues : fréquences BASSES = ondulations longues et douces (réf. 0.5–2.5)
     this._waves = [
-      { id:'sfcSVWaveA', freq:0.5, dur:4.5, light:0.30, alpha:0.92, dy:0,  amp:7,  ampTo:7,  ampDur:3.0, grad:null }, // arrière : moyenne (corps plein)
-      { id:'sfcSVWaveB', freq:1.0, dur:3.6, light:0.55, alpha:0.85, dy:-2, amp:5,  ampTo:7,  ampDur:3.6, grad:'sfcSVWaveGradB' }, // milieu : claire (fondue)
-      { id:'sfcSVWaveC', freq:0.8, dur:5.2, light:0,    alpha:0.80, dy:-3, amp:4,  ampTo:7,  ampDur:4.0, grad:'sfcSVWaveGradC' }, // avant : foncée (fondue)
+      { id:'sfcSVWaveA', freq:0.5, dur:4.5, light:0,    alpha:0.95, dy:0,  amp:7,  ampTo:7,  ampDur:3.0, grad:null }, // 1er plan : foncée + opaque (corps)
+      { id:'sfcSVWaveB', freq:1.0, dur:3.6, light:0.35, alpha:0.80, dy:-2, amp:5,  ampTo:7,  ampDur:3.6, grad:'sfcSVWaveGradB' }, // milieu : moyenne (fondue)
+      { id:'sfcSVWaveC', freq:0.8, dur:5.2, light:0.60, alpha:0.70, dy:-3, amp:4,  ampTo:7,  ampDur:4.0, grad:'sfcSVWaveGradC' }, // arrière : claire (fondue)
     ];
     this._waveTweens = [];
     this._waves.forEach(wv => {
