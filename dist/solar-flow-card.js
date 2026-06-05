@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.87';
+const VERSION = '1.0.88';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -1930,6 +1930,15 @@ function buildCardHTML(cfg) {
               <stop id="sfcSVGradLevelTop" offset="0%"   stop-color="rgba(0,220,255,0.92)"/>
               <stop id="sfcSVGradLevelBot" offset="100%" stop-color="rgb(0,90,150)"/>
             </linearGradient>
+            <!-- Vagues claires : fondu vers transparent vers le bas (pas de bord plat visible) -->
+            <linearGradient id="sfcSVWaveGradB" x1="0" y1="0" x2="0" y2="1">
+              <stop id="sfcSVWaveGradBTop" offset="0%"  stop-color="rgba(255,255,255,0.85)"/>
+              <stop id="sfcSVWaveGradBBot" offset="100%" stop-color="rgba(255,255,255,0)"/>
+            </linearGradient>
+            <linearGradient id="sfcSVWaveGradC" x1="0" y1="0" x2="0" y2="1">
+              <stop id="sfcSVWaveGradCTop" offset="0%"  stop-color="rgba(255,255,255,0.80)"/>
+              <stop id="sfcSVWaveGradCBot" offset="100%" stop-color="rgba(255,255,255,0)"/>
+            </linearGradient>
             <!-- Halo solaire (mode single) -->
             <radialGradient id="sfcGlowGradS" cx="50%" cy="50%" r="50%">
               <stop offset="0%"   stop-color="rgba(255,200,0,0.28)"/>
@@ -3255,9 +3264,9 @@ class SolarFlowCard extends HTMLElement {
     this._waveSeg = SEG;
     // 3 vagues : fréquences BASSES = ondulations longues et douces (réf. 0.5–2.5)
     this._waves = [
-      { id:'sfcSVWaveA', freq:0.5, dur:4.5, light:0.30, alpha:0.92, dy:0,  amp:7,  ampTo:7,  ampDur:3.0 }, // arrière : moyenne
-      { id:'sfcSVWaveB', freq:1.0, dur:3.6, light:0.55, alpha:0.85, dy:-2, amp:5,  ampTo:7,  ampDur:3.6 }, // milieu : claire
-      { id:'sfcSVWaveC', freq:0.8, dur:5.2, light:0,    alpha:0.80, dy:-3, amp:4,  ampTo:7,  ampDur:4.0 }, // avant : foncée
+      { id:'sfcSVWaveA', freq:0.5, dur:4.5, light:0.30, alpha:0.92, dy:0,  amp:7,  ampTo:7,  ampDur:3.0, grad:null }, // arrière : moyenne (corps plein)
+      { id:'sfcSVWaveB', freq:1.0, dur:3.6, light:0.55, alpha:0.85, dy:-2, amp:5,  ampTo:7,  ampDur:3.6, grad:'sfcSVWaveGradB' }, // milieu : claire (fondue)
+      { id:'sfcSVWaveC', freq:0.8, dur:5.2, light:0,    alpha:0.80, dy:-3, amp:4,  ampTo:7,  ampDur:4.0, grad:'sfcSVWaveGradC' }, // avant : foncée (fondue)
     ];
     this._waveTweens = [];
     this._waves.forEach(wv => {
@@ -3346,7 +3355,17 @@ class SolarFlowCard extends HTMLElement {
                     :                          surface + 8;
       d += ` L ${x0 + w} ${bottomY} L ${x0} ${bottomY} Z`;
       el.setAttribute('d', d);
-      el.setAttribute('fill', `rgba(${this._lighten(rgb, wv.light)},${wv.alpha})`);
+      // Couleur : vague A pleine (corps) ; B/C en dégradé fondu vers transparent (pas de bord plat)
+      const lr = this._lighten(rgb, wv.light);
+      if (wv.grad) {
+        const top = this._el(wv.grad + 'Top');
+        const bot = this._el(wv.grad + 'Bot');
+        if (top) top.setAttribute('stop-color', `rgba(${lr},${wv.alpha})`);
+        if (bot) bot.setAttribute('stop-color', `rgba(${lr},0)`);
+        el.setAttribute('fill', `url(#${wv.grad})`);
+      } else {
+        el.setAttribute('fill', `rgba(${lr},${wv.alpha})`);
+      }
     });
   }
 
