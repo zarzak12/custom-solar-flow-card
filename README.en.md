@@ -3,7 +3,7 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.0.94-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.95-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -360,6 +360,7 @@ router1_temp: sensor.spa_temp    # optional: water temperature (single mode)
 | `router_N_energy` | Daily energy entity in kWh |
 | `router_N_temp` | Water temperature entity (router 1, single mode) |
 | `router_N_position` | Position: `left`, `center`, `right` |
+| `router_N_color` | Neon flow + value color (default `#FFA040`) |
 
 ---
 

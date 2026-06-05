@@ -3,7 +3,7 @@
 **🇫🇷 Français** · [🇬🇧 English](README.en.md)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.0.94-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.95-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Ouvrir dans Home Assistant et ajouter ce dépôt à HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -364,6 +364,7 @@ router1_power: sensor.spa_power  # en mode 'power'
 | `router_N_energy` | Entité énergie du jour en kWh |
 | `router_N_temp` | Entité température eau (routeur 1, mode single) — ex. spa |
 | `router_N_position` | Position : `left`, `center`, `right` |
+| `router_N_color` | Couleur du flux néon + de la valeur (défaut `#FFA040`) |
 
 ---
 

@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.94';
+const VERSION = '1.0.95';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -31,6 +31,7 @@ const DEFAULTS = {
   router1_energy:       '',   // sensor.xxx → kWh aujourd'hui
   router1_temp:         '',   // sensor.xxx → °C (température eau, spa...)
   router1_position:     'right',
+  router1_color:        '#FFA040',  // couleur du flux néon + valeur
 
   router2_enabled:      false,
   router2_img:          '',
@@ -41,6 +42,7 @@ const DEFAULTS = {
   router2_opening:      '',
   router2_energy:       '',
   router2_position:     'left',
+  router2_color:        '#FFA040',
 
   router3_enabled:      false,
   router3_img:          '',
@@ -51,6 +53,7 @@ const DEFAULTS = {
   router3_opening:      '',
   router3_energy:       '',
   router3_position:     'center',
+  router3_color:        '#FFA040',
 
   // Images personnalisées (chemin relatif à /local/ ou URL complète)
   img_house:   '/hacsfiles/custom-solar-flow-card/img/house.png',
@@ -412,6 +415,7 @@ const I18N = {
     ed_router_resistance: 'Puissance résistance (W)',
     ed_router_opening:    'Entité ouverture % (ex: sensor.f1atb_opening)',
     ed_router_pos:        'Position dans la scène',
+    ed_router_color:      'Couleur du flux',
     ed_pos_left:          'Gauche',
     ed_pos_center:        'Centre',
     ed_pos_right:         'Droite',
@@ -634,6 +638,7 @@ const I18N = {
     ed_router_resistance: 'Resistance power (W)',
     ed_router_opening:    'Opening entity % (e.g. sensor.f1atb_opening)',
     ed_router_pos:        'Position in scene',
+    ed_router_color:      'Flow color',
     ed_pos_left:          'Left',
     ed_pos_center:        'Center',
     ed_pos_right:         'Right',
@@ -2026,18 +2031,18 @@ function buildCardHTML(cfg) {
 
           <!-- ── FLUX Maison → Spa (router1) ── -->
           ${c.router1_enabled ? `
-          <path id="sfcLSpa_s"         class="sfc-flow-core"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(3*var(--sfc-sf,1))"   d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
-          <path id="sfcLSpaTailLong_s" class="sfc-flow-tail-long" stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(6.5*var(--sfc-sf,1))" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
-          <path id="sfcLSpaTailMid_s"  class="sfc-flow-tail-mid"  stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(4.8*var(--sfc-sf,1))" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
-          <path id="sfcLSpaGlow_s"     class="sfc-flow-neon"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(3.6*var(--sfc-sf,1))" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
+          <path id="sfcLSpa_s"         class="sfc-flow-core"      stroke="${c.router1_color||'#FFA040'}" style="--flow-color:${c.router1_color||'#FFA040'};stroke-width:calc(3*var(--sfc-sf,1))"   d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
+          <path id="sfcLSpaTailLong_s" class="sfc-flow-tail-long" stroke="${c.router1_color||'#FFA040'}" style="--flow-color:${c.router1_color||'#FFA040'};stroke-width:calc(6.5*var(--sfc-sf,1))" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
+          <path id="sfcLSpaTailMid_s"  class="sfc-flow-tail-mid"  stroke="${c.router1_color||'#FFA040'}" style="--flow-color:${c.router1_color||'#FFA040'};stroke-width:calc(4.8*var(--sfc-sf,1))" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
+          <path id="sfcLSpaGlow_s"     class="sfc-flow-neon"      stroke="${c.router1_color||'#FFA040'}" style="--flow-color:${c.router1_color||'#FFA040'};stroke-width:calc(3.6*var(--sfc-sf,1))" d="M718 608 L544 660.5 L417.5 646.5 L364.5 660.5"/>
           ` : ''}
 
           <!-- ── FLUX Maison → ECS (router2) ── -->
           ${c.router2_enabled ? `
-          <path id="sfcLECS_s"         class="sfc-flow-core"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(3*var(--sfc-sf,1))"   d="M865.5 597.5 V514.5 H1333.5"/>
-          <path id="sfcLECSTailLong_s" class="sfc-flow-tail-long" stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(6.5*var(--sfc-sf,1))" d="M865.5 597.5 V514.5 H1333.5"/>
-          <path id="sfcLECSTailMid_s"  class="sfc-flow-tail-mid"  stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(4.8*var(--sfc-sf,1))" d="M865.5 597.5 V514.5 H1333.5"/>
-          <path id="sfcLECSGlow_s"     class="sfc-flow-neon"      stroke="#FFA040" style="--flow-color:#FFA040;stroke-width:calc(3.6*var(--sfc-sf,1))" d="M865.5 597.5 V514.5 H1333.5"/>
+          <path id="sfcLECS_s"         class="sfc-flow-core"      stroke="${c.router2_color||'#FFA040'}" style="--flow-color:${c.router2_color||'#FFA040'};stroke-width:calc(3*var(--sfc-sf,1))"   d="M865.5 597.5 V514.5 H1333.5"/>
+          <path id="sfcLECSTailLong_s" class="sfc-flow-tail-long" stroke="${c.router2_color||'#FFA040'}" style="--flow-color:${c.router2_color||'#FFA040'};stroke-width:calc(6.5*var(--sfc-sf,1))" d="M865.5 597.5 V514.5 H1333.5"/>
+          <path id="sfcLECSTailMid_s"  class="sfc-flow-tail-mid"  stroke="${c.router2_color||'#FFA040'}" style="--flow-color:${c.router2_color||'#FFA040'};stroke-width:calc(4.8*var(--sfc-sf,1))" d="M865.5 597.5 V514.5 H1333.5"/>
+          <path id="sfcLECSGlow_s"     class="sfc-flow-neon"      stroke="${c.router2_color||'#FFA040'}" style="--flow-color:${c.router2_color||'#FFA040'};stroke-width:calc(3.6*var(--sfc-sf,1))" d="M865.5 597.5 V514.5 H1333.5"/>
           ` : ''}
 
           <!-- ── FLUX Maison ↔ EV (bidirectionnel : charge / V2H) ── -->
@@ -2097,7 +2102,7 @@ function buildCardHTML(cfg) {
                    fill:rgba(232,244,253,0.55)">${(c.router1_label||'SPA').toUpperCase()}</text>
           <text id="sfcSGSpaVal" text-anchor="middle" x="195" y="${c.router1_temp ? '638' : '650'}"
             style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
-                   fill:#FFA040;filter:drop-shadow(0 0 4px #FFA040)">0 W</text>
+                   fill:${c.router1_color||'#FFA040'};filter:drop-shadow(0 0 4px ${c.router1_color||'#FFA040'})">0 W</text>
           ${c.router1_temp ? `
           <text id="sfcSGSpaTemp" text-anchor="middle" x="195" y="686"
             style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));font-weight:600;
@@ -2107,14 +2112,14 @@ function buildCardHTML(cfg) {
 
           <!-- ECS (router2) — center x=1268 -->
           ${c.router2_enabled ? `
-          <rect x="1133" y="460" width="270" height="108" rx="9"
+          <rect x="1133" y="330" width="270" height="108" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(255,160,64,0.25)" stroke-width="1.5"/>
-          <text text-anchor="middle" x="1268" y="491"
+          <text text-anchor="middle" x="1268" y="361"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${(c.router2_label||'ECS').toUpperCase()}</text>
-          <text id="sfcSGECSVal" text-anchor="middle" x="1268" y="548"
+          <text id="sfcSGECSVal" text-anchor="middle" x="1268" y="418"
             style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
-                   fill:#FFA040;filter:drop-shadow(0 0 4px #FFA040)">0 W</text>
+                   fill:${c.router2_color||'#FFA040'};filter:drop-shadow(0 0 4px ${c.router2_color||'#FFA040'})">0 W</text>
           ` : ''}
 
           <!-- EV — center x=1101, positionné sous le chemin EV -->
@@ -2734,6 +2739,7 @@ function buildEditorHTML(cfg) {
       ${edEntity('router1_opening',      t(c,'ed_router_opening'),     'sensor.f1atb_opening', c)}
       ${edEntity('router1_energy',       t(c,'ed_router_energy'),      'sensor.spa_energy_today', c)}
       ${edEntity('router1_temp',         t(c,'ed_router_temp'),         'sensor.spa_temperature', c)}
+      ${edColor('router1_color', t(c,'ed_router_color'), '#FFA040', c)}
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,'ed_router_pos')}</label>
         <select class="sfc-ed-input" data-key="router1_position" style="cursor:pointer;">
@@ -2760,6 +2766,7 @@ function buildEditorHTML(cfg) {
       ${edEntity('router2_resistance_w', t(c,'ed_router_resistance'),  '2000', c)}
       ${edEntity('router2_opening',      t(c,'ed_router_opening'),     'sensor.f1atb_opening', c)}
       ${edEntity('router2_energy',       t(c,'ed_router_energy'),      'sensor.water_heater_energy_today', c)}
+      ${edColor('router2_color', t(c,'ed_router_color'), '#FFA040', c)}
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,'ed_router_pos')}</label>
         <select class="sfc-ed-input" data-key="router2_position" style="cursor:pointer;">
@@ -2786,6 +2793,7 @@ function buildEditorHTML(cfg) {
       ${edEntity('router3_resistance_w', t(c,'ed_router_resistance'),  '2000', c)}
       ${edEntity('router3_opening',      t(c,'ed_router_opening'),     'sensor.f1atb_opening', c)}
       ${edEntity('router3_energy',       t(c,'ed_router_energy'),      'sensor.router3_energy_today', c)}
+      ${edColor('router3_color', t(c,'ed_router_color'), '#FFA040', c)}
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,'ed_router_pos')}</label>
         <select class="sfc-ed-input" data-key="router3_position" style="cursor:pointer;">
@@ -4301,17 +4309,19 @@ class SolarFlowCard extends HTMLElement {
 
       const active = w > 10;
       const path = `M 210,40 Q ${(210+rx)/2},20 ${rx},40`;
+      const rColor = c2['router' + rn + '_color'] || '#FFA040';   // couleur configurable du routeur
 
       const line = this._el('sfcLR' + rn);
       if (line) {
         line.style.display = '';
         line.setAttribute('d', path);
+        line.style.stroke = rColor;
         line.classList.toggle('active', active);
         line.classList.toggle('inactive', !active);
       }
 
       const valEl = this._el('sfcRouter' + rn + 'Val');
-      if (valEl) { valEl.textContent = w >= 1000 ? (w/1000).toFixed(2)+' kW' : Math.round(w)+' W'; valEl.className = 'sfc-router-val'+(active?'':' inactive'); }
+      if (valEl) { valEl.textContent = w >= 1000 ? (w/1000).toFixed(2)+' kW' : Math.round(w)+' W'; valEl.className = 'sfc-router-val'+(active?'':' inactive'); valEl.style.color = active ? rColor : ''; }
       const node = this._el('sfcRouterNode' + rn);
       if (node)  node.classList.toggle('active', active);
 
