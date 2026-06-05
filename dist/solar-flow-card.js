@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.91';
+const VERSION = '1.0.92';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -240,7 +240,7 @@ const I18N = {
     ed_batt_charge_limit:  'Limite puissance charge (W ou entité)',
     ed_batt_discharge_limit:'Limite puissance décharge (W ou entité)',
     ed_batt_voltage:  'Tension (V)',
-    ed_batt_mode:     'Mode (0=charge, 1=décharge)',
+    ed_batt_mode:     'Mode batterie (capteur 0/1 ou select de stratégie : couplage intelligent, charge/décharge forcée…)',
     ed_batt_temp:     'Température BMS (°C)',
     ed_batt_power:    'Puissance charge / décharge batterie (W)',
     ed_batt_chg:      'Charge auj. (kWh)',
@@ -452,7 +452,7 @@ const I18N = {
     ed_batt_charge_limit:  'Charge power limit (W or entity)',
     ed_batt_discharge_limit:'Discharge power limit (W or entity)',
     ed_batt_voltage:  'Voltage (V)',
-    ed_batt_mode:     'Mode (0=charge, 1=discharge)',
+    ed_batt_mode:     'Battery mode (0/1 sensor or strategy select: smart matching, forced charge/discharge…)',
     ed_batt_temp:     'BMS temperature (°C)',
     ed_batt_power:    'Battery charge / discharge power (W)',
     ed_batt_chg:      'Charge today (kWh)',
@@ -3785,6 +3785,18 @@ class SolarFlowCard extends HTMLElement {
     return this._hass.states[entityId]?.state || null;
   }
 
+  // Libellé d'état localisé (ex. select Zendure → "Couplage intelligent").
+  // Utilise hass.formatEntityState si dispo, sinon formate l'option brute.
+  _getStateDisplay(entityId) {
+    if (!entityId || !this._hass) return null;
+    const s = this._hass.states[entityId];
+    if (!s) return null;
+    if (typeof this._hass.formatEntityState === 'function') {
+      try { return this._hass.formatEntityState(s); } catch (e) { /* repli ci-dessous */ }
+    }
+    return String(s.state).replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
+  }
+
   _fmt(w, unit = 'W') {
     if (unit === 'W') return w >= 1000 ? (w/1000).toFixed(2) + ' kW' : Math.round(w) + ' W';
     return w.toFixed(2) + ' ' + unit;
@@ -3984,11 +3996,29 @@ class SolarFlowCard extends HTMLElement {
     // Mode
     const modeEl = this._el('sfcMode');
     if (modeEl) {
-      const isChg = modeRaw === '0' || modeRaw === 'charge' || (pvW > 50 && homeW < pvW);
-      const isDis = modeRaw === '1' || modeRaw === 'discharge';
-      const mc = isDis ? 'discharge' : isChg ? 'charge' : 'idle';
-      modeEl.textContent = isDis ? t(c,'mode_discharge') : isChg ? t(c,'mode_charge') : t(c,'mode_idle');
-      modeEl.className = 'sfc-mode ' + mc;
+      const rawLc = modeRaw != null ? String(modeRaw).toLowerCase() : '';
+      // Cas 1 : batt_mode est un select de STRATÉGIE (ex. Zendure : couplage intelligent /
+      // charge forcée / décharge forcée). On affiche le libellé localisé du select, car le
+      // badge en haut (statut) donne déjà charge/décharge en temps réel.
+      const isStrategy = c.batt_mode && modeRaw != null
+        && !['0', '1', 'charge', 'discharge', 'on', 'off'].includes(rawLc);
+      if (isStrategy) {
+        modeEl.textContent = this._getStateDisplay(c.batt_mode) || modeRaw;
+        // Couleur d'après le mot-clé (vérifier décharge AVANT charge → "décharge" contient "charge")
+        const mc = /discharg|décharg|decharg/.test(rawLc) ? 'discharge'
+                 : /charg/.test(rawLc) ? 'charge' : 'idle';
+        modeEl.className = 'sfc-mode ' + mc;
+      } else {
+        // Cas 2 : capteur 0/1 ou rien → charge/décharge déduits de la puissance réelle
+        // (battPower > 0 = charge, < 0 = décharge) ou, à défaut, du bilan PV/maison.
+        const isChg = rawLc === '0' || rawLc === 'charge'
+                   || (battPower !== null ? battPower > 50 : (pvW > 50 && homeW < pvW));
+        const isDis = rawLc === '1' || rawLc === 'discharge'
+                   || (battPower !== null ? battPower < -50 : homeW > pvW + 100);
+        const mc = isDis ? 'discharge' : isChg ? 'charge' : 'idle';
+        modeEl.textContent = isDis ? t(c,'mode_discharge') : isChg ? t(c,'mode_charge') : t(c,'mode_idle');
+        modeEl.className = 'sfc-mode ' + mc;
+      }
     }
 
     const bmsEl = this._el('sfcBmsT');    if (bmsEl) bmsEl.textContent = bmsT ? bmsT.toFixed(1) + '°C' : '—°C';
