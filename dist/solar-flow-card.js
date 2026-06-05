@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.86';
+const VERSION = '1.0.87';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -90,6 +90,8 @@ const DEFAULTS = {
   batt_power: '',
   batt_chg_today: '',
   batt_dis_today: '',
+  endurance_entity: '',   // entité temps restant directe (ex. Zendure remaining_time) — prioritaire
+  endurance_unit:   'h',  // unité de l'entité : 'h' (heures) | 'min' (minutes)
   min_cell: '',
   max_cell: '',
   remaining: '',
@@ -246,6 +248,10 @@ const I18N = {
     ed_min_cell:      'Tension min cellule (V)',
     ed_max_cell:      'Tension max cellule (V)',
     ed_remaining:     'Énergie restante (kWh)',
+    ed_endurance_entity:  'Entité temps restant (autonomie)',
+    ed_endurance_unit:    'Unité du temps restant',
+    ed_endurance_unit_h:  'Heures',
+    ed_endurance_unit_min:'Minutes',
     ed_grid_power:    'Puissance réseau (W)',
     ed_home_power:    'Consommation maison (W)',
     ed_pwr_pct:       'Puissance sortie (%)',
@@ -454,6 +460,10 @@ const I18N = {
     ed_min_cell:      'Min cell voltage (V)',
     ed_max_cell:      'Max cell voltage (V)',
     ed_remaining:     'Remaining energy (kWh)',
+    ed_endurance_entity:  'Remaining time entity (autonomy)',
+    ed_endurance_unit:    'Remaining time unit',
+    ed_endurance_unit_h:  'Hours',
+    ed_endurance_unit_min:'Minutes',
     ed_grid_power:    'Grid power (W)',
     ed_home_power:    'Home consumption (W)',
     ed_pwr_pct:       'Output pack power (%)',
@@ -2567,6 +2577,16 @@ function buildEditorHTML(cfg) {
       ${edEntity('min_cell', t(c,'ed_min_cell'), 'sensor.zendure_min_cell_voltage', c)}
       ${edEntity('max_cell', t(c,'ed_max_cell'), 'sensor.zendure_max_cell_voltage', c)}
       ${edEntity('remaining', t(c,'ed_remaining'), 'sensor.zendure_remaining_energy', c)}
+      <div class="sfc-ed-info">Autonomie : si une entité de temps restant est fournie (ex. Zendure <i>remaining_time</i>), elle remplace le calcul théorique.</div>
+      ${edEntity('endurance_entity', t(c,'ed_endurance_entity'), 'sensor.solarflow_2400_ac_remaining_time', c)}
+      ${c.endurance_entity ? `
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_endurance_unit')}</label>
+        <select class="sfc-ed-input" data-key="endurance_unit" style="cursor:pointer;">
+          <option value="h"   ${(c.endurance_unit||'h')==='h'  ?'selected':''}>${t(c,'ed_endurance_unit_h')}</option>
+          <option value="min" ${(c.endurance_unit||'h')==='min'?'selected':''}>${t(c,'ed_endurance_unit_min')}</option>
+        </select>
+      </div>` : ''}
     `)}
 
     <!-- SECTION: État de santé batterie -->
@@ -3962,13 +3982,20 @@ class SolarFlowCard extends HTMLElement {
     if (dl) { const d = minCell && maxCell ? Math.round((maxCell-minCell)*1000) : null; dl.textContent = d !== null ? 'Δ '+d+' mV' : ''; }
     const bd = this._el('sfcBattDis'); if (bd) bd.textContent = battDis ? battDis.toFixed(2)+' kWh' : '— kWh';
 
-    // Endurance
+    // Endurance — entité temps restant directe (prioritaire) sinon calcul théorique
     const ev = this._el('sfcEndVal'); const es = this._el('sfcEndSub');
     if (ev) {
-      if (homeW > 50 && battSoc > 0) {
+      let hours = null;
+      if (c.endurance_entity) {
+        const raw = this._getNum(c.endurance_entity, NaN);
+        if (!isNaN(raw) && raw > 0) hours = c.endurance_unit === 'min' ? raw / 60 : raw;
+      }
+      if (hours === null && homeW > 50 && battSoc > 0) {
         const remKwh = (battSoc/100) * (c.batt_capacity_kwh || 2.4);
-        const hours  = remKwh / (homeW/1000);
-        const endD   = new Date(Date.now() + hours*3600000);
+        hours = remKwh / (homeW/1000);
+      }
+      if (hours !== null && hours > 0) {
+        const endD = new Date(Date.now() + hours*3600000);
         ev.textContent = this._formatDuration(hours);
         if (es) es.textContent = '→ '+endD.toLocaleString(c.language==='en'?'en-GB':'fr-FR',{weekday:'short',hour:'2-digit',minute:'2-digit'});
       } else { ev.textContent='—'; if (es) es.textContent=''; }

@@ -3,7 +3,7 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.0.86-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.87-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -164,6 +164,8 @@ batt_soc: sensor.battery_soc
 | `min_cell` | V | Lowest cell voltage |
 | `max_cell` | V | Highest cell voltage |
 | `remaining` | kWh | Remaining energy (if exposed by the inverter) |
+| `endurance_entity` | h/min | Direct remaining time (e.g. Zendure `remaining_time`) — overrides the calculation |
+| `endurance_unit` | — | Unit of `endurance_entity`: `h` (default) or `min` |
 
 ### Entities — Battery health (SOH)
 
@@ -511,6 +513,8 @@ End time         = now + endurance
 ```
 
 > The calculation assumes constant consumption and no future solar recharge. It is shown only when `home_power > 50 W` and `batt_soc > 0`.
+>
+> 💡 **Better**: if you set `endurance_entity` (e.g. Zendure `sensor.solarflow_2400_ac_remaining_time`), that **real** value replaces the theoretical calculation. Set the unit via `endurance_unit` (`h` or `min`).
 
 ---
 
