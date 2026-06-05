@@ -3,7 +3,7 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.0.93-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.94-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -30,6 +30,10 @@ Solar Flow Card displays **all your energy flows** in real time on an immersive 
 - 🩺 **Battery health (SOH)** with a colored bar and cycle estimation
 - 📈 **Self-consumption & self-sufficiency rates** with colored gauges
 - 🔎 **Adjustable sizes** via sliders: flow thickness, label size and value size
+- 🖥️ **Full-width mode** (fullscreen): the immersive scene fills the whole card width
+- 🔃 **Customizable section order**: reorder the blocks under the scene with ▲ / ▼
+- 🌈 **Tomorrow's Tempo color** shown as soon as it's known (dedicated badge)
+- 🔌 **Battery "strategy" mode**: shows the Zendure strategy (smart matching, forced charge/discharge…)
 - 🌙 **Night mode** automatic, with moon, stars and lunar phase
 - 🔌 **EDF Tempo tariff** natively supported with a colored HP/HC badge
 
@@ -157,7 +161,7 @@ batt_soc: sensor.battery_soc
 | `batt_discharge_limit` | W | Discharge power limit (entity or number) — `power` mode |
 | `batt_voltage` | V | Battery pack voltage |
 | `batt_power` | W | Charge/discharge power (positive = charge) |
-| `batt_mode` | — | Mode: `0`/`charge` or `1`/`discharge` |
+| `batt_mode` | — | Battery mode. **0/1 sensor** (`0`/`charge`, `1`/`discharge`) → Charge/Discharge badge. **Strategy select** (e.g. Zendure `select.zendure_manager_operation`) → shows the localized label (smart matching, forced charge/discharge…). Otherwise inferred from `batt_power` or the PV/home balance |
 | `batt_temp` | °C | BMS temperature |
 | `batt_chg_today` | kWh | Energy charged today |
 | `batt_dis_today` | kWh | Energy discharged today |
@@ -243,11 +247,13 @@ A large photo (1536×1024) with the SVG flows overlaid directly on the image.
 ```yaml
 img_scene_mode: single
 img_scene_variant: esc_ev   # or esc_spa
+scene_full_width: false     # true = full-width scene (fullscreen)
 ```
 
 | Option | Description |
 |---|---|
 | `img_scene_mode` | `separate` or `single` |
+| `scene_full_width` | `false` (default) or `true` — the single scene fills the whole card width (ideal for wall/tablet fullscreen) |
 | `img_scene_variant` | `esc_ev` (electric vehicle) or `esc_spa` (spa/jacuzzi) |
 | `img_scene_day` | URL of the day image |
 | `img_scene_night` | URL of the night image |
@@ -402,6 +408,8 @@ price_entity: sensor.current_price
 
 # 'tempo' mode (EDF Tempo)
 tempo_color: sensor.rte_tempo_color   # entity returning BLUE/WHITE/RED
+tempo_color_tomorrow: ''  # (optional) TOMORROW's color — empty = auto-detect via
+                          #   the tomorrow/next_color attribute of the entity above
 tempo_blue_hc:  0.1296    # Tempo Blue off-peak price (editable each year)
 tempo_blue_hp:  0.1609    # Tempo Blue peak price
 tempo_white_hc: 0.1470    # Tempo White off-peak price
@@ -439,6 +447,8 @@ co2_factor: 0.4           # kg CO₂/kWh avoided (French grid mix 2024)
 > 💶 **Savings vs revenue**: self-consumption is valued at the price you **avoid paying** (`electricity_price`/Tempo/peak-offpeak), exported surplus at the **sell-back** price (`export_price`). Both are summed in the totals.
 
 > **Tempo note**: the HP/HC windows used are the standard EDF hours (off-peak: 10pm–6am, peak: 6am–10pm). Since solar production is 100% diurnal, it almost always falls during peak hours — so the calculation stays very accurate even after a page reload.
+
+> 🌈 **Tomorrow's color**: if `tempo_color_tomorrow` is set (or the `tempo_color` entity exposes a `tomorrow`/`next_color` attribute), a second badge "Tomorrow: 🔵/⚪/🔴" appears next to today's, as soon as the next day's color is known (≈ 11am). It hides automatically when unknown.
 
 ---
 
@@ -501,6 +511,24 @@ show_savings:      true    # Savings & ROI section
 show_health:       true    # Battery health section (SOH + cycles)
 show_images:       true    # Images (false = emoji fallback)
 ```
+
+### Section order
+
+Reorder how the blocks under the scene are displayed, from the editor (**🔃 Sections order** section, ▲ / ▼ buttons) or in YAML via `section_order`:
+
+```yaml
+section_order:
+  - bars        # PV / PWR / BAT bars
+  - metrics     # Mode / BMS / CO₂
+  - cells       # Cell voltages
+  - endurance   # Endurance
+  - inverter    # Inverter
+  - autoconso   # Self-consumption
+  - health      # Battery health
+  - savings     # Savings & ROI
+```
+
+> Any omitted key is automatically appended at the end (nothing disappears). A section hidden by its `show_*` toggle stays absent regardless of its rank. The header and scene remain fixed at the top.
 
 ---
 

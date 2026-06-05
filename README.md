@@ -3,7 +3,7 @@
 **🇫🇷 Français** · [🇬🇧 English](README.en.md)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.0.93-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.94-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Ouvrir dans Home Assistant et ajouter ce dépôt à HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -33,6 +33,10 @@ Solar Flow Card affiche en temps réel **tous vos flux d'énergie** sur une scè
 - 📈 **Taux d'autoconsommation & autoproduction** avec jauges colorées
 - 🔎 **Tailles ajustables** par curseurs : épaisseur des flux, taille des libellés et des valeurs
 - 🎨 **Deux modes de scène** : vue séparée (icônes) ou scène immersive (photo réaliste 1536×1024)
+- 🖥️ **Mode pleine largeur** (plein écran) : la scène immersive remplit toute la largeur de la carte
+- 🔃 **Ordre des sections personnalisable** : réorganisez les blocs sous la scène avec ▲ / ▼
+- 🌈 **Couleur Tempo de demain** affichée dès qu'elle est connue (badge dédié)
+- 🔌 **Mode batterie « stratégie »** : affiche la stratégie Zendure (couplage intelligent, charge/décharge forcée…)
 - 🌙 **Mode nuit** automatique avec lune, étoiles et phase lunaire
 
 ---
@@ -162,7 +166,7 @@ batt_soc: sensor.battery_soc
 | `batt_discharge_limit` | W | Limite de puissance en décharge (entité ou nombre) — mode `power` |
 | `batt_voltage` | V | Tension du pack batterie |
 | `batt_power` | W | Puissance de charge/décharge (positif = charge) |
-| `batt_mode` | — | Mode : `0`/`charge` ou `1`/`discharge` |
+| `batt_mode` | — | Mode batterie. **Capteur 0/1** (`0`/`charge`, `1`/`discharge`) → badge Charge/Décharge. **Select de stratégie** (ex. Zendure `select.zendure_manager_operation`) → affiche le libellé localisé (couplage intelligent, charge/décharge forcée…). Sinon, déduit de `batt_power` ou du bilan PV/maison |
 | `batt_temp` | °C | Température BMS |
 | `batt_chg_today` | kWh | Énergie chargée aujourd'hui |
 | `batt_dis_today` | kWh | Énergie déchargée aujourd'hui |
@@ -248,11 +252,13 @@ Une grande photo (1536×1024) avec les flux SVG superposés directement sur l'im
 ```yaml
 img_scene_mode: single
 img_scene_variant: esc_ev   # ou esc_spa
+scene_full_width: false     # true = scène pleine largeur (plein écran)
 ```
 
 | Option | Description |
 |---|---|
 | `img_scene_mode` | `separate` ou `single` |
+| `scene_full_width` | `false` (défaut) ou `true` — la scène single remplit toute la largeur de la carte (idéal mur/tablette plein écran) |
 | `img_scene_variant` | `esc_ev` (voiture électrique) ou `esc_spa` (spa/jacuzzi) |
 | `img_scene_day` | URL de l'image de jour |
 | `img_scene_night` | URL de l'image de nuit |
@@ -406,6 +412,8 @@ price_entity: sensor.prix_kwh_actuel
 
 # Mode 'tempo' (Tempo EDF)
 tempo_color: sensor.rte_tempo_color   # entité retournant BLUE/WHITE/RED
+tempo_color_tomorrow: ''  # (optionnel) couleur de DEMAIN — vide = détection auto via
+                          #   l'attribut tomorrow/next_color de l'entité ci-dessus
 tempo_blue_hc:  0.1296    # Prix Tempo Bleu HC  (modifiables chaque année)
 tempo_blue_hp:  0.1609    # Prix Tempo Bleu HP
 tempo_white_hc: 0.1470    # Prix Tempo Blanc HC
@@ -443,6 +451,8 @@ co2_factor: 0.4           # kg CO₂/kWh évités (mix français 2024)
 > 💶 **Économies vs revenu** : l'autoconsommation est valorisée au prix que tu **évites de payer** (`electricity_price`/Tempo/HP-HC), le surplus exporté au prix de **revente** (`export_price`). Les deux sont additionnés dans les totaux.
 
 > **Note Tempo** : les plages HC/HP utilisées sont les heures standard EDF (HC : 22h–6h, HP : 6h–22h). La production solaire étant 100% diurne, elle tombe quasi-toujours en HP — le calcul est donc très fidèle même après un rechargement de page.
+
+> 🌈 **Couleur de demain** : si `tempo_color_tomorrow` est renseigné (ou si l'entité `tempo_color` expose un attribut `tomorrow`/`next_color`), un second badge « Demain : 🔵/⚪/🔴 » apparaît à côté de celui du jour, dès que la couleur du lendemain est connue (≈ 11h). Il se masque automatiquement si elle est inconnue.
 
 ---
 
@@ -505,6 +515,24 @@ show_savings:      true    # Section Économies & ROI
 show_health:       true    # Section État de santé batterie (SOH + cycles)
 show_images:       true    # Images (false = fallback émojis)
 ```
+
+### Ordre des sections
+
+Réorganisez l'ordre d'affichage des blocs sous la scène depuis l'éditeur (section **🔃 Ordre des sections**, boutons ▲ / ▼) ou en YAML via `section_order` :
+
+```yaml
+section_order:
+  - bars        # Barres PV / PWR / BAT
+  - metrics     # Mode / BMS / CO₂
+  - cells       # Tensions cellules
+  - endurance   # Autonomie
+  - inverter    # Onduleur
+  - autoconso   # Autoconsommation
+  - health      # État de santé
+  - savings     # Économies & ROI
+```
+
+> Toute clé omise est ajoutée automatiquement à la fin (rien ne disparaît). Une section masquée par son toggle `show_*` reste absente quel que soit son rang. L'en-tête et la scène restent fixes en haut.
 
 ---
 
