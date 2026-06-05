@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.89';
+const VERSION = '1.0.90';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -3350,15 +3350,18 @@ class SolarFlowCard extends HTMLElement {
         d += ` Q ${pts[i][0].toFixed(1)} ${pts[i][1].toFixed(1)} ${xc.toFixed(1)} ${yc.toFixed(1)}`;
       }
       d += ` L ${pts[pts.length - 1][0].toFixed(1)} ${pts[pts.length - 1][1].toFixed(1)}`;
-      // Vague A = corps (rejoint le rect) ; B/C = bandes plus fines par-dessus
-      const bottomY = wv.id === 'sfcSVWaveA' ? rectTop + 14
+      // Vague A = corps COMPLET (jusqu'au fond du cylindre) ; B/C = bandes fines par-dessus
+      const bottomY = wv.id === 'sfcSVWaveA' ? 614
                     : wv.id === 'sfcSVWaveB' ? surface + 10
                     :                          surface + 8;
       d += ` L ${x0 + w} ${bottomY} L ${x0} ${bottomY} Z`;
       el.setAttribute('d', d);
-      // Couleur : vague A pleine (corps) ; B/C en dégradé fondu vers transparent (pas de bord plat)
+      // Vague A : même dégradé que le réservoir (couvre le rect → pas de chevauchement/scintillement)
+      // B/C : dégradé fondu vers transparent (accents, pas de bord plat)
       const lr = this._lighten(rgb, wv.light);
-      if (wv.grad) {
+      if (wv.id === 'sfcSVWaveA') {
+        el.setAttribute('fill', 'url(#sfcSVGradLevel)');
+      } else if (wv.grad) {
         const top = this._el(wv.grad + 'Top');
         const bot = this._el(wv.grad + 'Bot');
         if (top) top.setAttribute('stop-color', `rgba(${lr},${wv.alpha})`);
