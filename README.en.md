@@ -3,7 +3,7 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.0.85-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.86-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -152,6 +152,9 @@ batt_soc: sensor.battery_soc
 | Option | Unit | Description |
 |---|---|---|
 | `batt_soc` | % | State of charge (SOC) |
+| `batt_bar_mode` | — | BAT bar source: `soc` (default) or `power` (power ÷ limit) |
+| `batt_charge_limit` | W | Charge power limit (entity or number) — `power` mode |
+| `batt_discharge_limit` | W | Discharge power limit (entity or number) — `power` mode |
 | `batt_voltage` | V | Battery pack voltage |
 | `batt_power` | W | Charge/discharge power (positive = charge) |
 | `batt_mode` | — | Mode: `0`/`charge` or `1`/`discharge` |

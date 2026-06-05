@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.85';
+const VERSION = '1.0.86';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -81,6 +81,9 @@ const DEFAULTS = {
   pv_today: '',
   pv_total: '',
   batt_soc: '',
+  batt_bar_mode: 'soc',        // 'soc' (SOC %) | 'power' (puissance ÷ limite)
+  batt_charge_limit: '',       // entité OU nombre : limite puissance charge (W) — ex. Zendure chargeMaxLimit
+  batt_discharge_limit: '',    // entité OU nombre : limite puissance décharge (W)
   batt_voltage: '',
   batt_mode: '',
   batt_temp: '',
@@ -229,6 +232,11 @@ const I18N = {
     ed_pv_today:      "PV aujourd'hui (kWh)",
     ed_pv_total:      'PV total (kWh)',
     ed_batt_soc:      'SOC (%)',
+    ed_batt_bar_mode:      'Source barre BAT',
+    ed_batt_bar_soc:       'État de charge (SOC %)',
+    ed_batt_bar_power:     'Puissance ÷ limite (charge/décharge)',
+    ed_batt_charge_limit:  'Limite puissance charge (W ou entité)',
+    ed_batt_discharge_limit:'Limite puissance décharge (W ou entité)',
     ed_batt_voltage:  'Tension (V)',
     ed_batt_mode:     'Mode (0=charge, 1=décharge)',
     ed_batt_temp:     'Température BMS (°C)',
@@ -432,6 +440,11 @@ const I18N = {
     ed_pv_today:      'PV today (kWh)',
     ed_pv_total:      'PV total (kWh)',
     ed_batt_soc:      'SOC (%)',
+    ed_batt_bar_mode:      'BAT bar source',
+    ed_batt_bar_soc:       'State of charge (SOC %)',
+    ed_batt_bar_power:     'Power ÷ limit (charge/discharge)',
+    ed_batt_charge_limit:  'Charge power limit (W or entity)',
+    ed_batt_discharge_limit:'Discharge power limit (W or entity)',
     ed_batt_voltage:  'Voltage (V)',
     ed_batt_mode:     'Mode (0=charge, 1=discharge)',
     ed_batt_temp:     'BMS temperature (°C)',
@@ -2533,6 +2546,18 @@ function buildEditorHTML(cfg) {
     <!-- SECTION: Batterie -->
     ${edSection('batt', t(c,'ed_batt'), false, `
       ${edEntity('batt_soc', t(c,'ed_batt_soc'), 'sensor.zendure_battery_soc', c)}
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_batt_bar_mode')}</label>
+        <select class="sfc-ed-input" data-key="batt_bar_mode" style="cursor:pointer;">
+          <option value="soc"   ${(c.batt_bar_mode||'soc')==='soc'  ?'selected':''}>${t(c,'ed_batt_bar_soc')}</option>
+          <option value="power" ${(c.batt_bar_mode||'soc')==='power'?'selected':''}>${t(c,'ed_batt_bar_power')}</option>
+        </select>
+      </div>
+      ${c.batt_bar_mode === 'power' ? `
+      <div class="sfc-ed-info">Barre BAT = puissance batterie ÷ limite. En charge → limite charge ; en décharge → limite décharge.</div>
+      ${edEntity('batt_charge_limit',    t(c,'ed_batt_charge_limit'),    'sensor.solarflow_2400_ac_charge_max_limit', c)}
+      ${edEntity('batt_discharge_limit', t(c,'ed_batt_discharge_limit'), 'sensor.solarflow_2400_ac_discharge_max_limit', c)}
+      ` : ''}
       ${edEntity('batt_voltage', t(c,'ed_batt_voltage'), 'sensor.zendure_battery_voltage', c)}
       ${edEntity('batt_mode', t(c,'ed_batt_mode'), 'sensor.zendure_battery_mode', c)}
       ${edEntity('batt_temp', t(c,'ed_batt_temp'), 'sensor.zendure_bms_temperature', c)}
@@ -3897,9 +3922,21 @@ class SolarFlowCard extends HTMLElement {
     } else {
       pwrBar = pwrPct;
     }
+    // Barre BAT : SOC (défaut) OU puissance ÷ limite (charge/décharge)
+    let battBar = battSoc;
+    if (c.batt_bar_mode === 'power' && battPower !== null) {
+      if (battPower >= 0) {            // charge
+        const lim = c.batt_charge_limit ? this._getNum(c.batt_charge_limit) : 0;
+        battBar = lim > 0 ? battPower / lim * 100 : 0;
+      } else {                          // décharge
+        const lim = c.batt_discharge_limit ? this._getNum(c.batt_discharge_limit)
+                  : c.batt_charge_limit    ? this._getNum(c.batt_charge_limit) : 0;
+        battBar = lim > 0 ? Math.abs(battPower) / lim * 100 : 0;
+      }
+    }
     this._setPct('sfcPvBar',   'sfcPvBarPct',  pvPct);
     this._setPct('sfcPwrBar',  'sfcPwrBarPct', Math.min(100, Math.max(0, pwrBar)));
-    this._setPct('sfcBattBar', 'sfcBattBarPct',battSoc);
+    this._setPct('sfcBattBar', 'sfcBattBarPct', Math.min(100, Math.max(0, battBar)));
 
     // Mode
     const modeEl = this._el('sfcMode');
