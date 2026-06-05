@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.93';
+const VERSION = '1.0.94';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -133,6 +133,16 @@ const DEFAULTS = {
   show_autoconso: true,   // taux d'autoconsommation / autoproduction
   // Ordre d'affichage des sections sous la scène (réordonnable via l'éditeur)
   section_order: ['bars','metrics','cells','endurance','inverter','autoconso','health','savings'],
+  // Titres personnalisés des sections (vide = libellé par défaut, ou aucun en-tête
+  // pour les sections qui n'en ont pas : barres, métriques, cellules, autonomie)
+  title_bars:      '',
+  title_metrics:   '',
+  title_cells:     '',
+  title_endurance: '',
+  title_inverter:  '',
+  title_autoconso: '',
+  title_health:    '',
+  title_savings:   '',
   title: 'Solar Flow',
   // ── Échelles d'affichage (curseurs) ──
   scale_flux:  1.0,   // épaisseur des flux d'énergie (0.5–2)
@@ -283,6 +293,8 @@ const I18N = {
     ed_show_savings:  'Bloc Économies',
     ed_section_order:      '🔃 Ordre des sections',
     ed_section_order_info: 'Réorganisez l\'ordre d\'affichage des sections sous l\'image avec ▲ / ▼.',
+    ed_section_titles:     '🏷️ Titres des sections',
+    ed_section_titles_info:'Personnalisez le titre de chaque section (vide = libellé par défaut).',
     sec_bars:      'Barres de progression',
     sec_metrics:   'Mode / BMS / CO₂',
     sec_cells:     'Tensions cellules',
@@ -508,6 +520,8 @@ const I18N = {
     ed_show_savings:  'Savings block',
     ed_section_order:      '🔃 Sections order',
     ed_section_order_info: 'Reorder how sections are displayed under the image with ▲ / ▼.',
+    ed_section_titles:     '🏷️ Section titles',
+    ed_section_titles_info:'Customize each section title (empty = default label).',
     sec_bars:      'Progress bars',
     sec_metrics:   'Mode / BMS / CO₂',
     sec_cells:     'Cell voltages',
@@ -2327,6 +2341,7 @@ function buildCardHTML(cfg) {
       const S = {};
 
       S.bars = showBars ? `
+    ${c.title_bars ? `<div class="sfc-section">${c.title_bars}</div><div class="sfc-gap" style="height:6px;"></div>` : ''}
     <div class="sfc-progress">
       <div class="sfc-prow">
         <span class="sfc-plabel">PV</span>
@@ -2346,6 +2361,7 @@ function buildCardHTML(cfg) {
     </div>` : '';
 
       S.metrics = `
+    ${c.title_metrics ? `<div class="sfc-section">${c.title_metrics}</div><div class="sfc-gap" style="height:6px;"></div>` : ''}
     <div class="sfc-metrics cols-3">
       ${c.show_mode ? `
       <div class="sfc-mc">
@@ -2365,6 +2381,7 @@ function buildCardHTML(cfg) {
     </div>`;
 
       S.cells = showCells ? `
+    ${c.title_cells ? `<div class="sfc-section">${c.title_cells}</div><div class="sfc-gap" style="height:6px;"></div>` : ''}
     <div class="sfc-metrics cols-3">
       <div class="sfc-mc">
         <div class="sfc-mc-header">${"🔋 " + t(c,"lbl_min_cell")}</div>
@@ -2382,6 +2399,7 @@ function buildCardHTML(cfg) {
     </div>` : '';
 
       S.endurance = showEnd ? `
+    ${c.title_endurance ? `<div class="sfc-section">${c.title_endurance}</div><div class="sfc-gap" style="height:6px;"></div>` : ''}
     <div class="sfc-endurance">
       <div class="sfc-end-left">${"⏱️ " + t(c,"lbl_endurance")}</div>
       <div>
@@ -2391,7 +2409,7 @@ function buildCardHTML(cfg) {
     </div>` : '';
 
       S.inverter = showInv ? `
-    <div class="sfc-section">${t(c,"section_inverter")}</div>
+    <div class="sfc-section">${c.title_inverter || t(c,"section_inverter")}</div>
     <div class="sfc-gap" style="height:6px;"></div>
     <div class="sfc-inv">
       <div class="sfc-inv-card">
@@ -2418,7 +2436,7 @@ function buildCardHTML(cfg) {
     </div>` : '';
 
       S.autoconso = showAuto ? `
-    <div class="sfc-section">📈 ${t(c,'section_autoconso')}</div>
+    <div class="sfc-section">📈 ${c.title_autoconso || t(c,'section_autoconso')}</div>
     <div class="sfc-gap" style="height:6px;"></div>
     <div class="sfc-health" id="sfcAuto">
       <div class="sfc-health-row">
@@ -2434,7 +2452,7 @@ function buildCardHTML(cfg) {
     </div>` : '';
 
       S.health = showHealth ? `
-    <div class="sfc-section">🩺 ${t(c,'section_health')}</div>
+    <div class="sfc-section">🩺 ${c.title_health || t(c,'section_health')}</div>
     <div class="sfc-gap" style="height:6px;"></div>
     <div class="sfc-health" id="sfcHealth">
       <div class="sfc-health-row">
@@ -2450,7 +2468,7 @@ function buildCardHTML(cfg) {
     </div>` : '';
 
       S.savings = showSavings ? `
-    <div class="sfc-section">💰 ${t(c,'section_savings')}</div>
+    <div class="sfc-section">💰 ${c.title_savings || t(c,'section_savings')}</div>
     <div class="sfc-gap" style="height:6px;"></div>
     <div class="sfc-savings" id="sfcSavings">
       <div class="sfc-savings-header">
@@ -2982,6 +3000,19 @@ function buildEditorHTML(cfg) {
     ${edSection('order', t(c,'ed_section_order'), false, `
       <div class="sfc-ed-info">${t(c,'ed_section_order_info')}</div>
       ${edOrderList(c)}
+    `)}
+
+    <!-- SECTION: Titres des sections -->
+    ${edSection('titles', t(c,'ed_section_titles'), false, `
+      <div class="sfc-ed-info">${t(c,'ed_section_titles_info')}</div>
+      ${edEntity('title_bars',      t(c,'sec_bars'),      '—', c)}
+      ${edEntity('title_metrics',   t(c,'sec_metrics'),   '—', c)}
+      ${edEntity('title_cells',     t(c,'sec_cells'),     '—', c)}
+      ${edEntity('title_endurance', t(c,'sec_endurance'), '—', c)}
+      ${edEntity('title_inverter',  t(c,'sec_inverter'),  t(c,'section_inverter'),  c)}
+      ${edEntity('title_autoconso', t(c,'sec_autoconso'), t(c,'section_autoconso'), c)}
+      ${edEntity('title_health',    t(c,'sec_health'),    t(c,'section_health'),    c)}
+      ${edEntity('title_savings',   t(c,'sec_savings'),   t(c,'section_savings'),   c)}
     `)}
 
     <!-- ACTIONS -->

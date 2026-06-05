@@ -534,6 +534,26 @@ section_order:
 
 > Toute clé omise est ajoutée automatiquement à la fin (rien ne disparaît). Une section masquée par son toggle `show_*` reste absente quel que soit son rang. L'en-tête et la scène restent fixes en haut.
 
+### Titres des sections
+
+Personnalisez le titre de **chaque** section depuis l'éditeur (section **🏷️ Titres des sections**) ou en YAML :
+
+```yaml
+# Sections sans en-tête par défaut → un titre n'apparaît que si tu le renseignes
+title_bars:      Puissances        # au-dessus des barres PV/PWR/BAT
+title_metrics:   Infos             # au-dessus de Mode / BMS / CO₂
+title_cells:     Cellules
+title_endurance: Autonomie
+
+# Sections à en-tête → vide = libellé par défaut traduit
+title_inverter:  Onduleur          # défaut : « Onduleur »
+title_autoconso: Mon autoconso     # défaut : « Autoconsommation »
+title_health:    Santé batterie    # défaut : « État de santé batterie »
+title_savings:   Mes économies     # défaut : « Économies & ROI »
+```
+
+> Pour **Barres**, **Mode/BMS/CO₂**, **Cellules** et **Autonomie** (sans en-tête d'origine), un titre n'est affiché **que si** tu en saisis un. Pour les 4 autres, laisser vide garde le libellé par défaut.
+
 ---
 
 ## 🧮 Calcul d'autonomie

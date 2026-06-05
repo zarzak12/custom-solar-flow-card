@@ -530,6 +530,26 @@ section_order:
 
 > Any omitted key is automatically appended at the end (nothing disappears). A section hidden by its `show_*` toggle stays absent regardless of its rank. The header and scene remain fixed at the top.
 
+### Section titles
+
+Customize the title of **every** section, from the editor (**🏷️ Section titles** section) or in YAML:
+
+```yaml
+# Sections without a default header → a title only appears if you set one
+title_bars:      Power            # above the PV/PWR/BAT bars
+title_metrics:   Info             # above Mode / BMS / CO₂
+title_cells:     Cells
+title_endurance: Endurance
+
+# Sections with a header → empty = default translated label
+title_inverter:  Inverter        # default: "Inverter"
+title_autoconso: My self-cons.   # default: "Self-consumption"
+title_health:    Battery health  # default: "Battery health"
+title_savings:   My savings      # default: "Savings & ROI"
+```
+
+> For **Bars**, **Mode/BMS/CO₂**, **Cells** and **Endurance** (no original header), a title is shown **only if** you set one. For the other 4, leaving it empty keeps the default label.
+
 ---
 
 ## 🧮 Endurance calculation

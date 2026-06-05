@@ -1,3 +1,6 @@
 # Éditeurs / outils
 .vscode/
 .claude/
+
+# Copies locales / artefacts de test (ex. fichiers sauvegardés par le navigateur)
+dist/domotique.derz.fr/
