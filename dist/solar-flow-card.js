@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.92';
+const VERSION = '1.0.93';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -1423,8 +1423,9 @@ const CARD_CSS = `
   .sfc-mc-sub { font-size:calc(10px*var(--sfc-sv,1));color:var(--muted);font-family:monospace; }
 
   /* ── Mode badge ── */
-  .sfc-mode { display:inline-flex;align-items:center;gap:4px;padding:2px 8px;
-    border-radius:20px;font-size:10px;font-weight:700;transition:all .5s; }
+  .sfc-mode { display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:2px 10px;
+    border-radius:20px;font-size:10px;font-weight:700;transition:all .5s;
+    text-align:center;align-self:center;max-width:100%; }
   .sfc-mode.discharge { background:rgba(255,107,107,.15);color:var(--home);border:1px solid rgba(255,107,107,.3); }
   .sfc-mode.charge    { background:rgba(105,255,71,.15);color:var(--batt);border:1px solid rgba(105,255,71,.3); }
   .sfc-mode.idle      { background:rgba(100,100,120,.3);color:#aaa;border:1px solid rgba(180,180,200,.2); }
