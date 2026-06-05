@@ -1947,17 +1947,17 @@ function buildCardHTML(cfg) {
           </defs>
 
           <!-- ── ARC TRAJECTOIRE SOLAIRE (calé sur l'image, coords Figma) ── -->
-          <path class="sfc-sun-arc-bg" d="M127 163 C544 -95.5 1117 -37 1416 138.5"
+          <path class="sfc-sun-arc-bg" d="M127 150 C544 -95.5 999 -95.5 1416 150"
             fill="none" stroke="rgba(255,215,0,0.22)" stroke-width="3" stroke-linecap="round"/>
-          <path id="sfcArcDone_s" class="sfc-sun-arc-active" d="M127 163 C544 -95.5 1117 -37 1416 138.5"
+          <path id="sfcArcDone_s" class="sfc-sun-arc-active" d="M127 150 C544 -95.5 999 -95.5 1416 150"
             fill="none" stroke="rgba(255,215,0,0.78)" stroke-width="5" stroke-linecap="round"
             style="transition:stroke-dashoffset 20s ease;filter:drop-shadow(0 0 10px rgba(255,215,0,0.35))"/>
           <ellipse id="sfcGlowEl_s" cx="760" cy="20" rx="150" ry="100" fill="url(#sfcGlowGradS)" style="transition:all 20s ease;"/>
 
           <!-- Lever / coucher — extrémités de l'arc -->
-          <text id="sfcSGSunrise" text-anchor="start" x="120" y="225"
+          <text id="sfcSGSunrise" text-anchor="start" x="120" y="215"
             style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:600;fill:rgba(232,244,253,0.65)">🌅 —</text>
-          <text id="sfcSGSunset"  text-anchor="end"   x="1416" y="200"
+          <text id="sfcSGSunset"  text-anchor="end"   x="1416" y="215"
             style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:600;fill:rgba(232,244,253,0.65)">— 🌇</text>
 
           <!-- ── FLUX Soleil → Maison (rayon ciel, coords Figma M790 15.5 V224.5) ── -->
@@ -2044,16 +2044,16 @@ function buildCardHTML(cfg) {
 
           <!-- Spa (router1) — center x=265 -->
           ${c.router1_enabled ? `
-          <rect x="135" y="562" width="260" height="${c.router1_temp ? '142' : '108'}" rx="9"
+          <rect x="65" y="562" width="260" height="${c.router1_temp ? '142' : '108'}" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(255,160,64,0.25)" stroke-width="1.5"/>
-          <text text-anchor="middle" x="265" y="593"
+          <text text-anchor="middle" x="195" y="593"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${(c.router1_label||'SPA').toUpperCase()}</text>
-          <text id="sfcSGSpaVal" text-anchor="middle" x="265" y="${c.router1_temp ? '638' : '650'}"
+          <text id="sfcSGSpaVal" text-anchor="middle" x="195" y="${c.router1_temp ? '638' : '650'}"
             style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
                    fill:#FFA040;filter:drop-shadow(0 0 4px #FFA040)">0 W</text>
           ${c.router1_temp ? `
-          <text id="sfcSGSpaTemp" text-anchor="middle" x="265" y="686"
+          <text id="sfcSGSpaTemp" text-anchor="middle" x="195" y="686"
             style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));font-weight:600;
                    fill:#7ecfff;filter:drop-shadow(0 0 3px rgba(126,207,255,0.5))">🌡 — °C</text>
           ` : ''}
@@ -2073,37 +2073,37 @@ function buildCardHTML(cfg) {
 
           <!-- EV — center x=1101, positionné sous le chemin EV -->
           ${c.ev_enabled ? `
-          <rect x="975" y="618" width="253" height="${c.ev_soc ? '142' : '108'}" rx="9"
+          <rect x="975" y="678" width="253" height="${c.ev_soc ? '142' : '108'}" rx="9"
             fill="rgba(6,13,26,0.72)" stroke="rgba(79,195,247,0.28)" stroke-width="1.5"/>
-          <text text-anchor="middle" x="1101" y="649"
+          <text text-anchor="middle" x="1101" y="709"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${(c.ev_label||'VOITURE').toUpperCase()}</text>
-          <text id="sfcSGEVPwr" text-anchor="middle" x="1101" y="706"
+          <text id="sfcSGEVPwr" text-anchor="middle" x="1101" y="766"
             style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
                    fill:#4FC3F7;filter:drop-shadow(0 0 4px #4FC3F7)">0 W</text>
-          ${c.ev_soc ? `<text id="sfcSGEVSoc" text-anchor="middle" x="1101" y="746"
+          ${c.ev_soc ? `<text id="sfcSGEVSoc" text-anchor="middle" x="1101" y="806"
             style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));fill:rgba(232,244,253,0.65)">— %</text>` : ''}
           ` : ''}
 
           <!-- Réseau — center x=280 -->
-          <rect x="128" y="836" width="304" height="143" rx="9"
+          <rect x="58" y="836" width="304" height="143" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(79,195,247,0.20)" stroke-width="1.5"/>
-          <text text-anchor="middle" x="280" y="867"
+          <text text-anchor="middle" x="210" y="867"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">RÉSEAU</text>
-          <text id="sfcSGGridVal" text-anchor="middle" x="280" y="921"
+          <text id="sfcSGGridVal" text-anchor="middle" x="210" y="921"
             style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
                    fill:var(--sfc-grid,#4FC3F7);filter:drop-shadow(0 0 4px var(--sfc-grid,#4FC3F7))">0 W</text>
-          <text id="sfcSGGridSub" text-anchor="middle" x="280" y="962"
+          <text id="sfcSGGridSub" text-anchor="middle" x="210" y="962"
             style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));fill:rgba(232,244,253,0.6)">—</text>
 
           <!-- Maison — center x=720 -->
-          <rect x="577" y="447" width="286" height="108" rx="9"
+          <rect x="577" y="387" width="286" height="108" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(255,107,107,0.20)" stroke-width="1.5"/>
-          <text text-anchor="middle" x="720" y="478"
+          <text text-anchor="middle" x="720" y="418"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">MAISON</text>
-          <text id="sfcSGHomeVal" text-anchor="middle" x="720" y="535"
+          <text id="sfcSGHomeVal" text-anchor="middle" x="720" y="475"
             style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
                    fill:var(--sfc-home,#FF6B6B);filter:drop-shadow(0 0 4px var(--sfc-home,#FF6B6B))">0 W</text>
 
@@ -4280,8 +4280,8 @@ class SolarFlowCard extends HTMLElement {
     let sgx = null, sgy = null;
     if (isSingleMode) {
       const mt = 1 - tt;
-      sgx = mt*mt*mt*127 + 3*mt*mt*tt*544 + 3*mt*tt*tt*1117 + tt*tt*tt*1416;
-      sgy = mt*mt*mt*163 + 3*mt*mt*tt*(-95.5) + 3*mt*tt*tt*(-37) + tt*tt*tt*138.5;
+      sgx = mt*mt*mt*127 + 3*mt*mt*tt*544 + 3*mt*tt*tt*999 + tt*tt*tt*1416;
+      sgy = mt*mt*mt*150 + 3*mt*mt*tt*(-95.5) + 3*mt*tt*tt*(-95.5) + tt*tt*tt*150;
       // Soleil au-dessus de l'arc (−95 unités SVG)
       const pos = this._svgToScenePct(sgx, sgy - 95);
       if (pos) { pctX = pos.x; pctY = pos.y; }
@@ -4317,8 +4317,8 @@ class SolarFlowCard extends HTMLElement {
         if (isSingleMode) {
           // Même arc Bézier cubique que le soleil (coords 1536×1024)
           const nt = 1 - mt;
-          const mgx = nt*nt*nt*127 + 3*nt*nt*mt*544 + 3*nt*mt*mt*1117 + mt*mt*mt*1416;
-          const mgy = nt*nt*nt*163 + 3*nt*nt*mt*(-95.5) + 3*nt*mt*mt*(-37) + mt*mt*mt*138.5;
+          const mgx = nt*nt*nt*127 + 3*nt*nt*mt*544 + 3*nt*mt*mt*999 + mt*mt*mt*1416;
+          const mgy = nt*nt*nt*150 + 3*nt*nt*mt*(-95.5) + 3*nt*mt*mt*(-95.5) + mt*mt*mt*150;
           // Lune au-dessus de l'arc, même décalage que le soleil (−95)
           const pos = this._svgToScenePct(mgx, mgy - 95);
           if (pos) { moonEl.style.left = pos.x + '%'; moonEl.style.top = pos.y + '%'; }
