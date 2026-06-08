@@ -18,9 +18,9 @@ This guide explains how to compute your **savings in €** (day / month / year /
 │ (fixed / peak-offpeak │   │   battery (avoided import) │   │           ▼               │
 │  / Tempo / dynamic)   │   │                            │   │ integration → € cumulative│
 └───────────────────────┘   └────────────────────────────┘   │           ▼               │
-                                                              │ utility_meter →           │
-                                                              │ day / month / year / total│
-                                                              └───────────────────────────┘
+                                                             │ utility_meter →           │
+                                                             │ day / month / year / total│
+                                                             └───────────────────────────┘
 ```
 
 1. **Current price** (`sensor.electricity_price`, €/kWh) — depends on your contract.
