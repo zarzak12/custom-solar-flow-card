@@ -46,11 +46,11 @@ template:
         device_class: power
         state: >
           {{ (states('sensor.f1atb_spa_ouverture') | float(0) / 100 * 3000) | round(0) }}
-        availability: >
-          {{ states('sensor.f1atb_spa_ouverture') not in ['unknown','unavailable'] }}
 ```
 
 > 🔧 Remplace `sensor.f1atb_spa_ouverture` par ton entité d'ouverture et `3000` par la puissance nominale de **ta** résistance.
+
+> ⚠️ **N'ajoute PAS de `availability:`** ici. `float(0)` renvoie déjà **0** si l'ouverture est `unknown`/`unavailable` → le capteur reste **toujours numérique**. Un bloc `availability:` rendrait le capteur `unavailable`, ce qui se propage à l'intégration puis au utility_meter (→ `unknown`).
 
 ---
 
@@ -71,6 +71,8 @@ sensor:
 ```
 
 ➡️ `sensor.spa_energie_totale` = **énergie totale cumulée** (la valeur « total »).
+
+> ⚠️ **Avec plusieurs routeurs, donne un `name` DIFFÉRENT à chaque intégration.** L'`entity_id` est dérivé du `name` (pas du `unique_id`) : deux capteurs nommés pareil deviennent `sensor.spa_energie_totale` et `sensor.spa_energie_totale_2` — et tes `utility_meter` ne trouveront plus la bonne source. Exemple : `"Spa énergie totale triac"` → `sensor.spa_energie_totale_triac`.
 
 ---
 
@@ -130,9 +132,67 @@ sensor.spa_energie_jour / _mois / _annee
 
 ---
 
-## 🔁 Plusieurs routeurs
+## 🔁 Plusieurs routeurs (exemple complet : spa triac + nomade)
 
-Répète les 4 étapes pour chaque routeur (résistance et entité d'ouverture propres), puis renseigne `router2_*`, `router3_*`. La section « Routeurs » ajoute automatiquement un badge par routeur actif (largeur responsive).
+Répète les 4 étapes pour chaque routeur, **avec des `name` distincts** (cf. avertissement plus haut). Exemple : un spa alimenté par deux routeurs (triac fixe + nomade), chacun 3000 W.
+
+```yaml
+template:
+  - sensor:
+      - name: "Spa puissance triac"
+        unique_id: spa_puissance_triac
+        unit_of_measurement: "W"
+        device_class: power
+        state: >
+          {{ (states('sensor.routeur_spa_ouverture_triac') | float(0) / 100 * 3000) | round(0) }}
+      - name: "Spa puissance nomade"
+        unique_id: spa_puissance_nomade
+        unit_of_measurement: "W"
+        device_class: power
+        state: >
+          {{ (states('sensor.routeur_nomade_spa_ouverture') | float(0) / 100 * 3000) | round(0) }}
+
+sensor:
+  - platform: integration
+    source: sensor.spa_puissance_triac
+    name: "Spa énergie totale triac"      # name distinct → sensor.spa_energie_totale_triac
+    unique_id: spa_energie_totale_triac
+    unit_time: h
+    unit_prefix: k
+    method: left
+    round: 3
+  - platform: integration
+    source: sensor.spa_puissance_nomade
+    name: "Spa énergie totale nomade"     # name distinct → sensor.spa_energie_totale_nomade
+    unique_id: spa_energie_totale_nomade
+    unit_time: h
+    unit_prefix: k
+    method: left
+    round: 3
+
+utility_meter:
+  spa_energie_jour_triac:   { source: sensor.spa_energie_totale_triac, cycle: daily }
+  spa_energie_mois_triac:   { source: sensor.spa_energie_totale_triac, cycle: monthly }
+  spa_energie_annee_triac:  { source: sensor.spa_energie_totale_triac, cycle: yearly }
+  spa_energie_jour_nomade:  { source: sensor.spa_energie_totale_nomade, cycle: daily }
+  spa_energie_mois_nomade:  { source: sensor.spa_energie_totale_nomade, cycle: monthly }
+  spa_energie_annee_nomade: { source: sensor.spa_energie_totale_nomade, cycle: yearly }
+```
+
+Côté carte, deux possibilités :
+- **Deux routeurs** : `router1_*` (triac) et `router2_*` (nomade).
+- **Un seul routeur « Spa » = somme** : liste les entités séparées par des virgules (additionnées) :
+  ```yaml
+  router1_power:        sensor.spa_puissance_triac, sensor.spa_puissance_nomade
+  router1_energy:       sensor.spa_energie_jour_triac, sensor.spa_energie_jour_nomade
+  router1_energy_total: sensor.spa_energie_totale_triac, sensor.spa_energie_totale_nomade
+  ```
+
+> ⚙️ Après modif : *Vérifier la configuration* puis **redémarrage complet** de Home Assistant (template / integration / utility_meter se construisent au démarrage). Les compteurs peuvent afficher `0` au début — c'est normal, ils montent avec le temps et **conservent** leur valeur (restauration d'état).
+
+## 💡 Alternative : laisser la carte estimer le kWh du jour
+
+Si tu ne veux **rien créer** : en mode `calc` (résistance × ouverture %), la carte **estime elle-même les kWh du jour** (`Jour ~X kWh`) en intégrant la puissance. ⚠️ Estimation côté navigateur (ne compte que dashboard ouvert, reset minuit). Pour des kWh fiables et mois/année/total, garde la méthode par capteurs ci-dessus.
 
 ---
 

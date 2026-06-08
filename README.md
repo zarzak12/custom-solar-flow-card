@@ -414,11 +414,13 @@ router1_power: sensor.spa_power  # en mode 'power'
 
 ### Section « Routeurs » (énergie)
 
-Une section dédiée affiche un **badge par routeur actif** (largeur responsive : 1 → un grand badge, 2 → deux, etc.) avec l'énergie du **jour** en grand + **mois / année / total** en sous-ligne.
+Une section dédiée affiche un **badge par routeur actif** (largeur responsive : 1 → un grand badge, 2 → deux, etc.) : **puissance** en grand + énergie **jour / mois / année / total** en sous-ligne.
+
+> 🔋 **Énergie du jour sans capteur** : si `router_N_energy` n'est pas renseigné, la carte **estime elle-même les kWh du jour** en intégrant la puissance (affiché `Jour ~X kWh`). Pratique pour un routeur F1ATB en mode `calc`. ⚠️ Estimation côté navigateur : ne compte que pendant que le dashboard est ouvert (remise à zéro à minuit). Pour des kWh fiables/historisés (et mois/année/total), crée les capteurs côté HA.
 
 > ⚡ **Routeur F1ATB (ouverture en %) ?** Deux modes possibles :
-> - **`calc`** — la carte calcule la puissance (`résistance × ouverture %`), sans rien créer (pas d'énergie kWh).
-> - **`power` + capteurs** — pour obtenir puissance **et** énergie jour/mois/année/total : voir le guide **[Créer les capteurs F1ATB](docs/CAPTEURS-F1ATB.md)**.
+> - **`calc`** — la carte calcule la puissance (`résistance × ouverture %`) **et estime les kWh du jour**, sans rien créer.
+> - **`power` + capteurs** — pour des kWh fiables jour/mois/année/total : voir le guide **[Créer les capteurs F1ATB](docs/CAPTEURS-F1ATB.md)**.
 
 ### Section « Véhicule électrique »
 

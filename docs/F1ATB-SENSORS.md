@@ -46,11 +46,11 @@ template:
         device_class: power
         state: >
           {{ (states('sensor.f1atb_spa_opening') | float(0) / 100 * 3000) | round(0) }}
-        availability: >
-          {{ states('sensor.f1atb_spa_opening') not in ['unknown','unavailable'] }}
 ```
 
 > 🔧 Replace `sensor.f1atb_spa_opening` with your opening entity and `3000` with **your** resistance rating.
+
+> ⚠️ **Do NOT add `availability:`** here. `float(0)` already returns **0** when the opening is `unknown`/`unavailable` → the sensor stays **always numeric**. An `availability:` block would make it `unavailable`, which propagates to the integration and then the utility_meter (→ `unknown`).
 
 ---
 
@@ -71,6 +71,8 @@ sensor:
 ```
 
 ➡️ `sensor.spa_total_energy` = **cumulative total energy** (the "total" value).
+
+> ⚠️ **With several routers, give each integration a DIFFERENT `name`.** The `entity_id` is derived from `name` (not `unique_id`): two identically-named sensors become `sensor.spa_total_energy` and `sensor.spa_total_energy_2` — and your `utility_meter` will no longer find the right source. Example: `"Spa total energy triac"` → `sensor.spa_total_energy_triac`.
 
 ---
 
@@ -130,9 +132,67 @@ sensor.spa_energy_day / _month / _year
 
 ---
 
-## 🔁 Multiple routers
+## 🔁 Multiple routers (full example: spa triac + nomade)
 
-Repeat the 4 steps for each router (its own resistance and opening entity), then fill `router2_*`, `router3_*`. The "Routers" section automatically adds one badge per active router (responsive width).
+Repeat the 4 steps for each router, **with distinct `name`s** (see warning above). Example: a spa fed by two routers (fixed triac + portable), each 3000 W.
+
+```yaml
+template:
+  - sensor:
+      - name: "Spa power triac"
+        unique_id: spa_power_triac
+        unit_of_measurement: "W"
+        device_class: power
+        state: >
+          {{ (states('sensor.router_spa_opening_triac') | float(0) / 100 * 3000) | round(0) }}
+      - name: "Spa power nomade"
+        unique_id: spa_power_nomade
+        unit_of_measurement: "W"
+        device_class: power
+        state: >
+          {{ (states('sensor.router_nomade_spa_opening') | float(0) / 100 * 3000) | round(0) }}
+
+sensor:
+  - platform: integration
+    source: sensor.spa_power_triac
+    name: "Spa total energy triac"        # distinct name → sensor.spa_total_energy_triac
+    unique_id: spa_total_energy_triac
+    unit_time: h
+    unit_prefix: k
+    method: left
+    round: 3
+  - platform: integration
+    source: sensor.spa_power_nomade
+    name: "Spa total energy nomade"       # distinct name → sensor.spa_total_energy_nomade
+    unique_id: spa_total_energy_nomade
+    unit_time: h
+    unit_prefix: k
+    method: left
+    round: 3
+
+utility_meter:
+  spa_energy_day_triac:    { source: sensor.spa_total_energy_triac, cycle: daily }
+  spa_energy_month_triac:  { source: sensor.spa_total_energy_triac, cycle: monthly }
+  spa_energy_year_triac:   { source: sensor.spa_total_energy_triac, cycle: yearly }
+  spa_energy_day_nomade:   { source: sensor.spa_total_energy_nomade, cycle: daily }
+  spa_energy_month_nomade: { source: sensor.spa_total_energy_nomade, cycle: monthly }
+  spa_energy_year_nomade:  { source: sensor.spa_total_energy_nomade, cycle: yearly }
+```
+
+In the card, two options:
+- **Two routers**: `router1_*` (triac) and `router2_*` (nomade).
+- **One "Spa" router = sum**: comma-separate the entities (they are summed):
+  ```yaml
+  router1_power:        sensor.spa_power_triac, sensor.spa_power_nomade
+  router1_energy:       sensor.spa_energy_day_triac, sensor.spa_energy_day_nomade
+  router1_energy_total: sensor.spa_total_energy_triac, sensor.spa_total_energy_nomade
+  ```
+
+> ⚙️ After editing: *Check configuration* then a **full restart** of Home Assistant (template / integration / utility_meter are built at startup). Meters may show `0` at first — that's normal, they ramp up and **keep** their value (state restoration).
+
+## 💡 Alternative: let the card estimate the daily kWh
+
+If you'd rather **create nothing**: in `calc` mode (resistance × opening %), the card **estimates the daily kWh itself** (`Day ~X kWh`) by integrating power. ⚠️ Browser-side estimate (only counts while the dashboard is open, reset at midnight). For reliable kWh and month/year/total, keep the sensor method above.
 
 ---
 

@@ -4767,6 +4767,35 @@ class SolarFlowCard extends HTMLElement {
     });
   }
 
+  // Calcule l'énergie du jour (kWh) d'un routeur en intégrant sa puissance dans le temps
+  // (somme de Riemann trapézoïdale), persistée en localStorage. Utilisé quand aucune entité
+  // énergie jour n'est fournie (ex. routeur F1ATB en mode calcul direct).
+  // ⚠️ Estimation côté navigateur : ne compte que pendant que la carte est ouverte.
+  _accumRouterEnergy(n, w) {
+    if (!this._rtEnergy) this._rtEnergy = {};
+    const c = this._cfg;
+    const key = 'sfc_rten_' + (c['router' + n + '_power'] || c['router' + n + '_opening'] || ('r' + n));
+    const today = new Date().toDateString();
+    const now = Date.now();
+    let st = this._rtEnergy[n];
+    if (!st) {
+      st = { day: today, kwh: 0, lastT: 0, lastW: w };
+      try {
+        const raw = JSON.parse(localStorage.getItem(key) || 'null');
+        if (raw && raw.day === today) st.kwh = parseFloat(raw.kwh) || 0;
+      } catch (e) { /* localStorage indispo */ }
+      this._rtEnergy[n] = st;
+    }
+    if (st.day !== today) { st.day = today; st.kwh = 0; st.lastT = 0; }
+    if (st.lastT) {
+      const dtH = (now - st.lastT) / 3600000;
+      // n'intègre que les petits intervalles (< 3 min) → ignore les coupures (carte fermée)
+      if (dtH > 0 && dtH < 0.05) st.kwh += ((st.lastW + w) / 2 / 1000) * dtH;
+    }
+    st.lastT = now; st.lastW = w;
+    try { localStorage.setItem(key, JSON.stringify({ day: st.day, kwh: st.kwh })); } catch (e) { /* ignore */ }
+  }
+
   _updateRouters() {
     const c = this._cfg;
     const activeRouters = [
@@ -4798,6 +4827,8 @@ class SolarFlowCard extends HTMLElement {
         w = this._getNum(c2['router' + rn + '_power']);
       }
       routersTotalW += w;
+      // Pas d'entité énergie jour → la carte calcule les kWh du jour en intégrant la puissance
+      if (!c2['router' + rn + '_energy']) this._accumRouterEnergy(rn, w);
 
       const active = w > 10;
       const path = `M 210,40 Q ${(210+rx)/2},20 ${rx},40`;
@@ -4894,7 +4925,12 @@ class SolarFlowCard extends HTMLElement {
       const subEl = this._el('sfcREn' + n + 'Sub');
       if (subEl) {
         const parts = [];
-        if (hasState(c['router' + n + '_energy']))       parts.push(t(c, 'rt_day')   + ' ' + fmtKwh(this._getNum(c['router' + n + '_energy'])));
+        if (hasState(c['router' + n + '_energy'])) {
+          parts.push(t(c, 'rt_day') + ' ' + fmtKwh(this._getNum(c['router' + n + '_energy'])));
+        } else if (this._rtEnergy && this._rtEnergy[n]) {
+          // énergie du jour calculée par la carte (~ = estimation côté navigateur)
+          parts.push(t(c, 'rt_day') + ' ~' + fmtKwh(this._rtEnergy[n].kwh));
+        }
         if (hasState(c['router' + n + '_energy_month'])) parts.push(t(c, 'rt_month') + ' ' + fmtKwh(this._getNum(c['router' + n + '_energy_month'])));
         if (hasState(c['router' + n + '_energy_year']))  parts.push(t(c, 'rt_year')  + ' ' + fmtKwh(this._getNum(c['router' + n + '_energy_year'])));
         if (hasState(c['router' + n + '_energy_total'])) parts.push(t(c, 'rt_total') + ' ' + fmtKwh(this._getNum(c['router' + n + '_energy_total'])));

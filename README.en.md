@@ -410,11 +410,13 @@ router1_temp: sensor.spa_temp    # optional: water temperature (single mode)
 
 ### "Routers" section (energy)
 
-A dedicated section shows **one badge per active router** (responsive width: 1 → one large badge, 2 → two, etc.) with **daily** energy large + **month / year / total** as a sub-line.
+A dedicated section shows **one badge per active router** (responsive width: 1 → one large badge, 2 → two, etc.): **power** large + **day / month / year / total** energy as a sub-line.
+
+> 🔋 **Daily energy without a sensor**: if `router_N_energy` is empty, the card **estimates the daily kWh itself** by integrating power (shown as `Day ~X kWh`). Handy for an F1ATB router in `calc` mode. ⚠️ Browser-side estimate: only counts while the dashboard is open (reset at midnight). For reliable/recorded kWh (and month/year/total), create the sensors in HA.
 
 > ⚡ **F1ATB router (opening %)?** Two possible modes:
-> - **`calc`** — the card computes power (`resistance × opening %`), nothing to create (no kWh energy).
-> - **`power` + sensors** — to get power **and** energy day/month/year/total: see the guide **[Building F1ATB sensors](docs/F1ATB-SENSORS.md)**.
+> - **`calc`** — the card computes power (`resistance × opening %`) **and estimates the daily kWh**, nothing to create.
+> - **`power` + sensors** — for reliable day/month/year/total kWh: see the guide **[Building F1ATB sensors](docs/F1ATB-SENSORS.md)**.
 
 ### "Electric vehicle" section
 
