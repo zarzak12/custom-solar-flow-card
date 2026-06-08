@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.95';
+const VERSION = '1.0.96';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -670,7 +670,14 @@ function computeSunPosition(date, lat, lon) {
   const UT = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
   const GMST = (6.697375 + 0.0657098242 * n + UT) % 24;
   const LST = (GMST + lon / 15 + 24) % 24;
-  const HA = deg2rad((LST - 12) * 15);
+  // Angle horaire du SOLEIL = temps sidéral local − ascension droite du soleil.
+  // (Avant : (LST−12)·15, ce qui confondait temps sidéral et temps solaire → position fausse.)
+  let RAh = rad2deg(Math.atan2(Math.cos(ε) * Math.sin(λ), Math.cos(λ))) / 15;
+  RAh = (RAh + 24) % 24;
+  let HAh = LST - RAh;
+  if (HAh < -12) HAh += 24;
+  if (HAh > 12)  HAh -= 24;
+  const HA = deg2rad(HAh * 15);
   const latR = deg2rad(lat);
   const sinAlt = Math.sin(latR) * sinDec + Math.cos(latR) * Math.cos(dec) * Math.cos(HA);
   const elevation = rad2deg(Math.asin(sinAlt));
