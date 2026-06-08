@@ -1726,13 +1726,24 @@ const CARD_CSS = `
   /* ── Routeurs (énergie) — grille responsive selon le nombre de routeurs actifs ── */
   .sfc-routers { display:grid;gap:7px;padding:0 10px; }   /* grid-template-columns posé en inline */
   .sfc-rt-card {
+    position:relative;
     background:var(--card);border:1px solid var(--border);border-radius:11px;
+    border-top:2px solid var(--rt,#FFA040);
     padding:9px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;
-    transition:background .2s;
+    transition:background .2s;overflow:hidden;
   }
+  /* halo coloré discret en fond, à la couleur du routeur */
+  .sfc-rt-card::before {
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(120% 80% at 50% 0%, var(--rt,#FFA040) 0%, transparent 60%);
+    opacity:0.10;
+  }
+  .sfc-rt-card > * { position:relative; }
   .sfc-rt-card:hover { background:rgba(255,255,255,.07); }
+  .sfc-rt-ico     { font-size:calc(22px*var(--sfc-sv,1));line-height:1;filter:drop-shadow(0 0 6px currentColor); }
+  .sfc-rt-ico-img { height:30px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5)); }
   .sfc-rt-name { font-size:calc(9px*var(--sfc-sl,1));letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:700; }
-  .sfc-rt-day  { font-family:monospace;font-size:calc(15px*var(--sfc-sv,1));font-weight:700;color:#FFA040;text-shadow:0 0 6px currentColor; }
+  .sfc-rt-day  { font-family:monospace;font-size:calc(15px*var(--sfc-sv,1));font-weight:700;color:var(--rt,#FFA040);text-shadow:0 0 6px currentColor;transition:opacity .3s; }
   .sfc-rt-sub  { font-family:monospace;font-size:calc(9px*var(--sfc-sv,1));color:var(--muted);line-height:1.5; }
 
   /* ── Véhicule électrique — section dédiée ── */
@@ -2698,12 +2709,19 @@ function buildCardHTML(cfg) {
     <div class="sfc-section">⚡ ${c.title_routers || t(c,'section_routers')}</div>
     <div class="sfc-gap" style="height:6px;"></div>
     <div class="sfc-routers" style="grid-template-columns:repeat(${activeRt.length},1fr);">
-      ${activeRt.map(n => `
-      <div class="sfc-rt-card">
+      ${activeRt.map(n => {
+        const col = c['router'+n+'_color'] || '#FFA040';
+        const icon = c['router'+n+'_img']
+          ? `<img class="sfc-rt-ico-img" src="${c['router'+n+'_img']}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'sfc-rt-ico',textContent:'⚡',style:'color:${col}'}))"/>`
+          : `<span class="sfc-rt-ico" style="color:${col}">⚡</span>`;
+        return `
+      <div class="sfc-rt-card" style="--rt:${col};">
+        ${icon}
         <div class="sfc-rt-name">${c['router'+n+'_label'] || ('Routeur '+n)}</div>
-        <div class="sfc-rt-day" id="sfcRPwr${n}" style="color:${c['router'+n+'_color']||'#FFA040'}">0 W</div>
+        <div class="sfc-rt-day" id="sfcRPwr${n}" style="color:${col}">0 W</div>
         <div class="sfc-rt-sub" id="sfcREn${n}Sub"></div>
-      </div>`).join('')}
+      </div>`;
+      }).join('')}
     </div>` : '';
 
       // ── Section Véhicule électrique — toutes les infos utiles ──
@@ -4852,7 +4870,8 @@ class SolarFlowCard extends HTMLElement {
       const secPwrEl = this._el('sfcRPwr' + rn);
       if (secPwrEl) {
         secPwrEl.textContent = w >= 1000 ? (w/1000).toFixed(2)+' kW' : Math.round(w)+' W';
-        secPwrEl.style.color = active ? rColor : 'var(--muted)';
+        secPwrEl.style.color = rColor;                 // toujours la couleur du routeur
+        secPwrEl.style.opacity = active ? '1' : '0.45'; // juste atténuée quand inactif (pas gris terne)
       }
 
       // Flux single-mode par routeur
