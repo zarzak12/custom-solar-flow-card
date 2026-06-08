@@ -123,8 +123,8 @@ batt_soc: sensor.battery_soc
 |---|---|---|---|
 | `title` | string | `Solar Flow` | Title shown at the top of the card |
 | `language` | string | `fr` | Language: `fr` or `en` |
-| `latitude` | number | `44.35` | Latitude for the sun position calculation |
-| `longitude` | number | `2.57` | Longitude |
+| `latitude` | number | _(HA home)_ | Latitude for the sun position calculation. Empty = Home Assistant home location |
+| `longitude` | number | _(HA home)_ | Longitude. Empty = Home Assistant home location |
 | `pv_max_watts` | number | `2500` | Peak power of the installation (W) — for the PV progress bar |
 | `batt_capacity_kwh` | number | `2.4` | Usable battery capacity (kWh) — for the endurance calculation |
 | `pwr_kva` | number | `0` | Subscribed power (kVA) — for the PWR bar calculated mode |

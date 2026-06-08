@@ -128,8 +128,8 @@ batt_soc: sensor.battery_soc
 |---|---|---|---|
 | `title` | string | `Solar Flow` | Titre affiché en haut de la carte |
 | `language` | string | `fr` | Langue : `fr` ou `en` |
-| `latitude` | number | `44.35` | Latitude pour le calcul de la position du soleil |
-| `longitude` | number | `2.57` | Longitude |
+| `latitude` | number | _(maison HA)_ | Latitude pour le calcul de la position du soleil. Vide = localisation de la maison Home Assistant |
+| `longitude` | number | _(maison HA)_ | Longitude. Vide = localisation de la maison Home Assistant |
 | `pv_max_watts` | number | `2500` | Puissance crête de l'installation (W) — pour la barre de progression PV |
 | `batt_capacity_kwh` | number | `2.4` | Capacité utile de la batterie (kWh) — pour le calcul d'autonomie |
 | `pwr_kva` | number | `0` | Puissance souscrite (kVA) — pour le mode calculé de la barre PWR |

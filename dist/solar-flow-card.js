@@ -15,7 +15,9 @@ const VERSION = '1.0.96';
 // ══════════════════════════════════════════════════════════
 const DEFAULTS = {
   language: 'fr',
-  latitude: 44.35,
+  // Vides par défaut → la carte utilise automatiquement la localisation de la
+  // maison Home Assistant (hass.config). Renseigner pour forcer d'autres coordonnées.
+  latitude: '',
   // ── Routeurs solaires (jusqu'à 3) ──
   // Chaque routeur a : image, label, entité puissance, entité énergie journalière
   router1_enabled:      false,
@@ -60,7 +62,7 @@ const DEFAULTS = {
   img_battery: '/hacsfiles/custom-solar-flow-card/img/battery.png',
   img_grid:    '/hacsfiles/custom-solar-flow-card/img/grid.png',
   img_scene_mode:    'single',
-  img_scene_variant: 'esc_spa',
+  img_scene_variant: 'esc_ev',
   img_scene_day:     '/hacsfiles/custom-solar-flow-card/img/house-grid.png',
   img_scene_night:   '/hacsfiles/custom-solar-flow-card/img/house-night.png',
   img_scene_day_ev:  '/hacsfiles/custom-solar-flow-card/img/house-grid.png?v=1',
@@ -74,7 +76,7 @@ const DEFAULTS = {
   img_overlay2_label: '',
   show_images: true,
   scene_full_width: false,   // true = la scène single remplit toute la largeur (plein écran)
-  longitude: 2.57,
+  longitude: '',
   pv_max_watts: 2500,
   batt_capacity_kwh: 2.4,
   pwr_kva: 0,             // puissance souscrite (kVA) — pour le mode 'calc' de la barre PWR
@@ -2544,11 +2546,11 @@ function buildEditorHTML(cfg) {
       <div class="sfc-ed-grid">
         <div class="sfc-ed-row">
           <label class="sfc-ed-label">${t(c,"ed_lat")}</label>
-          <input class="sfc-ed-input sfc-ed-number" data-key="latitude" type="number" step="0.01" placeholder="44.35" value="${c.latitude||''}" />
+          <input class="sfc-ed-input sfc-ed-number" data-key="latitude" type="number" step="0.01" placeholder="48.8566" value="${c.latitude||''}" />
         </div>
         <div class="sfc-ed-row">
           <label class="sfc-ed-label">${t(c,"ed_lon")}</label>
-          <input class="sfc-ed-input sfc-ed-number" data-key="longitude" type="number" step="0.01" placeholder="2.57" value="${c.longitude||''}" />
+          <input class="sfc-ed-input sfc-ed-number" data-key="longitude" type="number" step="0.01" placeholder="2.3522" value="${c.longitude||''}" />
         </div>
         <div class="sfc-ed-row">
           <label class="sfc-ed-label">${t(c,"ed_pv_max")}</label>
@@ -3146,7 +3148,8 @@ class SolarFlowCard extends HTMLElement {
   }
 
   static getStubConfig() {
-    return { title: 'Solar Flow', latitude: 44.35, longitude: 2.57 };
+    // Pas de coordonnées ici : la carte prend par défaut la localisation de la maison HA.
+    return { title: 'Solar Flow' };
   }
 
   getCardSize() { return 8; }
@@ -4388,10 +4391,26 @@ class SolarFlowCard extends HTMLElement {
     return { x: (px / pr.width * 100).toFixed(2), y: (py / pr.height * 100).toFixed(2) };
   }
 
+  // Coordonnées utilisées pour le calcul du soleil, par ordre de priorité :
+  // 1) latitude/longitude renseignées dans la config de la carte (prioritaire — toujours modifiable)
+  // 2) localisation de la maison Home Assistant (hass.config) — repli automatique
+  // 3) Paris en dernier recours (si HA indisponible)
+  // isNaN() (et non « || ») pour accepter les valeurs légitimes 0 (équateur / méridien de Greenwich).
+  _getCoords() {
+    const c = this._cfg;
+    const lat = parseFloat(c.latitude);
+    const lon = parseFloat(c.longitude);
+    return {
+      lat: !isNaN(lat) ? lat : (this._hass?.config?.latitude ?? 48.8566),
+      lon: !isNaN(lon) ? lon : (this._hass?.config?.longitude ?? 2.3522),
+    };
+  }
+
   _updateSun(cloudyOverride) {
 
     const c   = this._cfg;
     const now = new Date();
+    const { lat, lon } = this._getCoords();
     let elevation, azimuth;
     const haElevState = c.sun_elevation ? this._hass?.states[c.sun_elevation] : null;
     if (haElevState && haElevState.state !== 'unavailable' && haElevState.state !== 'unknown') {
@@ -4399,11 +4418,11 @@ class SolarFlowCard extends HTMLElement {
       const haAzState = c.sun_azimuth ? this._hass?.states[c.sun_azimuth] : null;
       azimuth = haAzState ? (parseFloat(haAzState.state) ?? 180) : 180;
     } else {
-      const sp = computeSunPosition(now, c.latitude || 44.35, c.longitude || 2.57);
+      const sp = computeSunPosition(now, lat, lon);
       elevation = sp.elevation; azimuth = sp.azimuth;
     }
 
-    const ss = computeSunriseSunset(now, c.latitude || 44.35, c.longitude || 2.57);
+    const ss = computeSunriseSunset(now, lat, lon);
     const sunrise = ss.sunrise, sunset = ss.sunset;
     const isSingle = c.img_scene_mode === 'single';
     const srEl = this._el('sfcSunrise');
