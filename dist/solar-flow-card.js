@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.1.3';
+const VERSION = '1.1.4';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -118,6 +118,7 @@ const DEFAULTS = {
   batt_charge_limit: '',       // entité OU nombre : limite puissance charge (W) — ex. Zendure chargeMaxLimit
   batt_discharge_limit: '',    // entité OU nombre : limite puissance décharge (W)
   batt_voltage: '',
+  batt_power_invert: false,   // true = inverse le signe de batt_power (si l'entité fait + = décharge)
   batt_mode: '',
   batt_temp: '',
   batt_power: '',
@@ -303,6 +304,7 @@ const I18N = {
     ed_batt_mode:     'Mode batterie (capteur 0/1 ou select de stratégie : couplage intelligent, charge/décharge forcée…)',
     ed_batt_temp:     'Température BMS (°C)',
     ed_batt_power:    'Puissance charge / décharge batterie (W)',
+    ed_batt_power_invert: 'Inverser le signe (si + = décharge)',
     ed_batt_chg:      'Charge auj. (kWh)',
     ed_batt_dis:      'Décharge auj. (kWh)',
     ed_min_cell:      'Tension min cellule (V)',
@@ -322,7 +324,7 @@ const I18N = {
     ed_sun_az:        'Azimut solaire',
     ed_sun_rise:      'Heure lever',
     ed_sun_set:       'Heure coucher',
-    ed_sun_info:      '💡 Les entités soleil sont <strong>optionnelles</strong> — si absentes, la position est calculée depuis les coordonnées GPS.',
+    ed_sun_info:      '💡 Les entités soleil sont <strong>optionnelles</strong> — si absentes, la position est calculée depuis les coordonnées GPS. Le lever/coucher utilise automatiquement <strong>sun.sun</strong> (intégration Soleil) s\'il existe, sinon les entités ci-dessous, sinon le calcul interne.',
     ed_col_solar:     'Couleur solaire',
     ed_col_grid:      'Couleur réseau',
     ed_col_batt:      'Couleur batterie',
@@ -568,6 +570,7 @@ const I18N = {
     ed_batt_mode:     'Battery mode (0/1 sensor or strategy select: smart matching, forced charge/discharge…)',
     ed_batt_temp:     'BMS temperature (°C)',
     ed_batt_power:    'Battery charge / discharge power (W)',
+    ed_batt_power_invert: 'Invert sign (if + = discharge)',
     ed_batt_chg:      'Charge today (kWh)',
     ed_batt_dis:      'Discharge today (kWh)',
     ed_min_cell:      'Min cell voltage (V)',
@@ -587,7 +590,7 @@ const I18N = {
     ed_sun_az:        'Sun azimuth',
     ed_sun_rise:      'Sunrise time',
     ed_sun_set:       'Sunset time',
-    ed_sun_info:      '💡 Sun entities are <strong>optional</strong> — if absent, position is calculated from GPS coordinates.',
+    ed_sun_info:      '💡 Sun entities are <strong>optional</strong> — if absent, position is calculated from GPS coordinates. Sunrise/sunset automatically uses <strong>sun.sun</strong> (Sun integration) if present, otherwise the entities below, otherwise the internal calculation.',
     ed_col_solar:     'Solar color',
     ed_col_grid:      'Grid color',
     ed_col_batt:      'Battery color',
@@ -832,8 +835,10 @@ function computeSunriseSunset(date, lat, lon) {
   // Équation du temps (en jours)
   const RA   = Math.atan2(Math.cos(eps) * Math.sin(lambda), Math.cos(lambda));
   const EoT  = ((L / 360 - RA / (2 * Math.PI) + 0.5) % 1 - 0.5);
-  // Correction longitude (en jours) : lon°/360 jours
-  const lonCorr = lon / 360;
+  // Correction longitude (en jours). La formule NOAA est en longitude OUEST-positive ;
+  // Home Assistant fournit la longitude EST-positive → signe inversé (−lon/360).
+  // (Avant : +lon/360 → lever/coucher décalés, ~+1h50 à Berlin, ~+18min à Paris.)
+  const lonCorr = -lon / 360;
 
   // Demi-durée du jour (en jours)
   const cosH = (Math.cos(deg2rad(90.833)) - Math.sin(latR) * Math.sin(decl)) /
@@ -2857,6 +2862,7 @@ function buildEditorHTML(cfg) {
       ${edEntity('batt_mode', t(c,'ed_batt_mode'), 'sensor.zendure_battery_mode', c)}
       ${edEntity('batt_temp', t(c,'ed_batt_temp'), 'sensor.zendure_bms_temperature', c)}
       ${edEntity('batt_power', t(c,'ed_batt_power'), 'sensor.zendure_manager_power', c)}
+      ${edToggle('batt_power_invert', t(c,'ed_batt_power_invert'), c)}
       ${edEntity('batt_chg_today', t(c,'ed_batt_chg'), 'sensor.zendure_charge_today', c)}
       ${edEntity('batt_dis_today', t(c,'ed_batt_dis'), 'sensor.zendure_discharge_today', c)}
       ${edEntity('min_cell', t(c,'ed_min_cell'), 'sensor.zendure_min_cell_voltage', c)}
@@ -4419,7 +4425,9 @@ class SolarFlowCard extends HTMLElement {
     const battSoc  = this._getNum(c.batt_soc, 0);
     const battV    = this._getNum(c.batt_voltage);
     const bmsT     = this._getNum(c.batt_temp);
-    const battPower= c.batt_power ? this._getNum(c.batt_power) : null;
+    let battPower = c.batt_power ? this._getNum(c.batt_power) : null;
+    // Convention attendue : + = charge, − = décharge. Inverser si l'entité fait l'inverse.
+    if (battPower !== null && c.batt_power_invert) battPower = -battPower;
     const minCell  = this._getNum(c.min_cell);
     const maxCell  = this._getNum(c.max_cell);
     const battDis  = this._getNum(c.batt_dis_today);
@@ -4908,6 +4916,33 @@ class SolarFlowCard extends HTMLElement {
     };
   }
 
+  // Résout une heure de lever/coucher depuis HA, ramenée à AUJOURD'HUI (pour la progression
+  // de l'arc) : 1) entité configurée (timestamp ISO), 2) attribut de sun.sun, sinon null.
+  // L'entité sun.sun next_rising peut pointer sur demain → on ne garde que l'heure du jour.
+  _resolveSunTime(entityId, sunAttr) {
+    const norm = (val) => {
+      if (!val) return null;
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return null;
+      const t = new Date();
+      t.setHours(d.getHours(), d.getMinutes(), d.getSeconds(), 0);
+      return t;
+    };
+    if (entityId && this._hass?.states[entityId]) {
+      const st = this._hass.states[entityId];
+      if (st.state !== 'unavailable' && st.state !== 'unknown') {
+        const t = norm(st.state);
+        if (t) return t;
+      }
+    }
+    const sun = this._hass?.states['sun.sun'];
+    if (sun && sun.attributes && sun.attributes[sunAttr]) {
+      const t = norm(sun.attributes[sunAttr]);
+      if (t) return t;
+    }
+    return null;
+  }
+
   _updateSun(cloudyOverride) {
 
     const c   = this._cfg;
@@ -4924,8 +4959,15 @@ class SolarFlowCard extends HTMLElement {
       elevation = sp.elevation; azimuth = sp.azimuth;
     }
 
-    const ss = computeSunriseSunset(now, lat, lon);
-    const sunrise = ss.sunrise, sunset = ss.sunset;
+    // Lever / coucher : priorité aux entités HA (exactes, TZ/DST gérés) →
+    // 1) entités configurées sun_rise/sun_set, 2) attributs de sun.sun, 3) calcul interne.
+    let sunrise = this._resolveSunTime(c.sun_rise, 'next_rising');
+    let sunset  = this._resolveSunTime(c.sun_set,  'next_setting');
+    if (!sunrise || !sunset) {
+      const ss = computeSunriseSunset(now, lat, lon);
+      if (!sunrise) sunrise = ss.sunrise;
+      if (!sunset)  sunset  = ss.sunset;
+    }
     const isSingle = c.img_scene_mode === 'single';
     const srEl = this._el('sfcSunrise');
     if (srEl) {

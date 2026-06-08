@@ -7,7 +7,7 @@
 **🇫🇷 Français** · [🇬🇧 English](README.en.md)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.1.3-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.4-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Ouvrir dans Home Assistant et ajouter ce dépôt à HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -169,7 +169,8 @@ batt_soc: sensor.battery_soc
 | `batt_charge_limit` | W | Limite de puissance en charge (entité ou nombre) — mode `power` |
 | `batt_discharge_limit` | W | Limite de puissance en décharge (entité ou nombre) — mode `power` |
 | `batt_voltage` | V | Tension du pack batterie |
-| `batt_power` | W | Puissance de charge/décharge (positif = charge) |
+| `batt_power` | W | Puissance de charge/décharge (**positif = charge** ; sinon active `batt_power_invert`) |
+| `batt_power_invert` | bool | Inverse le signe de `batt_power` si ton entité fait l'inverse (+ = décharge). Corrige la barre BAT (mode `power`) et le signe ± affiché |
 | `batt_mode` | — | Mode batterie. **Capteur 0/1** (`0`/`charge`, `1`/`discharge`) → badge Charge/Décharge. **Select de stratégie** (ex. Zendure `select.zendure_manager_operation`) → affiche le libellé localisé (couplage intelligent, charge/décharge forcée…). Sinon, déduit de `batt_power` ou du bilan PV/maison |
 | `batt_temp` | °C | Température BMS |
 | `batt_chg_today` | kWh | Énergie chargée aujourd'hui |
@@ -234,9 +235,11 @@ Puis `batt_soc: sensor.parc_batterie_soc`. (Pour 2 batteries identiques, une sim
 | `ext_temp` | Température extérieure (`sensor.temp_ext`) |
 | `sun_elevation` | Élévation du soleil en degrés (optionnel — calculé si absent) |
 | `sun_azimuth` | Azimut du soleil en degrés (optionnel) |
-| `sun_rise` | Heure de lever (optionnel — calculé si absent) |
-| `sun_set` | Heure de coucher (optionnel) |
+| `sun_rise` | Heure de lever (optionnel). Sinon, la carte utilise **automatiquement** `sun.sun` (`next_rising`) s'il existe, puis le calcul interne |
+| `sun_set` | Heure de coucher (optionnel). Idem : `sun.sun` (`next_setting`) en repli automatique |
 | `moon_phase` | Phase lunaire (`sensor.moon_phase`) — affiche l'emoji de phase la nuit |
+
+> 🌅 **Lever/coucher** : ordre de priorité = entités `sun_rise`/`sun_set` → attributs de **`sun.sun`** (intégration *Soleil* de HA, exact TZ/DST) → calcul interne depuis les coordonnées. Si tu as l'intégration Soleil, les heures sont donc justes sans rien configurer.
 
 ### Entités — Prévision de production
 

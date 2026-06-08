@@ -7,7 +7,7 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.1.3-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.4-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -164,7 +164,8 @@ batt_soc: sensor.battery_soc
 | `batt_charge_limit` | W | Charge power limit (entity or number) — `power` mode |
 | `batt_discharge_limit` | W | Discharge power limit (entity or number) — `power` mode |
 | `batt_voltage` | V | Battery pack voltage |
-| `batt_power` | W | Charge/discharge power (positive = charge) |
+| `batt_power` | W | Charge/discharge power (**positive = charge**; otherwise enable `batt_power_invert`) |
+| `batt_power_invert` | bool | Inverts the sign of `batt_power` if your entity does the opposite (+ = discharge). Fixes the BAT bar (`power` mode) and the displayed ± sign |
 | `batt_mode` | — | Battery mode. **0/1 sensor** (`0`/`charge`, `1`/`discharge`) → Charge/Discharge badge. **Strategy select** (e.g. Zendure `select.zendure_manager_operation`) → shows the localized label (smart matching, forced charge/discharge…). Otherwise inferred from `batt_power` or the PV/home balance |
 | `batt_temp` | °C | BMS temperature |
 | `batt_chg_today` | kWh | Energy charged today |
@@ -229,9 +230,11 @@ Then `batt_soc: sensor.battery_pack_soc`. (For 2 identical batteries, a plain av
 | `ext_temp` | Outdoor temperature (`sensor.outdoor_temp`) |
 | `sun_elevation` | Sun elevation in degrees (optional — computed if absent) |
 | `sun_azimuth` | Sun azimuth in degrees (optional) |
-| `sun_rise` | Sunrise time (optional — computed if absent) |
-| `sun_set` | Sunset time (optional) |
+| `sun_rise` | Sunrise time (optional). Otherwise the card **automatically** uses `sun.sun` (`next_rising`) if present, then the internal calculation |
+| `sun_set` | Sunset time (optional). Same: `sun.sun` (`next_setting`) as automatic fallback |
 | `moon_phase` | Lunar phase (`sensor.moon_phase`) — shows the phase emoji at night |
+
+> 🌅 **Sunrise/sunset** priority: `sun_rise`/`sun_set` entities → **`sun.sun`** attributes (HA *Sun* integration, exact TZ/DST) → internal calculation from coordinates. If you have the Sun integration, times are correct with no configuration.
 
 ### Entities — Production forecast
 
