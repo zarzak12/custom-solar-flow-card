@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.98';
+const VERSION = '1.0.99';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -2580,6 +2580,9 @@ function buildEditorHTML(cfg) {
   <div class="sfc-editor">
     <div class="sfc-ed-title">☀️ ${t(c,"ed_title")}</div>
 
+    <!-- Liste d'autocomplétion des entités HA (peuplée en JS via set hass) -->
+    <datalist id="sfcEntityList"></datalist>
+
     <!-- SECTION: Général -->
     ${edSection('general', t(c,'ed_general'), true, `
       <div class="sfc-ed-row">
@@ -4860,6 +4863,14 @@ class SolarFlowCardEditor extends HTMLElement {
     this._dirty = false;
   }
 
+  // HA fournit l'objet hass aux éditeurs de configuration → on s'en sert pour
+  // peupler l'autocomplétion des entités (datalist).
+  set hass(hass) {
+    this._hass = hass;
+    this._refreshEntityDatalist();
+  }
+  get hass() { return this._hass; }
+
   setConfig(config) {
     const incoming = { ...DEFAULTS, ...config };
     if (!this._ready) {
@@ -4899,6 +4910,23 @@ class SolarFlowCardEditor extends HTMLElement {
     this.shadowRoot.innerHTML = `<style>${CARD_CSS}${EDITOR_EXTRA_CSS}</style>` + buildEditorHTML(this._draft);
     this._populateAll();
     this._attachListeners();
+    this._refreshEntityDatalist();
+  }
+
+  // Peuple la <datalist> avec les entités HA pertinentes → autocomplétion des champs entité.
+  _refreshEntityDatalist() {
+    if (!this._hass || !this.shadowRoot) return;
+    const dl = this.shadowRoot.getElementById('sfcEntityList');
+    if (!dl) return;
+    const ids = Object.keys(this._hass.states || {});
+    if (dl._count === ids.length) return;   // déjà à jour → évite de reconstruire à chaque hass
+    dl._count = ids.length;
+    const domains = ['sensor','binary_sensor','weather','sun','select','number','input_number','input_boolean','switch'];
+    dl.innerHTML = ids
+      .filter(id => domains.includes(id.split('.')[0]))
+      .sort()
+      .map(id => `<option value="${id}"></option>`)
+      .join('');
   }
 
   _populateAll() {
@@ -4966,6 +4994,18 @@ class SolarFlowCardEditor extends HTMLElement {
         el.addEventListener('input', () => { const ck = el.dataset.colorKey; if (/^#[0-9a-fA-F]{6}$/.test(el.value)) { const col = this.shadowRoot.querySelector(`[data-key="${ck}"][type="color"]`); if (col) col.value = el.value; } this._draft = { ...this._draft, [ck]: el.value }; this._setDirty(); });
       } else {
         el.addEventListener('input', () => { let v = el.value; if (el.type==='number') { const n=parseFloat(v); if(!isNaN(n)) v=n; } this._draft = { ...this._draft, [k]: v }; this._setDirty(); });
+      }
+    });
+
+    // Autocomplétion entités : on relie à la <datalist> les champs texte qui attendent une
+    // entité — détectés via un placeholder de forme « domaine.entité » (sensor.xxx, weather.xxx…).
+    // Les champs libres (chemins d'image, libellés, nombres) ne matchent pas → pas de suggestion.
+    this.shadowRoot.querySelectorAll('input.sfc-ed-input[data-key]').forEach(el => {
+      if (el.type === 'number' || el.type === 'color') return;
+      const ph = el.getAttribute('placeholder') || '';
+      if (/^[a-z_]+\.[a-z0-9_]+/.test(ph)) {
+        el.setAttribute('list', 'sfcEntityList');
+        el.setAttribute('autocomplete', 'off');   // évite l'autocomplétion navigateur par-dessus
       }
     });
 

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="200" viewBox="0 0 720 200" font-family="'Segoe UI','Roboto',sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b1830"/>
+      <stop offset="1" stop-color="#060d1a"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.35" stop-color="#ffe17a"/>
+      <stop offset="0.7" stop-color="#FFC400"/>
+      <stop offset="1" stop-color="#FF8C00"/>
+    </radialGradient>
+    <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="rgba(255,200,0,0.45)"/>
+      <stop offset="1" stop-color="rgba(255,200,0,0)"/>
+    </radialGradient>
+    <linearGradient id="flow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4FC3F7"/>
+      <stop offset="0.5" stop-color="#69FF47"/>
+      <stop offset="1" stop-color="#FFD700"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fond -->
+  <rect x="0" y="0" width="720" height="200" rx="28" fill="url(#bg)"/>
+  <rect x="1.5" y="1.5" width="717" height="197" rx="26.5" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+
+  <!-- Arc trajectoire solaire -->
+  <path d="M70 150 C150 70, 250 70, 330 150" fill="none" stroke="rgba(255,215,0,0.25)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M70 150 C130 86, 210 78, 270 110" fill="none" stroke="rgba(255,215,0,0.85)" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 10"/>
+
+  <!-- Soleil -->
+  <circle cx="200" cy="95" r="58" fill="url(#sunGlow)"/>
+  <circle cx="200" cy="95" r="30" fill="url(#sun)"/>
+  <g stroke="#FFD27A" stroke-width="3.5" stroke-linecap="round" opacity="0.9">
+    <line x1="200" y1="40" x2="200" y2="52"/>
+    <line x1="200" y1="138" x2="200" y2="150"/>
+    <line x1="145" y1="95" x2="157" y2="95"/>
+    <line x1="243" y1="95" x2="255" y2="95"/>
+    <line x1="161" y1="56" x2="169" y2="64"/>
+    <line x1="231" y1="126" x2="239" y2="134"/>
+    <line x1="239" y1="56" x2="231" y2="64"/>
+    <line x1="169" y1="126" x2="161" y2="134"/>
+  </g>
+
+  <!-- Flux d'énergie -->
+  <path d="M90 168 H630" fill="none" stroke="url(#flow)" stroke-width="4" stroke-linecap="round" opacity="0.55"/>
+  <circle cx="150" cy="168" r="5" fill="#4FC3F7"/>
+  <circle cx="360" cy="168" r="5" fill="#69FF47"/>
+  <circle cx="560" cy="168" r="5" fill="#FFD700"/>
+
+  <!-- Texte -->
+  <text x="310" y="92" font-size="46" font-weight="800" fill="#e8f4fd" letter-spacing="1">Solar Flow</text>
+  <text x="312" y="128" font-size="22" font-weight="600" fill="#FFD700" letter-spacing="6">CARD</text>
+</svg>

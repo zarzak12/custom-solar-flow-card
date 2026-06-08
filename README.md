@@ -1,9 +1,13 @@
+<p align="center">
+  <img src="logo.svg" alt="Solar Flow Card" width="420"/>
+</p>
+
 # ☀️ Solar Flow Card
 
 **🇫🇷 Français** · [🇬🇧 English](README.en.md)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.0.96-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.99-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Ouvrir dans Home Assistant et ajouter ce dépôt à HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
