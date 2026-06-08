@@ -7,7 +7,7 @@
 **🇫🇷 Français** · [🇬🇧 English](README.en.md)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.1.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Ouvrir dans Home Assistant et ajouter ce dépôt à HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -193,6 +193,39 @@ batt_soc: sensor.battery_soc
 
 > La capacité théorique utilisée pour le SOH = `batt_capacity_kwh` (section Général).
 
+### Plusieurs batteries (vue agrégée)
+
+La carte présente **un seul système batterie**. Pour un parc de plusieurs batteries, agrège les entités :
+
+| Donnée | Comment agréger |
+|---|---|
+| Puissance, énergie chg/dch, déchargée cumulée, énergie restante | **Somme** → plusieurs entités séparées par des **virgules** (ex. `batt_power: sensor.b1_power, sensor.b2_power`) |
+| `batt_capacity_kwh`, `batt_full_kwh` | **Somme** (capacité totale du parc) — mets la valeur totale, ou additionne via un capteur template |
+| **SOC** (`batt_soc`) | ⚠️ **PAS** de virgule (sommerait les %). Utilise un capteur **moyenne pondérée** (voir ci-dessous) |
+| Tension | une seule batterie (parallèle ≈ même tension) ou moyenne |
+| Température BMS | max ou moyenne via template |
+
+Exemple de SOC moyen **pondéré par la capacité** :
+```yaml
+template:
+  - sensor:
+      - name: "Parc batterie SOC"
+        unit_of_measurement: "%"
+        device_class: battery
+        state: >
+          {% set ns = namespace(num=0, cap=0) %}
+          {% set batts = [
+            ['sensor.b1_soc', 5.0],
+            ['sensor.b2_soc', 5.0],
+            ['sensor.b3_soc', 2.4] ] %}
+          {% for ent, c in batts %}
+            {% set ns.num = ns.num + (states(ent)|float(0) * c) %}
+            {% set ns.cap = ns.cap + c %}
+          {% endfor %}
+          {{ (ns.num / ns.cap) | round(1) if ns.cap > 0 else 0 }}
+```
+Puis `batt_soc: sensor.parc_batterie_soc`. (Pour 2 batteries identiques, une simple moyenne suffit.)
+
 ### Entités — Météo & Soleil
 
 | Option | Description |
@@ -341,7 +374,7 @@ batt_cycles_max:    6000                                       # cycles max cons
 
 ## 🔌 Routeurs solaires
 
-Jusqu'à **3 routeurs** pour visualiser les charges pilotées (spa, chauffe-eau, résistance…).
+Jusqu'à **4 routeurs** pour visualiser les charges pilotées (spa, chauffe-eau, résistance…).
 
 ```yaml
 router1_enabled: true
@@ -365,10 +398,28 @@ router1_power: sensor.spa_power  # en mode 'power'
 | `router_N_power` | Entité puissance en W |
 | `router_N_resistance_w` | Puissance nominale de la résistance (mode `calc`) |
 | `router_N_opening` | Entité % ouverture 0-100 (mode `calc`) |
-| `router_N_energy` | Entité énergie du jour en kWh |
+| `router_N_energy` | Entité énergie du **jour** en kWh |
+| `router_N_energy_month` | Entité énergie du **mois** (kWh) — section Routeurs |
+| `router_N_energy_year` | Entité énergie de l'**année** (kWh) |
+| `router_N_energy_total` | Entité énergie **totale** cumulée (kWh) |
 | `router_N_temp` | Entité température eau (routeur 1, mode single) — ex. spa |
 | `router_N_position` | Position : `left`, `center`, `right` |
 | `router_N_color` | Couleur du flux néon + de la valeur (défaut `#FFA040`) |
+| `router_scene_mode` | Scène **mode séparé** : `spread` (un nœud par routeur, défaut) ou `sum` (un seul nœud additionné) |
+
+> En **mode single**, le routeur 1 = spa et le routeur 2 = ballon d'eau chaude (positions fixes dans l'image). Les routeurs **3 et 4** n'apparaissent pas dans la scène single mais sont affichés dans la **section Routeurs** (puissance + énergie).
+
+### Section « Routeurs » (énergie)
+
+Une section dédiée affiche un **badge par routeur actif** (largeur responsive : 1 → un grand badge, 2 → deux, etc.) avec l'énergie du **jour** en grand + **mois / année / total** en sous-ligne.
+
+> ⚡ **Routeur F1ATB (ouverture en %) ?** Deux modes possibles :
+> - **`calc`** — la carte calcule la puissance (`résistance × ouverture %`), sans rien créer (pas d'énergie kWh).
+> - **`power` + capteurs** — pour obtenir puissance **et** énergie jour/mois/année/total : voir le guide **[Créer les capteurs F1ATB](docs/CAPTEURS-F1ATB.md)**.
+
+### Section « Véhicule électrique »
+
+Si `ev_enabled`, une section dédiée affiche **état** (Charge / V2H / Repos), **puissance** (±), **SOC** et **batterie** (kWh actuels / capacité).
 
 ---
 

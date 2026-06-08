@@ -7,7 +7,7 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.1.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -188,6 +188,39 @@ batt_soc: sensor.battery_soc
 
 > The design capacity used for SOH = `batt_capacity_kwh` (General section).
 
+### Multiple batteries (aggregated view)
+
+The card shows **one battery system**. For a multi-battery pack, aggregate the entities:
+
+| Data | How to aggregate |
+|---|---|
+| Power, charge/discharge energy, cumulative discharge, remaining energy | **Sum** → several comma-separated entities (e.g. `batt_power: sensor.b1_power, sensor.b2_power`) |
+| `batt_capacity_kwh`, `batt_full_kwh` | **Sum** (total pack capacity) — enter the total, or add via a template sensor |
+| **SOC** (`batt_soc`) | ⚠️ **NO** comma (would sum %). Use a **weighted-average** sensor (see below) |
+| Voltage | a single battery (parallel ≈ same voltage) or average |
+| BMS temperature | max or average via template |
+
+Capacity-**weighted average SOC** example:
+```yaml
+template:
+  - sensor:
+      - name: "Battery pack SOC"
+        unit_of_measurement: "%"
+        device_class: battery
+        state: >
+          {% set ns = namespace(num=0, cap=0) %}
+          {% set batts = [
+            ['sensor.b1_soc', 5.0],
+            ['sensor.b2_soc', 5.0],
+            ['sensor.b3_soc', 2.4] ] %}
+          {% for ent, c in batts %}
+            {% set ns.num = ns.num + (states(ent)|float(0) * c) %}
+            {% set ns.cap = ns.cap + c %}
+          {% endfor %}
+          {{ (ns.num / ns.cap) | round(1) if ns.cap > 0 else 0 }}
+```
+Then `batt_soc: sensor.battery_pack_soc`. (For 2 identical batteries, a plain average is enough.)
+
 ### Entities — Weather & Sun
 
 | Option | Description |
@@ -336,7 +369,7 @@ batt_cycles_max:    6000                                       # rated max cycle
 
 ## 🔌 Solar routers
 
-Up to **3 routers** to visualize controlled loads (spa, water heater, resistor…).
+Up to **4 routers** to visualize controlled loads (spa, water heater, resistor…).
 
 ```yaml
 router1_enabled: true
@@ -361,10 +394,28 @@ router1_temp: sensor.spa_temp    # optional: water temperature (single mode)
 | `router_N_power` | Power entity in W |
 | `router_N_resistance_w` | Nominal resistor power (`calc` mode) |
 | `router_N_opening` | Opening entity %, 0-100 (`calc` mode) |
-| `router_N_energy` | Daily energy entity in kWh |
+| `router_N_energy` | **Daily** energy entity (kWh) |
+| `router_N_energy_month` | **Monthly** energy entity (kWh) — Routers section |
+| `router_N_energy_year` | **Yearly** energy entity (kWh) |
+| `router_N_energy_total` | **Total** cumulative energy entity (kWh) |
 | `router_N_temp` | Water temperature entity (router 1, single mode) |
 | `router_N_position` | Position: `left`, `center`, `right` |
 | `router_N_color` | Neon flow + value color (default `#FFA040`) |
+| `router_scene_mode` | **Separate** scene: `spread` (one node per router, default) or `sum` (single summed node) |
+
+> In **single mode**, router 1 = spa and router 2 = water heater (fixed positions in the image). Routers **3 and 4** don't appear in the single scene but are shown in the **Routers section** (power + energy).
+
+### "Routers" section (energy)
+
+A dedicated section shows **one badge per active router** (responsive width: 1 → one large badge, 2 → two, etc.) with **daily** energy large + **month / year / total** as a sub-line.
+
+> ⚡ **F1ATB router (opening %)?** Two possible modes:
+> - **`calc`** — the card computes power (`resistance × opening %`), nothing to create (no kWh energy).
+> - **`power` + sensors** — to get power **and** energy day/month/year/total: see the guide **[Building F1ATB sensors](docs/F1ATB-SENSORS.md)**.
+
+### "Electric vehicle" section
+
+If `ev_enabled`, a dedicated section shows **state** (Charging / V2H / Idle), **power** (±), **SOC** and **battery** (current kWh / capacity).
 
 ---
 

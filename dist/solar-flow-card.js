@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.1.2';
+const VERSION = '1.1.3';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -31,6 +31,9 @@ const DEFAULTS = {
   router1_resistance_w: 0,    // puissance nominale de la résistance en W (mode 'calc')
   router1_opening:      '',   // sensor.xxx → % ouverture 0-100 (mode 'calc')
   router1_energy:       '',   // sensor.xxx → kWh aujourd'hui
+  router1_energy_month: '',   // sensor.xxx → kWh ce mois (section Routeurs)
+  router1_energy_year:  '',   // sensor.xxx → kWh cette année
+  router1_energy_total: '',   // sensor.xxx → kWh total (cumul)
   router1_temp:         '',   // sensor.xxx → °C (température eau, spa...)
   router1_position:     'right',
   router1_color:        '#FFA040',  // couleur du flux néon + valeur
@@ -43,6 +46,9 @@ const DEFAULTS = {
   router2_resistance_w: 0,
   router2_opening:      '',
   router2_energy:       '',
+  router2_energy_month: '',
+  router2_energy_year:  '',
+  router2_energy_total: '',
   router2_position:     'left',
   router2_color:        '#FFA040',
 
@@ -54,8 +60,29 @@ const DEFAULTS = {
   router3_resistance_w: 0,
   router3_opening:      '',
   router3_energy:       '',
+  router3_energy_month: '',
+  router3_energy_year:  '',
+  router3_energy_total: '',
   router3_position:     'center',
   router3_color:        '#FFA040',
+
+  router4_enabled:      false,
+  router4_img:          '',
+  router4_label:        'Routeur 4',
+  router4_mode:         'power',
+  router4_power:        '',
+  router4_resistance_w: 0,
+  router4_opening:      '',
+  router4_energy:       '',
+  router4_energy_month: '',
+  router4_energy_year:  '',
+  router4_energy_total: '',
+  router4_position:     'center',
+  router4_color:        '#FFA040',
+
+  // Affichage des routeurs dans la scène MODE SÉPARÉ :
+  // 'spread' = un nœud par routeur (réparti, défaut) | 'sum' = un seul nœud additionné
+  router_scene_mode:    'spread',
 
   // Images personnalisées (chemin relatif à /local/ ou URL complète)
   img_house:   '/hacsfiles/custom-solar-flow-card/img/house.png',
@@ -137,7 +164,7 @@ const DEFAULTS = {
   show_mode: true,
   show_autoconso: true,   // taux d'autoconsommation / autoproduction
   // Ordre d'affichage des sections sous la scène (réordonnable via l'éditeur)
-  section_order: ['bars','metrics','cells','endurance','inverter','autoconso','health','savings'],
+  section_order: ['bars','metrics','cells','endurance','inverter','autoconso','health','savings','routers','ev'],
   // Titres personnalisés des sections (vide = libellé par défaut, ou aucun en-tête
   // pour les sections qui n'en ont pas : barres, métriques, cellules, autonomie)
   title_bars:      '',
@@ -148,6 +175,8 @@ const DEFAULTS = {
   title_autoconso: '',
   title_health:    '',
   title_savings:   '',
+  title_routers:   '',
+  title_ev:        '',
   title: 'Solar Flow',
   // ── Échelles d'affichage (curseurs) ──
   scale_flux:  1.0,   // épaisseur des flux d'énergie (0.5–2)
@@ -320,6 +349,24 @@ const I18N = {
     sec_autoconso: 'Autoconsommation',
     sec_health:    'État de santé',
     sec_savings:   'Économies & ROI',
+    sec_routers:   'Routeurs (énergie)',
+    sec_ev:        'Véhicule électrique',
+    section_routers: 'Routeurs',
+    section_ev:      'Véhicule électrique',
+    ev_st_charge:    'Charge',
+    ev_st_v2h:       'V2H (décharge)',
+    ev_st_idle:      'Repos',
+    lbl_ev_power:    'Puissance',
+    lbl_ev_soc:      'SOC',
+    lbl_ev_batt:     'Batterie',
+    lbl_ev_state:    'État',
+    rt_day:          'Jour',
+    rt_month:        'Mois',
+    rt_year:         'Année',
+    rt_total:        'Total',
+    ed_router_energy_month: 'Entité énergie mois (kWh)',
+    ed_router_energy_year:  'Entité énergie année (kWh)',
+    ed_router_energy_total: 'Entité énergie totale (kWh)',
     ed_appearance:    '🔎 Tailles d\'affichage',
     ed_scale_flux:    'Épaisseur des flux',
     ed_scale_label:   'Taille des libellés',
@@ -445,6 +492,9 @@ const I18N = {
     ed_router_opening:    'Entité ouverture % (ex: sensor.f1atb_opening)',
     ed_router_pos:        'Position dans la scène',
     ed_router_color:      'Couleur du flux',
+    ed_router_scene_mode:   'Affichage routeurs (scène mode séparé)',
+    ed_router_scene_spread: 'Répartis — un par routeur',
+    ed_router_scene_sum:    'Additionné — un seul bloc',
     ed_pos_left:          'Gauche',
     ed_pos_center:        'Centre',
     ed_pos_right:         'Droite',
@@ -564,6 +614,24 @@ const I18N = {
     sec_autoconso: 'Self-consumption',
     sec_health:    'Battery health',
     sec_savings:   'Savings & ROI',
+    sec_routers:   'Routers (energy)',
+    sec_ev:        'Electric vehicle',
+    section_routers: 'Routers',
+    section_ev:      'Electric vehicle',
+    ev_st_charge:    'Charging',
+    ev_st_v2h:       'V2H (discharge)',
+    ev_st_idle:      'Idle',
+    lbl_ev_power:    'Power',
+    lbl_ev_soc:      'SOC',
+    lbl_ev_batt:     'Battery',
+    lbl_ev_state:    'State',
+    rt_day:          'Day',
+    rt_month:        'Month',
+    rt_year:         'Year',
+    rt_total:        'Total',
+    ed_router_energy_month: 'Monthly energy entity (kWh)',
+    ed_router_energy_year:  'Yearly energy entity (kWh)',
+    ed_router_energy_total: 'Total energy entity (kWh)',
     ed_appearance:    '🔎 Display sizes',
     ed_scale_flux:    'Flow thickness',
     ed_scale_label:   'Label size',
@@ -684,6 +752,9 @@ const I18N = {
     ed_router_opening:    'Opening entity % (e.g. sensor.f1atb_opening)',
     ed_router_pos:        'Position in scene',
     ed_router_color:      'Flow color',
+    ed_router_scene_mode:   'Routers display (separate scene)',
+    ed_router_scene_spread: 'Spread — one per router',
+    ed_router_scene_sum:    'Summed — single block',
     ed_pos_left:          'Left',
     ed_pos_center:        'Center',
     ed_pos_right:         'Right',
@@ -1647,6 +1718,28 @@ const CARD_CSS = `
   .sfc-inv-val { font-family:monospace;font-size:calc(14px*var(--sfc-sv,1));font-weight:700;text-shadow:0 0 5px currentColor; }
   .sfc-inv-sub { font-family:monospace;font-size:calc(10px*var(--sfc-sv,1));color:var(--batt); }
 
+  /* ── Routeurs (énergie) — grille responsive selon le nombre de routeurs actifs ── */
+  .sfc-routers { display:grid;gap:7px;padding:0 10px; }   /* grid-template-columns posé en inline */
+  .sfc-rt-card {
+    background:var(--card);border:1px solid var(--border);border-radius:11px;
+    padding:9px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;
+    transition:background .2s;
+  }
+  .sfc-rt-card:hover { background:rgba(255,255,255,.07); }
+  .sfc-rt-name { font-size:calc(9px*var(--sfc-sl,1));letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:700; }
+  .sfc-rt-day  { font-family:monospace;font-size:calc(15px*var(--sfc-sv,1));font-weight:700;color:#FFA040;text-shadow:0 0 6px currentColor; }
+  .sfc-rt-sub  { font-family:monospace;font-size:calc(9px*var(--sfc-sv,1));color:var(--muted);line-height:1.5; }
+
+  /* ── Véhicule électrique — section dédiée ── */
+  .sfc-ev-card {
+    background:var(--card);border:1px solid var(--border);border-radius:11px;
+    padding:10px 11px;margin:0 10px;
+    display:flex;align-items:center;justify-content:space-around;gap:8px;flex-wrap:wrap;
+  }
+  .sfc-ev-item { display:flex;flex-direction:column;align-items:center;gap:2px;min-width:60px; }
+  .sfc-ev-lbl  { font-size:calc(8px*var(--sfc-sl,1));letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:700; }
+  .sfc-ev-val  { font-family:monospace;font-size:calc(14px*var(--sfc-sv,1));font-weight:700;text-shadow:0 0 5px currentColor; }
+
   /* ── Spacer ── */
   .sfc-gap { height:8px; }
 
@@ -1765,7 +1858,8 @@ const CARD_CSS = `
   /* Mode single : masquer les nœuds routeurs HTML (remplacés par les chemins SVG overlay) */
   .sfc-scene-mode-single #sfcRouterNode1,
   .sfc-scene-mode-single #sfcRouterNode2,
-  .sfc-scene-mode-single #sfcRouterNode3 {
+  .sfc-scene-mode-single #sfcRouterNode3,
+  .sfc-scene-mode-single #sfcRouterNode4 {
     display: none !important;
   }
 
@@ -1976,13 +2070,14 @@ function buildCardHTML(cfg) {
       <div class="sfc-sunset"  id="sfcSunset">🌇 21:00</div>
 
       <!-- SVG lignes de flux vers routeurs (overlay sur toute la scène) -->
-      ${(c.router1_enabled || c.router2_enabled || c.router3_enabled) ? `
+      ${(c.router1_enabled || c.router2_enabled || c.router3_enabled || c.router4_enabled) ? `
       <svg class="sfc-router-svg" id="sfcRouterSvg"
            style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;"
            viewBox="0 0 520 380" preserveAspectRatio="none">
         <path id="sfcRouterLine1" class="sfc-router-line" d="M 260,300 L 260,200"/>
         <path id="sfcRouterLine2" class="sfc-router-line" d="M 260,300 L 130,200"/>
         <path id="sfcRouterLine3" class="sfc-router-line" d="M 260,300 L 390,200"/>
+        <path id="sfcRouterLine4" class="sfc-router-line" d="M 260,300 L 460,200"/>
       </svg>` : ''}
 
       <!-- Plan d'eau + sol -->
@@ -2287,6 +2382,7 @@ function buildCardHTML(cfg) {
           <path id="sfcLR1" class="sfc-router-line" d="M 210,40 L 280,40" marker-end="url(#arrowRouter)" style="display:none"/>
           <path id="sfcLR2" class="sfc-router-line" d="M 210,40 L 310,40" marker-end="url(#arrowRouter)" style="display:none"/>
           <path id="sfcLR3" class="sfc-router-line" d="M 210,40 L 340,40" marker-end="url(#arrowRouter)" style="display:none"/>
+          <path id="sfcLR4" class="sfc-router-line" d="M 210,40 L 350,40" marker-end="url(#arrowRouter)" style="display:none"/>
         </svg>
 
         <!-- ── RÉSEAU ── -->
@@ -2309,7 +2405,15 @@ function buildCardHTML(cfg) {
         </div>
 
         <!-- ── ROUTEURS (si activés, entre maison et batterie) -->
-        ${c.router1_enabled ? `
+        <!-- Mode 'sum' : un seul nœud additionné -->
+        ${c.router_scene_mode === 'sum' && (c.router1_enabled || c.router2_enabled || c.router3_enabled || c.router4_enabled) ? `
+        <div class="sfc-img-node" id="sfcRouterNodeSum" style="flex:0.85;">
+          <span style="font-size:30px;">⚡</span>
+          <div class="sfc-router-label">${t(c,'section_routers')}</div>
+          <div class="sfc-router-val inactive" id="sfcRouterSumVal">0 W</div>
+        </div>` : ''}
+        <!-- Mode 'spread' (défaut) : un nœud par routeur -->
+        ${c.router_scene_mode !== 'sum' && c.router1_enabled ? `
         <div class="sfc-img-node" id="sfcRouterNode1" style="flex:0.85;">
           ${c.router1_img
             ? `<img src="${c.router1_img}" style="height:65px;mix-blend-mode:screen;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.7));"
@@ -2319,7 +2423,7 @@ function buildCardHTML(cfg) {
           <div class="sfc-router-label">${c.router1_label||'Routeur'}</div>
           <div class="sfc-router-val inactive" id="sfcRouter1Val">0 W</div>
         </div>` : ''}
-        ${c.router2_enabled ? `
+        ${c.router_scene_mode !== 'sum' && c.router2_enabled ? `
         <div class="sfc-img-node" id="sfcRouterNode2" style="flex:0.85;">
           ${c.router2_img
             ? `<img src="${c.router2_img}" style="height:65px;mix-blend-mode:screen;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.7));"
@@ -2329,7 +2433,7 @@ function buildCardHTML(cfg) {
           <div class="sfc-router-label">${c.router2_label||'Routeur 2'}</div>
           <div class="sfc-router-val inactive" id="sfcRouter2Val">0 W</div>
         </div>` : ''}
-        ${c.router3_enabled ? `
+        ${c.router_scene_mode !== 'sum' && c.router3_enabled ? `
         <div class="sfc-img-node" id="sfcRouterNode3" style="flex:0.85;">
           ${c.router3_img
             ? `<img src="${c.router3_img}" style="height:65px;mix-blend-mode:screen;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.7));"
@@ -2338,6 +2442,16 @@ function buildCardHTML(cfg) {
             : `<span style="font-size:30px;">⚡</span>`}
           <div class="sfc-router-label">${c.router3_label||'Routeur 3'}</div>
           <div class="sfc-router-val inactive" id="sfcRouter3Val">0 W</div>
+        </div>` : ''}
+        ${c.router_scene_mode !== 'sum' && c.router4_enabled ? `
+        <div class="sfc-img-node" id="sfcRouterNode4" style="flex:0.85;">
+          ${c.router4_img
+            ? `<img src="${c.router4_img}" style="height:65px;mix-blend-mode:screen;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.7));"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+<span style="display:none;font-size:30px;">⚡</span>`
+            : `<span style="font-size:30px;">⚡</span>`}
+          <div class="sfc-router-label">${c.router4_label||'Routeur 4'}</div>
+          <div class="sfc-router-val inactive" id="sfcRouter4Val">0 W</div>
         </div>` : ''}
 
         <!-- ── BATTERIE avec niveau liquide ── -->
@@ -2571,7 +2685,46 @@ function buildCardHTML(cfg) {
       <div class="sfc-roi-dates" id="sfcRoiDates" style="display:none;"></div>` : ''}
     </div>` : '';
 
-      const defOrder = ['bars','metrics','cells','endurance','inverter','autoconso','health','savings'];
+      // ── Section Routeurs — un badge par routeur ACTIF (tous, quel que soit le mode de scène).
+      //    Headline = puissance temps réel ; sous-lignes = énergie jour/mois/année/total si dispo.
+      //    Indispensable pour les routeurs 3/4 absents de la scène single. Largeur responsive. ──
+      const activeRt = [1,2,3,4].filter(n => c['router'+n+'_enabled']);
+      S.routers = activeRt.length ? `
+    <div class="sfc-section">⚡ ${c.title_routers || t(c,'section_routers')}</div>
+    <div class="sfc-gap" style="height:6px;"></div>
+    <div class="sfc-routers" style="grid-template-columns:repeat(${activeRt.length},1fr);">
+      ${activeRt.map(n => `
+      <div class="sfc-rt-card">
+        <div class="sfc-rt-name">${c['router'+n+'_label'] || ('Routeur '+n)}</div>
+        <div class="sfc-rt-day" id="sfcRPwr${n}" style="color:${c['router'+n+'_color']||'#FFA040'}">0 W</div>
+        <div class="sfc-rt-sub" id="sfcREn${n}Sub"></div>
+      </div>`).join('')}
+    </div>` : '';
+
+      // ── Section Véhicule électrique — toutes les infos utiles ──
+      S.ev = c.ev_enabled ? `
+    <div class="sfc-section">🚗 ${c.title_ev || t(c,'section_ev')}</div>
+    <div class="sfc-gap" style="height:6px;"></div>
+    <div class="sfc-ev-card">
+      <div class="sfc-ev-item">
+        <span class="sfc-ev-lbl">${c.ev_label || t(c,'section_ev')}</span>
+        <span class="sfc-ev-val" id="sfcEvSecState" style="color:var(--sfc-ev,#4FC3F7)">—</span>
+      </div>
+      <div class="sfc-ev-item">
+        <span class="sfc-ev-lbl">⚡ ${t(c,'lbl_ev_power')}</span>
+        <span class="sfc-ev-val" id="sfcEvSecPwr" style="color:var(--sfc-ev,#4FC3F7)">— W</span>
+      </div>
+      ${c.ev_soc ? `<div class="sfc-ev-item">
+        <span class="sfc-ev-lbl">🔌 ${t(c,'lbl_ev_soc')}</span>
+        <span class="sfc-ev-val" id="sfcEvSecSoc" style="color:var(--sfc-batt,#69FF47)">— %</span>
+      </div>` : ''}
+      ${(c.ev_soc && parseFloat(c.ev_max_kwh) > 0) || parseFloat(c.ev_max_kwh) > 0 ? `<div class="sfc-ev-item">
+        <span class="sfc-ev-lbl">🔋 ${t(c,'lbl_ev_batt')}</span>
+        <span class="sfc-ev-val" id="sfcEvSecKwh" style="color:var(--sfc-batt,#69FF47)">— kWh</span>
+      </div>` : ''}
+    </div>` : '';
+
+      const defOrder = ['bars','metrics','cells','endurance','inverter','autoconso','health','savings','routers','ev'];
       let order = (Array.isArray(c.section_order) && c.section_order.length) ? c.section_order.slice() : defOrder.slice();
       defOrder.forEach(k => { if (!order.includes(k)) order.push(k); });   // clés manquantes en fin (compat.)
       // Chaque bloc présent est précédé d'un espaceur uniforme.
@@ -2789,6 +2942,13 @@ function buildEditorHTML(cfg) {
     <!-- SECTION: Routeurs -->
     ${edSection('routers', t(c,'ed_routers'), false, `
       <div class="sfc-ed-info">${t(c,'ed_routers_info')}</div>
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_router_scene_mode')}</label>
+        <select class="sfc-ed-input" data-key="router_scene_mode" style="cursor:pointer;">
+          <option value="spread" ${(c.router_scene_mode||'spread')==='spread'?'selected':''}>${t(c,'ed_router_scene_spread')}</option>
+          <option value="sum"    ${(c.router_scene_mode||'spread')==='sum'   ?'selected':''}>${t(c,'ed_router_scene_sum')}</option>
+        </select>
+      </div>
 
       <div style="font-size:10px;font-weight:700;color:var(--sfc-solar,#FFD700);margin:8px 0 4px;letter-spacing:1px;">
         ♨️ ${t(c,'ed_router')} 1
@@ -2807,6 +2967,9 @@ function buildEditorHTML(cfg) {
       ${edEntity('router1_resistance_w', t(c,'ed_router_resistance'),  '2000', c)}
       ${edEntity('router1_opening',      t(c,'ed_router_opening'),     'sensor.f1atb_opening', c)}
       ${edEntity('router1_energy',       t(c,'ed_router_energy'),      'sensor.spa_energy_today', c)}
+      ${edEntity('router1_energy_month', t(c,'ed_router_energy_month'),'sensor.spa_energie_mois', c)}
+      ${edEntity('router1_energy_year',  t(c,'ed_router_energy_year'), 'sensor.spa_energie_annee', c)}
+      ${edEntity('router1_energy_total', t(c,'ed_router_energy_total'),'sensor.spa_energie_totale', c)}
       ${edEntity('router1_temp',         t(c,'ed_router_temp'),         'sensor.spa_temperature', c)}
       ${edColor('router1_color', t(c,'ed_router_color'), '#FFA040', c)}
       <div class="sfc-ed-row">
@@ -2835,6 +2998,9 @@ function buildEditorHTML(cfg) {
       ${edEntity('router2_resistance_w', t(c,'ed_router_resistance'),  '2000', c)}
       ${edEntity('router2_opening',      t(c,'ed_router_opening'),     'sensor.f1atb_opening', c)}
       ${edEntity('router2_energy',       t(c,'ed_router_energy'),      'sensor.water_heater_energy_today', c)}
+      ${edEntity('router2_energy_month', t(c,'ed_router_energy_month'),'sensor.routeur2_energie_mois', c)}
+      ${edEntity('router2_energy_year',  t(c,'ed_router_energy_year'), 'sensor.routeur2_energie_annee', c)}
+      ${edEntity('router2_energy_total', t(c,'ed_router_energy_total'),'sensor.routeur2_energie_totale', c)}
       ${edColor('router2_color', t(c,'ed_router_color'), '#FFA040', c)}
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,'ed_router_pos')}</label>
@@ -2862,6 +3028,9 @@ function buildEditorHTML(cfg) {
       ${edEntity('router3_resistance_w', t(c,'ed_router_resistance'),  '2000', c)}
       ${edEntity('router3_opening',      t(c,'ed_router_opening'),     'sensor.f1atb_opening', c)}
       ${edEntity('router3_energy',       t(c,'ed_router_energy'),      'sensor.router3_energy_today', c)}
+      ${edEntity('router3_energy_month', t(c,'ed_router_energy_month'),'sensor.router3_energie_mois', c)}
+      ${edEntity('router3_energy_year',  t(c,'ed_router_energy_year'), 'sensor.router3_energie_annee', c)}
+      ${edEntity('router3_energy_total', t(c,'ed_router_energy_total'),'sensor.router3_energie_totale', c)}
       ${edColor('router3_color', t(c,'ed_router_color'), '#FFA040', c)}
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,'ed_router_pos')}</label>
@@ -2869,6 +3038,36 @@ function buildEditorHTML(cfg) {
           <option value="left"   ${(c.router3_position||'center')==='left'   ?'selected':''}>← ${t(c,'ed_pos_left')}</option>
           <option value="center" ${(c.router3_position||'center')==='center' ?'selected':''}>↑ ${t(c,'ed_pos_center')}</option>
           <option value="right"  ${(c.router3_position||'center')==='right'  ?'selected':''}>→ ${t(c,'ed_pos_right')}</option>
+        </select>
+      </div>
+
+      <div style="font-size:10px;font-weight:700;color:var(--sfc-solar,#FFD700);margin:12px 0 4px;letter-spacing:1px;">
+        ⚡ ${t(c,'ed_router')} 4
+      </div>
+      ${edToggle('router4_enabled', t(c,'ed_router_enabled'), c)}
+      ${edEntity('router4_label',    t(c,'ed_router_label'),   'Routeur 4', c)}
+      ${edEntity('router4_img',      t(c,'ed_router_img'),     '', c)}
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_router_mode')}</label>
+        <select class="sfc-ed-input" data-key="router4_mode" style="cursor:pointer;">
+          <option value="power" ${(c.router4_mode||'power')==='power'?'selected':''}>${t(c,'ed_router_mode_power')}</option>
+          <option value="calc"  ${(c.router4_mode||'power')==='calc' ?'selected':''}>${t(c,'ed_router_mode_calc')}</option>
+        </select>
+      </div>
+      ${edEntity('router4_power',        t(c,'ed_router_power'),      'sensor.router4_power', c)}
+      ${edEntity('router4_resistance_w', t(c,'ed_router_resistance'),  '2000', c)}
+      ${edEntity('router4_opening',      t(c,'ed_router_opening'),     'sensor.f1atb_opening', c)}
+      ${edEntity('router4_energy',       t(c,'ed_router_energy'),      'sensor.router4_energy_today', c)}
+      ${edEntity('router4_energy_month', t(c,'ed_router_energy_month'),'sensor.router4_energie_mois', c)}
+      ${edEntity('router4_energy_year',  t(c,'ed_router_energy_year'), 'sensor.router4_energie_annee', c)}
+      ${edEntity('router4_energy_total', t(c,'ed_router_energy_total'),'sensor.router4_energie_totale', c)}
+      ${edColor('router4_color', t(c,'ed_router_color'), '#FFA040', c)}
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_router_pos')}</label>
+        <select class="sfc-ed-input" data-key="router4_position" style="cursor:pointer;">
+          <option value="left"   ${(c.router4_position||'center')==='left'   ?'selected':''}>← ${t(c,'ed_pos_left')}</option>
+          <option value="center" ${(c.router4_position||'center')==='center' ?'selected':''}>↑ ${t(c,'ed_pos_center')}</option>
+          <option value="right"  ${(c.router4_position||'center')==='right'  ?'selected':''}>→ ${t(c,'ed_pos_right')}</option>
         </select>
       </div>
     `)}
@@ -3119,6 +3318,8 @@ function buildEditorHTML(cfg) {
       ${edEntity('title_autoconso', t(c,'sec_autoconso'), t(c,'section_autoconso'), c)}
       ${edEntity('title_health',    t(c,'sec_health'),    t(c,'section_health'),    c)}
       ${edEntity('title_savings',   t(c,'sec_savings'),   t(c,'section_savings'),   c)}
+      ${edEntity('title_routers',   t(c,'sec_routers'),   t(c,'section_routers'),   c)}
+      ${edEntity('title_ev',        t(c,'sec_ev'),        t(c,'section_ev'),        c)}
     `)}
 
     <!-- ACTIONS -->
@@ -3170,7 +3371,7 @@ function edToggle(key, label, cfg) {
 }
 
 // Ordre par défaut des sections (utilisé par la carte ET l'éditeur)
-const SECTION_ORDER_DEFAULT = ['bars','metrics','cells','endurance','inverter','autoconso','health','savings'];
+const SECTION_ORDER_DEFAULT = ['bars','metrics','cells','endurance','inverter','autoconso','health','savings','routers','ev'];
 
 // Normalise un ordre : garde les clés valides, complète avec les manquantes.
 function normalizeSectionOrder(arr) {
@@ -3682,6 +3883,32 @@ class SolarFlowCard extends HTMLElement {
     const socEl = this._el('sfcSGEVSoc');
     if (socEl && evSoc !== null) {
       socEl.textContent = Math.round(evSoc) + ' %';
+    }
+
+    // ── Section EV dédiée (toutes les infos utiles) ──
+    const evCol = c.color_ev || '#4FC3F7';
+    const stEl = this._el('sfcEvSecState');
+    if (stEl) {
+      stEl.textContent = isV2H ? t(c, 'ev_st_v2h') : (evW > 50 ? t(c, 'ev_st_charge') : t(c, 'ev_st_idle'));
+      stEl.style.color = isV2H ? '#69FF47' : (evW > 50 ? evCol : 'var(--muted)');
+    }
+    const secPwr = this._el('sfcEvSecPwr');
+    if (secPwr) {
+      const abs = Math.abs(evW);
+      const sign = isV2H ? '−' : evW > 50 ? '+' : '';
+      secPwr.textContent = abs >= 1000 ? sign + (abs / 1000).toFixed(2) + ' kW' : sign + Math.round(abs) + ' W';
+      secPwr.style.color = isV2H ? '#69FF47' : evCol;
+    }
+    const secSoc = this._el('sfcEvSecSoc');
+    if (secSoc && evSoc !== null) secSoc.textContent = Math.round(evSoc) + ' %';
+    const secKwh = this._el('sfcEvSecKwh');
+    if (secKwh) {
+      const maxKwh = parseFloat(c.ev_max_kwh) || 0;
+      if (maxKwh > 0 && evSoc !== null) {
+        secKwh.textContent = (maxKwh * evSoc / 100).toFixed(1) + ' / ' + maxKwh.toFixed(0) + ' kWh';
+      } else if (maxKwh > 0) {
+        secKwh.textContent = maxKwh.toFixed(0) + ' kWh';
+      }
     }
   }
 
@@ -4518,10 +4745,13 @@ class SolarFlowCard extends HTMLElement {
       c.router1_enabled ? 1 : 0,
       c.router2_enabled ? 2 : 0,
       c.router3_enabled ? 3 : 0,
+      c.router4_enabled ? 4 : 0,
     ].filter(Boolean);
     const nRouters = activeRouters.length;
     const gap = nRouters > 0 ? (355 - 210) / (nRouters + 1) : 0;
     const routerXs = activeRouters.map((_, i) => Math.round(210 + gap * (i+1)));
+    const sumMode = c.router_scene_mode === 'sum' && c.img_scene_mode !== 'single';
+    let routersTotalW = 0;
 
     activeRouters.forEach((rn, i) => {
       const c2 = this._cfg;
@@ -4539,6 +4769,7 @@ class SolarFlowCard extends HTMLElement {
       } else {
         w = this._getNum(c2['router' + rn + '_power']);
       }
+      routersTotalW += w;
 
       const active = w > 10;
       const path = `M 210,40 Q ${(210+rx)/2},20 ${rx},40`;
@@ -4557,6 +4788,13 @@ class SolarFlowCard extends HTMLElement {
       if (valEl) { valEl.textContent = w >= 1000 ? (w/1000).toFixed(2)+' kW' : Math.round(w)+' W'; valEl.className = 'sfc-router-val'+(active?'':' inactive'); valEl.style.color = active ? rColor : ''; }
       const node = this._el('sfcRouterNode' + rn);
       if (node)  node.classList.toggle('active', active);
+
+      // Section Routeurs : puissance (headline) — pour TOUS les routeurs, y compris 3/4 absents de la scène
+      const secPwrEl = this._el('sfcRPwr' + rn);
+      if (secPwrEl) {
+        secPwrEl.textContent = w >= 1000 ? (w/1000).toFixed(2)+' kW' : Math.round(w)+' W';
+        secPwrEl.style.color = active ? rColor : 'var(--muted)';
+      }
 
       // Flux single-mode par routeur
       if (c.img_scene_mode === 'single') {
@@ -4578,6 +4816,27 @@ class SolarFlowCard extends HTMLElement {
       }
     });
 
+    // ── Mode 'sum' (scène séparée) : un seul nœud additionné + une seule ligne de flux ──
+    if (sumMode) {
+      const active = routersTotalW > 10;
+      const sumVal = this._el('sfcRouterSumVal');
+      if (sumVal) {
+        sumVal.textContent = routersTotalW >= 1000 ? (routersTotalW/1000).toFixed(2)+' kW' : Math.round(routersTotalW)+' W';
+        sumVal.className = 'sfc-router-val' + (active ? '' : ' inactive');
+      }
+      const sumNode = this._el('sfcRouterNodeSum');
+      if (sumNode) sumNode.classList.toggle('active', active);
+      // une seule ligne maison → routeurs (sfcLR1), les autres masquées
+      ['sfcLR2','sfcLR3','sfcLR4'].forEach(id => { const l = this._el(id); if (l) l.style.display = 'none'; });
+      const l1 = this._el('sfcLR1');
+      if (l1) {
+        l1.style.display = '';
+        l1.setAttribute('d', 'M 210,40 Q 250,20 290,40');
+        l1.classList.toggle('active', active);
+        l1.classList.toggle('inactive', !active);
+      }
+    }
+
     // Ligne batterie depuis dernier routeur (ou maison)
     const lastX = routerXs.length > 0 ? routerXs[routerXs.length-1] : 210;
     const lineBatt = this._el('sfcLB');
@@ -4594,6 +4853,26 @@ class SolarFlowCard extends HTMLElement {
         lineBatt.setAttribute('marker-end', 'url(#arrowBatt)');
       }
     }
+
+    // ── Section Routeurs : sous-lignes énergie jour / mois / année / total ──
+    // Une période n'est affichée que si son entité est configurée ET disponible (non vide).
+    const fmtKwh = v => v >= 1000 ? (v / 1000).toFixed(2) + ' MWh' : v.toFixed(v < 10 ? 2 : 1) + ' kWh';
+    const hasState = id => {
+      if (!id) return false;
+      const st = this._hass.states[id];
+      return !!st && st.state !== 'unavailable' && st.state !== 'unknown' && st.state !== '';
+    };
+    activeRouters.forEach(n => {
+      const subEl = this._el('sfcREn' + n + 'Sub');
+      if (subEl) {
+        const parts = [];
+        if (hasState(c['router' + n + '_energy']))       parts.push(t(c, 'rt_day')   + ' ' + fmtKwh(this._getNum(c['router' + n + '_energy'])));
+        if (hasState(c['router' + n + '_energy_month'])) parts.push(t(c, 'rt_month') + ' ' + fmtKwh(this._getNum(c['router' + n + '_energy_month'])));
+        if (hasState(c['router' + n + '_energy_year']))  parts.push(t(c, 'rt_year')  + ' ' + fmtKwh(this._getNum(c['router' + n + '_energy_year'])));
+        if (hasState(c['router' + n + '_energy_total'])) parts.push(t(c, 'rt_total') + ' ' + fmtKwh(this._getNum(c['router' + n + '_energy_total'])));
+        subEl.innerHTML = parts.join('<br>');
+      }
+    });
   }
 
   // Convertit un point (x,y) du viewBox 1536×1024 en % de la scène,
