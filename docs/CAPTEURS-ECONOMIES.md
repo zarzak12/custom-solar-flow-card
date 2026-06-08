@@ -236,11 +236,23 @@ sensor.economies_jour / _mois / _annee
 
 ---
 
-## 🔌 Et avec la Solar Flow Card ?
+## 🔌 Brancher ces capteurs dans la Solar Flow Card
 
-Ces capteurs s'affichent dans n'importe quelle carte Home Assistant standard (Entities, Statistics, History…).
+La carte peut **afficher directement** ces capteurs `€` (plus précis que son calcul interne). Dans l'éditeur, ouvre **Économies & Tarification → Source des économies** et choisis **« 🔗 Capteurs € (calculés dans HA) »**, puis renseigne tes entités :
 
-La **Solar Flow Card** calcule aujourd'hui ses économies à partir des entités de **production (kWh)** et applique le prix elle-même. Si tu veux qu'elle **affiche directement** ces capteurs `€` calculés côté HA (plus précis), c'est une évolution possible de la carte — [ouvre une issue](https://github.com/zarzak12/custom-solar-flow-card/issues) pour la demander.
+```yaml
+savings_mode:         entity
+savings_day_entity:   sensor.economies_jour
+savings_month_entity: sensor.economies_mois
+savings_year_entity:  sensor.economies_annee
+savings_total_entity: sensor.economies_totales   # utilisé pour le ROI
+```
+
+- La carte affiche alors les montants **tels quels** (jour / mois / année), et calcule le **ROI** à partir de `savings_total_entity` ÷ coût (PV + batterie).
+- Le **mode de tarification** (prix fixe / HP-HC / Tempo…) ne sert plus qu'au **badge prix/Tempo** affiché en haut du bloc — les montants viennent de tes capteurs.
+- Mode par défaut = **`calc`** (calcul interne kWh × prix) : si tu ne renseignes rien, rien ne change.
+
+> Ces capteurs s'affichent aussi dans n'importe quelle carte Home Assistant standard (Entities, Statistics, History…).
 
 ---
 

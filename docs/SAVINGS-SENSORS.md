@@ -235,11 +235,23 @@ sensor.savings_day / _month / _year
 
 ---
 
-## 🔌 What about the Solar Flow Card?
+## 🔌 Wiring these sensors into the Solar Flow Card
 
-These sensors display in any standard Home Assistant card (Entities, Statistics, History…).
+The card can **display these `€` sensors directly** (more accurate than its internal calc). In the editor, open **Savings & Pricing → Savings source** and pick **"🔗 € sensors (computed in HA)"**, then set your entities:
 
-The **Solar Flow Card** currently computes its savings from the **production (kWh)** entities and applies the price itself. If you'd like it to **display these HA-computed `€` sensors directly** (more accurate), that's a possible card enhancement — [open an issue](https://github.com/zarzak12/custom-solar-flow-card/issues) to request it.
+```yaml
+savings_mode:         entity
+savings_day_entity:   sensor.savings_day
+savings_month_entity: sensor.savings_month
+savings_year_entity:  sensor.savings_year
+savings_total_entity: sensor.total_savings   # used for ROI
+```
+
+- The card then shows the amounts **as-is** (day / month / year), and computes the **ROI** from `savings_total_entity` ÷ cost (PV + battery).
+- The **pricing mode** (fixed price / peak-offpeak / Tempo…) then only drives the **price/Tempo badge** at the top of the block — amounts come from your sensors.
+- Default mode = **`calc`** (internal kWh × price): if you set nothing, nothing changes.
+
+> These sensors also display in any standard Home Assistant card (Entities, Statistics, History…).
 
 ---
 
