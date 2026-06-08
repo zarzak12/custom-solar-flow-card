@@ -18,9 +18,9 @@ Ce guide explique comment calculer tes **économies en €** (jour / mois / ann�
 │ (fixe / HP-HC / Tempo │   │   batterie (import évité)  │   │           ▼               │
 │  / dynamique)         │   │                            │   │ Intégration → € cumulés   │
 └───────────────────────┘   └────────────────────────────┘   │           ▼               │
-                                                              │ utility_meter →           │
-                                                              │ jour / mois / an / total  │
-                                                              └───────────────────────────┘
+                                                             │ utility_meter →           │
+                                                             │ jour / mois / an / total  │
+                                                             └───────────────────────────┘
 ```
 
 1. **Prix actuel** (`sensor.prix_electricite`, en €/kWh) — dépend de ton contrat.
