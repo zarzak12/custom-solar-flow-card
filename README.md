@@ -440,6 +440,7 @@ grid_export_year:  sensor.export_annee  # (optionnel) revenu annuel + ROI
 # ROI (visible si install_cost OU batt_cost > 0, ET pv_year_kwh configuré)
 install_cost: 8000        # € coût PV / panneaux
 batt_cost:    4000        # € coût batterie (ajouté au coût PV → ROI global)
+install_date: '2023-04-15'  # date de mise en service (départ du ROI, affiche départ → atterrissage)
 
 # Économies batterie dédiées (arbitrage) — facultatif
 # ⚠️ Ne renseigner batt_savings_price QUE si la batterie est chargée depuis le réseau
@@ -462,6 +463,7 @@ co2_factor: 0.4           # kg CO₂/kWh évités (mix français 2024)
 - **ROI global** — coût pris en compte = `install_cost` (PV) **+** `batt_cost` (batterie) :
   - Si `pv_total` (énergie produite depuis l'installation) est renseignée → **amortissement réel** : économies déjà cumulées (production PV × bénéfice/kWh **+** économies batterie) ÷ coût total. La barre progresse avec l'âge de l'installation et affiche le **temps restant**, puis « **Amorti ✓ + gain net** » une fois le coût remboursé.
   - Sinon → **projection théorique** : coût total ÷ bénéfice annuel combiné = « années pour rentabiliser ».
+  - **Dates** : une ligne `📅 départ → atterrissage estimé` s'affiche sous le ROI. Le **départ** = `install_date` si renseignée, sinon **estimé automatiquement** depuis `pv_total ÷ production annuelle` (préfixe `~`). Une fois remboursé : `📅 départ → amorti ~<date> · +<bénéfice net>` (barre pleine, « Amorti ✓ »).
 
 > 🔗 **Plusieurs onduleurs / batteries** : dans **tout champ numérique** (ex. `pv_total`, `pv_power`, `pv_today`, `batt_power`, `batt_savings_kwh`…), saisis **plusieurs entités séparées par des virgules** — elles sont **additionnées**. Exemple : `pv_total: sensor.pv1_total, sensor.pv2_total, sensor.pv3_total`. ⚠️ Ne s'applique pas au **SOC** (`batt_soc`, un pourcentage) : utilise un seul capteur ou une moyenne via un capteur template.
 

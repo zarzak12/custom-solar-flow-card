@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.1.1';
+const VERSION = '1.1.2';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -185,6 +185,7 @@ const DEFAULTS = {
   grid_export_month: '',      // sensor export ce mois (revenu mensuel)
   grid_export_year:  '',      // sensor export cette année (revenu annuel + ROI)
   install_cost:      0,       // € coût PV / panneaux (0 = ROI masqué)
+  install_date:      '',      // date de mise en service (YYYY-MM-DD) — affichée comme départ du ROI
   batt_cost:         0,       // € coût batterie (ajouté au coût PV pour le ROI global)
   batt_savings_kwh:  '',      // entité énergie déchargée cumulée batterie (kWh) ; vide → réutilise batt_cycles_energy
   batt_savings_price:'',      // €/kWh valorisation de la décharge batterie (arbitrage) ; vide → prix courant
@@ -243,6 +244,7 @@ const I18N = {
     ed_title:         'Solar Flow Card — Configuration',
     ed_general:       '⚙️ Général',
     ed_pv:            '☀️ Production PV',
+    ed_multi_entity_info: "🔗 <b>Plusieurs onduleurs / batteries ?</b> Sépare les entités par des <b>virgules</b> dans un même champ → elles sont <b>additionnées</b> (ex. <i>sensor.pv1_total, sensor.pv2_total</i>). ⚠️ Sauf le <b>SOC (%)</b> : garde une seule entité (ou une moyenne via un capteur template).",
     ed_batt:          '🔋 Batterie',
     ed_grid:          '🏗️ Réseau & Maison',
     ed_meteo:         '⛅ Météo & Soleil',
@@ -390,6 +392,7 @@ const I18N = {
     ed_export_month:    "Export ce mois (entité kWh)",
     ed_export_year:     "Export cette année (entité kWh)",
     ed_install_cost:    "Coût PV / panneaux (€)",
+    ed_install_date:    "Date de mise en service",
     ed_batt_cost:       "Coût batterie (€)",
     ed_batt_savings_kwh:   "Entité énergie déchargée cumulée batterie (kWh)",
     ed_batt_savings_price: "Valorisation décharge batterie (€/kWh)",
@@ -485,6 +488,7 @@ const I18N = {
     ed_title:         'Solar Flow Card — Configuration',
     ed_general:       '⚙️ General',
     ed_pv:            '☀️ PV Production',
+    ed_multi_entity_info: "🔗 <b>Multiple inverters / batteries?</b> Separate entities with <b>commas</b> in one field → they are <b>summed</b> (e.g. <i>sensor.pv1_total, sensor.pv2_total</i>). ⚠️ Except <b>SOC (%)</b>: keep a single entity (or an average via a template sensor).",
     ed_batt:          '🔋 Battery',
     ed_grid:          '🏗️ Grid & Home',
     ed_meteo:         '⛅ Weather & Sun',
@@ -627,6 +631,7 @@ const I18N = {
     ed_export_month:   'Export this month (kWh entity)',
     ed_export_year:    'Export this year (kWh entity)',
     ed_install_cost:   'PV / panels cost (€)',
+    ed_install_date:   'Commissioning date',
     ed_batt_cost:      'Battery cost (€)',
     ed_batt_savings_kwh:   'Battery cumulative discharged energy entity (kWh)',
     ed_batt_savings_price: 'Battery discharge value (€/kWh)',
@@ -1508,11 +1513,12 @@ const CARD_CSS = `
   .sfc-metrics.cols-2 { grid-template-columns:1fr 1fr; }
   .sfc-mc {
     background:var(--card);border:1px solid var(--border);border-radius:11px;
-    padding:9px 11px;display:flex;flex-direction:column;gap:3px;
+    padding:9px 11px;display:flex;flex-direction:column;align-items:center;gap:3px;
+    text-align:center;
     transition:background .2s;cursor:default;
   }
   .sfc-mc:hover { background:rgba(255,255,255,.07); }
-  .sfc-mc-header { display:flex;align-items:center;gap:5px;font-size:calc(9px*var(--sfc-sl,1));letter-spacing:1px;
+  .sfc-mc-header { display:flex;align-items:center;justify-content:center;gap:5px;font-size:calc(9px*var(--sfc-sl,1));letter-spacing:1px;
     text-transform:uppercase;color:var(--muted);font-weight:700; }
   .sfc-mc-val { font-family:monospace;font-size:calc(14px*var(--sfc-sv,1));font-weight:700;
     text-shadow:0 0 6px currentColor;transition:all .5s; }
@@ -1584,6 +1590,11 @@ const CARD_CSS = `
     font-family:monospace;font-size:calc(14px*var(--sfc-sv,1));font-weight:700;color:#FFD700;
     white-space:nowrap;min-width:50px;text-align:right;
   }
+  .sfc-roi-dates {
+    font-family:monospace;font-size:calc(10px*var(--sfc-sv,1));color:var(--muted);
+    text-align:center;margin-top:-1px;
+  }
+  .sfc-roi-dates .sfc-roi-gain { color:#69FF47;font-weight:700; }
 
   /* ── État de santé batterie ── */
   .sfc-health {
@@ -2556,7 +2567,8 @@ function buildCardHTML(cfg) {
         <span class="sfc-sav-lbl">${t(c,'sav_roi')}</span>
         <div class="sfc-roi-bar-wrap"><div class="sfc-roi-bar" id="sfcRoiBar"></div></div>
         <span class="sfc-roi-val" id="sfcRoiVal">— ${t(c,'sav_roi_years')}</span>
-      </div>` : ''}
+      </div>
+      <div class="sfc-roi-dates" id="sfcRoiDates" style="display:none;"></div>` : ''}
     </div>` : '';
 
       const defOrder = ['bars','metrics','cells','endurance','inverter','autoconso','health','savings'];
@@ -2666,13 +2678,15 @@ function buildEditorHTML(cfg) {
 
     <!-- SECTION: PV -->
     ${edSection('pv', t(c,'ed_pv'), false, `
-      ${edEntity('pv_power', t(c,'ed_pv_power'), 'sensor.zendure_solar_input_power', c)}
-      ${edEntity('pv_today', t(c,'ed_pv_today'), 'sensor.zendure_solar_today', c)}
-      ${edEntity('pv_total', t(c,'ed_pv_total'), 'sensor.zendure_solar_total', c)}
+      <div class="sfc-ed-info">${t(c,'ed_multi_entity_info')}</div>
+      ${edEntity('pv_power', t(c,'ed_pv_power'), 'sensor.pv1_power, sensor.pv2_power', c)}
+      ${edEntity('pv_today', t(c,'ed_pv_today'), 'sensor.pv1_today, sensor.pv2_today', c)}
+      ${edEntity('pv_total', t(c,'ed_pv_total'), 'sensor.pv1_total, sensor.pv2_total', c)}
     `)}
 
     <!-- SECTION: Batterie -->
     ${edSection('batt', t(c,'ed_batt'), false, `
+      <div class="sfc-ed-info">${t(c,'ed_multi_entity_info')}</div>
       ${edEntity('batt_soc', t(c,'ed_batt_soc'), 'sensor.zendure_battery_soc', c)}
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,'ed_batt_bar_mode')}</label>
@@ -3016,6 +3030,10 @@ function buildEditorHTML(cfg) {
         <div class="sfc-ed-row">
           <label class="sfc-ed-label">${t(c,'ed_co2_factor')}</label>
           <input class="sfc-ed-input sfc-ed-number" data-key="co2_factor" type="number" step="0.01" placeholder="0.4" value="${c.co2_factor||''}"/>
+        </div>
+        <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_install_date')}</label>
+          <input class="sfc-ed-input" data-key="install_date" type="date" value="${c.install_date||''}"/>
         </div>
       </div>
       <div class="sfc-ed-info">${t(c,'ed_roi_info')}</div>
@@ -3980,59 +3998,76 @@ class SolarFlowCard extends HTMLElement {
     const battCost  = parseFloat(c.batt_cost) || 0;
     const totalCost = pvCost + battCost;
     if (totalCost > 0 && yearTotal > 0) {
-      const bar = this._el('sfcRoiBar');
-      const val = this._el('sfcRoiVal');
-      const yrsLbl = c.language === 'en' ? 'yrs' : 'ans';
+      const bar  = this._el('sfcRoiBar');
+      const val  = this._el('sfcRoiVal');
+      const datesEl = this._el('sfcRoiDates');
+      const en   = c.language === 'en';
+      const yrsLbl = en ? 'yrs' : 'ans';
+
       // Rythme annuel : yearTotal est cumulé depuis le 1er janvier (year-to-date), PAS une année
-      // complète → on l'annualise pour estimer le « temps restant » (ex. 319 € au 8 juin ≈ 730 €/an).
-      // ⚠️ Annualisation calendaire simple (la production solaire étant saisonnière, c'est une
-      // approximation). N'affecte QUE le rythme — pas la valeur « Cette année » affichée, ni le
-      // taux €/kWh (ratio YTD/YTD, insensible au prorata).
+      // complète → on l'annualise pour le « temps restant » (ex. 319 € au 8 juin ≈ 730 €/an).
+      // ⚠️ Annualisation calendaire simple (production saisonnière → approximation). N'affecte que
+      // le rythme — pas la valeur « Cette année » affichée, ni le taux €/kWh (ratio YTD/YTD).
       const nowD = new Date();
       const yearFrac = Math.max(0.04, (nowD - new Date(nowD.getFullYear(), 0, 1)) / (365.25 * 86400000));
-      const yearlyBenefit = yearTotal / yearFrac;
-      // ── Mode 'entity' : économies cumulées fournies par un capteur € (déjà tout inclus) ──
+      const annualPace = yearTotal / yearFrac + battAnnual;   // bénéfice annuel combiné (annualisé)
+
+      // Économies déjà cumulées (null = mode projection, aucun cumul connu)
+      let cumulative = null;
       if (useEntities) {
-        const cumulative = this._getNum(c.savings_total_entity);
-        const pct = Math.min(100, cumulative / totalCost * 100);
-        if (bar) bar.style.width = pct.toFixed(1) + '%';
-        if (val) {
-          if (cumulative >= totalCost) {
-            val.textContent = (c.language === 'en' ? 'Paid off ✓ +' : 'Amorti ✓ +') + fmtEur(cumulative - totalCost);
-          } else {
-            const remYrs = (totalCost - cumulative) / yearlyBenefit;   // rythme = bénéfice annualisé
-            val.textContent = remYrs.toFixed(1) + ' ' + yrsLbl;
-          }
-        }
-        return;
-      }
-      const annualPace = yearlyBenefit + battAnnual;   // bénéfice annuel combiné (annualisé)
-      // Production totale historique (kWh) → économies PV déjà cumulées depuis la mise en service.
-      const pvTotal = c.pv_total ? this._getNum(c.pv_total) : 0;
-      if (pvTotal > 0) {
-        // Bénéfice moyen par kWh produit, déduit de l'année en cours (mix autoconso/revente).
-        const ratePerKwh = pvYear > 0 ? yearTotal / pvYear : price;
-        const cumulative = pvTotal * ratePerKwh + battCumulative;
-        const pct = Math.min(100, cumulative / totalCost * 100);
-        if (bar) bar.style.width = pct.toFixed(1) + '%';
-        if (val) {
-          if (cumulative >= totalCost) {
-            // Amorti : afficher le gain net cumulé au-delà du coût
-            const net = cumulative - totalCost;
-            val.textContent = (c.language === 'en' ? 'Paid off ✓ +' : 'Amorti ✓ +') + fmtEur(net);
-          } else {
-            // Temps restant avant amortissement, au rythme du bénéfice annuel combiné
-            const remYrs = (totalCost - cumulative) / annualPace;
-            val.textContent = remYrs.toFixed(1) + ' ' + yrsLbl;
-          }
-        }
+        cumulative = this._getNum(c.savings_total_entity);
       } else {
-        // Repli (pas d'entité « PV total ») : projection théorique années pour rentabiliser
-        const roiYrs = totalCost / annualPace;
-        const pct    = Math.min(100, annualPace / totalCost * 100);
-        if (bar) bar.style.width = pct.toFixed(1) + '%';
-        if (val) val.textContent = roiYrs.toFixed(1) + ' ' + yrsLbl;
+        const pvTotal = c.pv_total ? this._getNum(c.pv_total) : 0;
+        if (pvTotal > 0) {
+          const ratePerKwh = pvYear > 0 ? yearTotal / pvYear : price;   // €/kWh (insensible au prorata)
+          cumulative = pvTotal * ratePerKwh + battCumulative;
+        }
       }
+
+      // Formatage date « mois année » (ex. mars 2027)
+      const fmtMY = d => d.toLocaleDateString(en ? 'en-GB' : 'fr-FR', { month: 'short', year: 'numeric' });
+      const Y = 365.25 * 86400000;
+      const sd = c.install_date ? new Date(c.install_date) : null;
+      let startTxt = (sd && !isNaN(sd)) ? fmtMY(sd) : '';
+      // Repli : pas de date saisie → estimer le départ depuis PV total ÷ production annuelle.
+      // Préfixe « ~ » car c'est une estimation (suppose une production annuelle ~constante).
+      if (!startTxt && pvYear > 0) {
+        const pvTotalKwh = c.pv_total ? this._getNum(c.pv_total) : 0;
+        const annualProd = pvYear / yearFrac;        // production annuelle estimée (kWh/an)
+        if (pvTotalKwh > 0 && annualProd > 0) {
+          const est = new Date(Date.now() - (pvTotalKwh / annualProd) * Y);
+          startTxt = '~' + fmtMY(est);
+        }
+      }
+      let datesLine = '';
+
+      if (cumulative === null) {
+        // Projection : amortissement complet depuis aujourd'hui (pas de cumul connu)
+        const roiYrs = totalCost / annualPace;
+        if (bar) bar.style.width = Math.min(100, annualPace / totalCost * 100).toFixed(1) + '%';
+        if (val) val.textContent = roiYrs.toFixed(1) + ' ' + yrsLbl;
+        const landing = new Date(Date.now() + roiYrs * Y);
+        datesLine = (startTxt ? '📅 ' + startTxt + ' → ' : '📅 → ') + fmtMY(landing);
+      } else if (cumulative >= totalCost) {
+        // Amorti : barre pleine, date de rentabilisation estimée + bénéfice net cumulé
+        const net = cumulative - totalCost;
+        if (bar) bar.style.width = '100%';
+        if (val) val.textContent = en ? 'Paid off ✓' : 'Amorti ✓';
+        const sincePayoff = annualPace > 0 ? net / annualPace : 0;
+        const payoff = new Date(Date.now() - sincePayoff * Y);
+        datesLine = (startTxt ? '📅 ' + startTxt + ' → ' : '📅 ')
+          + (en ? 'paid off ~' : 'amorti ~') + fmtMY(payoff)
+          + `  ·  <span class="sfc-roi-gain">+${fmtEur(net)}</span>`;
+      } else {
+        // En cours : avancement réel + date d'atterrissage estimée
+        const remYrs = (totalCost - cumulative) / annualPace;
+        if (bar) bar.style.width = Math.min(100, cumulative / totalCost * 100).toFixed(1) + '%';
+        if (val) val.textContent = remYrs.toFixed(1) + ' ' + yrsLbl;
+        const landing = new Date(Date.now() + remYrs * Y);
+        datesLine = (startTxt ? '📅 ' + startTxt + ' → ' : '📅 → ') + fmtMY(landing);
+      }
+
+      if (datesEl) { datesEl.innerHTML = datesLine; datesEl.style.display = ''; }
     }
   }
 

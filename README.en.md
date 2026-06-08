@@ -436,6 +436,7 @@ grid_export_year:  sensor.export_year   # (optional) yearly revenue + ROI
 # ROI (shown if install_cost OR batt_cost > 0, AND pv_year_kwh configured)
 install_cost: 8000        # € PV / panels cost
 batt_cost:    4000        # € battery cost (added to PV cost → global ROI)
+install_date: '2023-04-15'  # commissioning date (ROI start, shows start → landing)
 
 # Dedicated battery savings (arbitrage) — optional
 # ⚠️ Only set batt_savings_price if the battery is charged from the grid
@@ -458,6 +459,7 @@ co2_factor: 0.4           # kg CO₂/kWh avoided (French grid mix 2024)
 - **Global ROI** — cost = `install_cost` (PV) **+** `batt_cost` (battery):
   - If `pv_total` (energy produced since installation) is set → **real payback**: savings already accumulated (PV production × benefit/kWh **+** battery savings) ÷ total cost. The bar progresses with the age of the install and shows the **remaining time**, then "**Paid off ✓ + net gain**" once recouped.
   - Otherwise → **theoretical projection**: total cost ÷ combined annual benefit = "years to break even".
+  - **Dates**: a line `📅 start → estimated landing` appears under the ROI. The **start** = `install_date` if set, otherwise **auto-estimated** from `pv_total ÷ annual production` (`~` prefix). Once recouped: `📅 start → paid off ~<date> · +<net gain>` (full bar, "Paid off ✓").
 
 > 🔗 **Multiple inverters / batteries**: in **any numeric field** (e.g. `pv_total`, `pv_power`, `pv_today`, `batt_power`, `batt_savings_kwh`…), enter **several entities separated by commas** — they are **summed**. Example: `pv_total: sensor.pv1_total, sensor.pv2_total, sensor.pv3_total`. ⚠️ Does not apply to **SOC** (`batt_soc`, a percentage): use a single sensor or an average via a template sensor.
 
