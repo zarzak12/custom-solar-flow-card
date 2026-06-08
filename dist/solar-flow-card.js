@@ -155,6 +155,13 @@ const DEFAULTS = {
   scale_value: 1.0,   // taille des valeurs chiffrées (0.6–1.8)
   // ── Économies & Tarification ──
   show_savings:      true,
+  // Source des montants d'économies : 'calc' = calcul interne (kWh × prix, défaut) ;
+  // 'entity' = capteurs € pré-calculés dans HA (voir docs/CAPTEURS-ECONOMIES.md)
+  savings_mode:        'calc',
+  savings_day_entity:  '',    // €  économies du jour
+  savings_month_entity:'',    // €  économies du mois
+  savings_year_entity: '',    // €  économies de l'année
+  savings_total_entity:'',    // €  économies totales (cumul) — utilisé pour le ROI
   price_mode:        'fixed', // 'fixed' | 'hphc' | 'tempo' | 'entity'
   electricity_price: 0.23,    // €/kWh fixe
   hp_price:          0.27,    // €/kWh heures pleines (mode hphc)
@@ -351,6 +358,14 @@ const I18N = {
     sav_roi_years:     'ans',
     // Editor savings
     ed_savings:         '🔌Économies & Tarification',
+    ed_savings_mode:        'Source des économies',
+    ed_savings_mode_calc:   '🧮 Calcul interne (kWh × prix)',
+    ed_savings_mode_entity: '🔗 Capteurs € (calculés dans HA)',
+    ed_savings_entity_info: "💡 Affiche directement des capteurs € calculés dans Home Assistant (plus précis : tient compte de la variation tarifaire au moment exact de la conso). Voir le guide docs/CAPTEURS-ECONOMIES.md. Le tarif ci-dessous ne sert alors qu'au badge prix/Tempo.",
+    ed_savings_day_entity:   'Économies du jour (€)',
+    ed_savings_month_entity: 'Économies du mois (€)',
+    ed_savings_year_entity:  "Économies de l'année (€)",
+    ed_savings_total_entity: 'Économies totales (€) — pour le ROI',
     ed_price_mode:        'Mode de tarification',
     ed_price_mode_fixed:  '💶 Prix fixe',
     ed_price_mode_hphc:   '🕐 Heures Pleines / Creuses',
@@ -378,8 +393,8 @@ const I18N = {
     ed_batt_cost:       "Coût batterie (€)",
     ed_batt_savings_kwh:   "Entité énergie déchargée cumulée batterie (kWh)",
     ed_batt_savings_price: "Valorisation décharge batterie (€/kWh)",
-    ed_roi_info:        "💡 ROI : renseignez l'entité « PV total » (section Production PV) pour afficher l'amortissement réel (production cumulée × bénéfice/kWh), même sur une installation ancienne. Sinon, projection théorique « années pour rentabiliser ».",
-    ed_batt_roi_info:   "🔋 Batterie : le coût batterie s'ajoute au coût PV pour un ROI global. Les économies batterie = énergie déchargée cumulée × valorisation. Vide pour l'entité → réutilise l'énergie déchargée de l'état de santé ; vide pour la valorisation → prix courant. ⚠️ N'activez la valorisation que si la batterie fait de l'arbitrage (charge réseau heures creuses), sinon l'énergie solaire est déjà comptée côté PV.",
+    ed_roi_info:        "💡 <b>Comment le ROI est calculé</b><br>• <b>Coût total</b> = <i>Coût PV / panneaux</i> + <i>Coût batterie</i> (ci-dessus).<br>• <b>Économies cumulées</b> = <i>PV total</i> × bénéfice moyen/kWh (+ économies batterie).<br>&nbsp;&nbsp;↳ <i>PV total</i> (kWh depuis le début) vient de la section <b>☀️ Production PV</b>.<br>&nbsp;&nbsp;↳ bénéfice moyen/kWh = économies de l'année ÷ <i>PV cette année</i> (mix autoconso/revente).<br>• <b>Barre</b> = cumulé ÷ coût total ; <b>texte</b> = années restantes, puis « Amorti ✓ + gain net ».<br>• Sans <i>PV total</i> → projection théorique : coût total ÷ bénéfice annuel.<br>• En mode « Capteurs € » → ROI = <i>Économies totales</i> ÷ coût total.",
+    ed_batt_roi_info:   "🔋 <b>Batterie dans le ROI</b><br>• Le <i>Coût batterie</i> s'ajoute au coût PV → ROI global.<br>• Économies batterie = énergie déchargée cumulée × <i>Valorisation</i>.<br>&nbsp;&nbsp;↳ entité vide → réutilise « énergie déchargée cumulée » de la section <b>🩺 État de santé</b>.<br>&nbsp;&nbsp;↳ rythme annuel estimé via <i>Décharge auj.</i> de la section <b>🔋 Batterie</b>.<br>⚠️ Ne renseignez la <i>Valorisation</i> QUE si la batterie fait de l'arbitrage (charge réseau en heures creuses) — sinon l'énergie solaire est déjà comptée côté PV (double comptage).",
     sav_battery:        'Batterie',
     ed_co2_factor:      'Facteur CO₂ (kg/kWh)',
     ed_apply:         '💾 Appliquer les modifications',
@@ -580,6 +595,14 @@ const I18N = {
     sav_roi:           'ROI',
     sav_roi_years:     'yrs',
     ed_savings:        '🔌 Savings & Pricing',
+    ed_savings_mode:        'Savings source',
+    ed_savings_mode_calc:   '🧮 Internal calc (kWh × price)',
+    ed_savings_mode_entity: '🔗 € sensors (computed in HA)',
+    ed_savings_entity_info: '💡 Directly display € sensors computed in Home Assistant (more accurate: respects tariff variation at the exact moment of consumption). See docs/SAVINGS-SENSORS.md. The tariff below then only drives the price/Tempo badge.',
+    ed_savings_day_entity:   'Daily savings (€)',
+    ed_savings_month_entity: 'Monthly savings (€)',
+    ed_savings_year_entity:  'Yearly savings (€)',
+    ed_savings_total_entity: 'Total savings (€) — for ROI',
     ed_price_mode:        'Pricing mode',
     ed_price_mode_fixed:  '💶 Fixed price',
     ed_price_mode_hphc:   '🕐 Peak / Off-peak',
@@ -607,8 +630,8 @@ const I18N = {
     ed_batt_cost:      'Battery cost (€)',
     ed_batt_savings_kwh:   'Battery cumulative discharged energy entity (kWh)',
     ed_batt_savings_price: 'Battery discharge value (€/kWh)',
-    ed_roi_info:       "💡 ROI: set the 'PV total' entity (PV Production section) to show real payback (lifetime production × benefit/kWh), even on an older install. Otherwise, a theoretical 'years to break even' projection.",
-    ed_batt_roi_info:  "🔋 Battery: the battery cost is added to the PV cost for a global ROI. Battery savings = cumulative discharged energy × value. Empty entity → reuses the discharged energy from battery health; empty value → current price. ⚠️ Only enable the value if the battery does arbitrage (off-peak grid charging), otherwise solar energy is already counted on the PV side.",
+    ed_roi_info:       "💡 <b>How the ROI is computed</b><br>• <b>Total cost</b> = <i>PV / panels cost</i> + <i>Battery cost</i> (above).<br>• <b>Cumulative savings</b> = <i>PV total</i> × average benefit/kWh (+ battery savings).<br>&nbsp;&nbsp;↳ <i>PV total</i> (kWh since the start) comes from the <b>☀️ PV Production</b> section.<br>&nbsp;&nbsp;↳ average benefit/kWh = this year's savings ÷ <i>PV this year</i> (self-consumption/sell-back mix).<br>• <b>Bar</b> = cumulative ÷ total cost; <b>text</b> = remaining years, then 'Paid off ✓ + net gain'.<br>• Without <i>PV total</i> → theoretical projection: total cost ÷ annual benefit.<br>• In '€ sensors' mode → ROI = <i>Total savings</i> ÷ total cost.",
+    ed_batt_roi_info:  "🔋 <b>Battery in the ROI</b><br>• The <i>Battery cost</i> is added to the PV cost → global ROI.<br>• Battery savings = cumulative discharged energy × <i>Value</i>.<br>&nbsp;&nbsp;↳ empty entity → reuses 'cumulative discharged energy' from the <b>🩺 Battery health</b> section.<br>&nbsp;&nbsp;↳ annual pace estimated via <i>Discharge today</i> from the <b>🔋 Battery</b> section.<br>⚠️ Only set the <i>Value</i> if the battery does arbitrage (off-peak grid charging) — otherwise solar energy is already counted on the PV side (double counting).",
     sav_battery:       'Battery',
     ed_co2_factor:     'CO₂ factor (kg/kWh)',
     ed_apply:         '💾 Apply changes',
@@ -2512,22 +2535,22 @@ function buildCardHTML(cfg) {
         <span class="sfc-sav-val" id="sfcSavDay">— €</span>
         <span class="sfc-sav-co2" id="sfcCo2Day">—</span>
       </div>
-      ${c.pv_month_kwh ? `<div class="sfc-savings-row">
+      ${(c.savings_mode === 'entity' ? c.savings_month_entity : c.pv_month_kwh) ? `<div class="sfc-savings-row">
         <span class="sfc-sav-lbl">${t(c,'sav_month')}</span>
         <span class="sfc-sav-val" id="sfcSavMonth">— €</span>
         <span class="sfc-sav-co2" id="sfcCo2Month">—</span>
       </div>` : ''}
-      ${c.pv_year_kwh ? `<div class="sfc-savings-row">
+      ${(c.savings_mode === 'entity' ? c.savings_year_entity : c.pv_year_kwh) ? `<div class="sfc-savings-row">
         <span class="sfc-sav-lbl">${t(c,'sav_year')}</span>
         <span class="sfc-sav-val" id="sfcSavYear">— €</span>
         <span class="sfc-sav-co2" id="sfcCo2Year">—</span>
       </div>` : ''}
-      ${c.batt_savings_price ? `<div class="sfc-savings-row">
+      ${c.savings_mode !== 'entity' && c.batt_savings_price ? `<div class="sfc-savings-row">
         <span class="sfc-sav-lbl">🔋 ${t(c,'sav_battery')}</span>
         <span class="sfc-sav-val" id="sfcSavBatt">— €</span>
         <span class="sfc-sav-co2" id="sfcSavBattSub">—</span>
       </div>` : ''}
-      ${(parseFloat(c.install_cost||0) > 0 || parseFloat(c.batt_cost||0) > 0) && c.pv_year_kwh ? `
+      ${(parseFloat(c.install_cost||0) > 0 || parseFloat(c.batt_cost||0) > 0) && (c.savings_mode === 'entity' ? c.savings_total_entity : c.pv_year_kwh) ? `
       <div class="sfc-savings-sep"></div>
       <div class="sfc-roi-row">
         <span class="sfc-sav-lbl">${t(c,'sav_roi')}</span>
@@ -2836,6 +2859,20 @@ function buildEditorHTML(cfg) {
     <!-- SECTION: Images -->
     <!-- SECTION: Économies & Tarification -->
     ${edSection('savings', t(c,'ed_savings'), false, `
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_savings_mode')}</label>
+        <select class="sfc-ed-input" data-key="savings_mode" style="cursor:pointer;">
+          <option value="calc"   ${(c.savings_mode||'calc')==='calc'  ?'selected':''}>${t(c,'ed_savings_mode_calc')}</option>
+          <option value="entity" ${(c.savings_mode||'calc')==='entity'?'selected':''}>${t(c,'ed_savings_mode_entity')}</option>
+        </select>
+      </div>
+      ${c.savings_mode === 'entity' ? `
+      <div class="sfc-ed-info">${t(c,'ed_savings_entity_info')}</div>
+      ${edEntity('savings_day_entity',   t(c,'ed_savings_day_entity'),   'sensor.economies_jour', c)}
+      ${edEntity('savings_month_entity', t(c,'ed_savings_month_entity'), 'sensor.economies_mois', c)}
+      ${edEntity('savings_year_entity',  t(c,'ed_savings_year_entity'),  'sensor.economies_annee', c)}
+      ${edEntity('savings_total_entity', t(c,'ed_savings_total_entity'), 'sensor.economies_totales', c)}
+      ` : ''}
       <div class="sfc-ed-row">
         <label class="sfc-ed-label">${t(c,'ed_price_mode')}</label>
         <select class="sfc-ed-input" data-key="price_mode" style="cursor:pointer;">
@@ -3775,25 +3812,58 @@ class SolarFlowCard extends HTMLElement {
     const co2k      = parseFloat(c.co2_factor) || 0.4;
     const today     = new Date().toDateString();
 
-    // Reset à minuit
-    if (this._savDay !== today) {
-      this._savDay = today; this._savAccum = null;
-      this._savLastPv = null; this._savLastExp = null;
-    }
+    // Mode 'entity' : les montants viennent de capteurs € pré-calculés dans HA → on saute
+    // toute l'accumulation interne (le calcul ci-dessous ne sert qu'au mode 'calc').
+    const useEntities = c.savings_mode === 'entity';
 
-    // Accumulation delta — prix au moment de la production
-    if (this._savLastPv === null) {
-      // Initialisation : estimation avec prix actuel (quasi-exact car production = HP)
-      this._savAccum   = Math.max(0, pvTodayKwh - exportKwh) * price;
-      this._savLastPv  = pvTodayKwh;
-      this._savLastExp = exportKwh;
-    } else {
-      const pvDelta  = pvTodayKwh  - this._savLastPv;
-      const expDelta = Math.max(0, exportKwh - this._savLastExp);
-      const auto     = Math.max(0, pvDelta - expDelta);
-      if (auto > 0) this._savAccum += auto * price;
-      this._savLastPv  = pvTodayKwh;
-      this._savLastExp = exportKwh;
+    if (!useEntities) {
+      // Persistance (localStorage) : conserve l'accumulation valorisée HC/HP/Tempo entre les
+      // rechargements de page. Sans ça, un reload ré-initialise tout au prix de l'instant et
+      // écrase la variation tarifaire de la journée.
+      const savKey = 'sfc_sav_' + (c.pv_today || 'default');
+
+      // Premier appel après (re)chargement → tenter de restaurer l'état du jour
+      if (this._savDay == null) {
+        try {
+          const st = JSON.parse(localStorage.getItem(savKey) || 'null');
+          if (st && st.day === today) {
+            this._savDay     = st.day;
+            this._savAccum   = st.accum;
+            this._savLastPv  = st.lastPv;
+            this._savLastExp = st.lastExp;
+          }
+        } catch (e) { /* localStorage indispo → accumulation en mémoire seule */ }
+      }
+
+      // Reset à minuit (jour changé)
+      if (this._savDay !== today) {
+        this._savDay = today; this._savAccum = null;
+        this._savLastPv = null; this._savLastExp = null;
+      }
+
+      // Accumulation delta — chaque kWh autoconsommé valorisé au prix de SON moment (HC/HP/Tempo)
+      if (this._savLastPv === null) {
+        // Seed une seule fois par jour : la production déjà faite avant le 1er chargement est
+        // estimée au prix courant (approximation inévitable sans historique par tranche horaire).
+        this._savAccum   = Math.max(0, pvTodayKwh - exportKwh) * price;
+        this._savLastPv  = pvTodayKwh;
+        this._savLastExp = exportKwh;
+      } else {
+        const pvDelta  = pvTodayKwh  - this._savLastPv;
+        const expDelta = Math.max(0, exportKwh - this._savLastExp);
+        const auto     = Math.max(0, pvDelta - expDelta);
+        if (auto > 0) this._savAccum += auto * price;
+        this._savLastPv  = pvTodayKwh;
+        this._savLastExp = exportKwh;
+      }
+
+      // Sauvegarder l'état → survit au rechargement, garde la valorisation HC/HP cumulée
+      try {
+        localStorage.setItem(savKey, JSON.stringify({
+          day: this._savDay, accum: this._savAccum,
+          lastPv: this._savLastPv, lastExp: this._savLastExp,
+        }));
+      } catch (e) { /* ignore */ }
     }
 
     const fmtEur = v => v < 0.005 ? '0.00 €' : v >= 100 ? Math.round(v) + ' €' : v.toFixed(2) + ' €';
@@ -3849,12 +3919,15 @@ class SolarFlowCard extends HTMLElement {
     // Aujourd'hui : économies (autoconso) + revenu (export)
     const savDay = this._el('sfcSavDay');
     const co2Day = this._el('sfcCo2Day');
-    if (savDay) savDay.textContent = fmtEur((this._savAccum || 0) + revToday);
+    if (savDay) savDay.textContent = fmtEur(useEntities ? this._getNum(c.savings_day_entity) : ((this._savAccum || 0) + revToday));
     if (co2Day) co2Day.textContent = fmtCo2(Math.max(0, pvTodayKwh - exportKwh) * co2k);
 
-    // Mois : autoconso (× prix évité) + revente (export × prix revente)
+    // Mois : capteur € (mode entity) OU autoconso (× prix évité) + revente (mode calc)
     const pvMonth = c.pv_month_kwh ? this._getNum(c.pv_month_kwh) : 0;
-    if (pvMonth > 0) {
+    if (useEntities) {
+      const sm = this._el('sfcSavMonth'); if (sm) sm.textContent = fmtEur(this._getNum(c.savings_month_entity));
+      if (pvMonth > 0) { const cm = this._el('sfcCo2Month'); if (cm) cm.textContent = fmtCo2(pvMonth * co2k); }
+    } else if (pvMonth > 0) {
       let monthTotal;
       if (c.export_paid && c.grid_export_month) {
         const expM = Math.max(0, this._getNum(c.grid_export_month));
@@ -3866,10 +3939,14 @@ class SolarFlowCard extends HTMLElement {
       const cm = this._el('sfcCo2Month'); if (cm) cm.textContent = fmtCo2(pvMonth * co2k);
     }
 
-    // Année
+    // Année — yearTotal sert aussi de rythme annuel pour le ROI
     const pvYear = c.pv_year_kwh ? this._getNum(c.pv_year_kwh) : 0;
     let yearTotal = 0;
-    if (pvYear > 0) {
+    if (useEntities) {
+      yearTotal = this._getNum(c.savings_year_entity);
+      const sy = this._el('sfcSavYear'); if (sy) sy.textContent = fmtEur(yearTotal);
+      if (pvYear > 0) { const cy = this._el('sfcCo2Year'); if (cy) cy.textContent = fmtCo2(pvYear * co2k); }
+    } else if (pvYear > 0) {
       if (c.export_paid && c.grid_export_year) {
         const expY = Math.max(0, this._getNum(c.grid_export_year));
         yearTotal = Math.max(0, pvYear - expY) * price + expY * exportPrice;
@@ -3903,6 +3980,21 @@ class SolarFlowCard extends HTMLElement {
       const bar = this._el('sfcRoiBar');
       const val = this._el('sfcRoiVal');
       const yrsLbl = c.language === 'en' ? 'yrs' : 'ans';
+      // ── Mode 'entity' : économies cumulées fournies par un capteur € (déjà tout inclus) ──
+      if (useEntities) {
+        const cumulative = this._getNum(c.savings_total_entity);
+        const pct = Math.min(100, cumulative / totalCost * 100);
+        if (bar) bar.style.width = pct.toFixed(1) + '%';
+        if (val) {
+          if (cumulative >= totalCost) {
+            val.textContent = (c.language === 'en' ? 'Paid off ✓ +' : 'Amorti ✓ +') + fmtEur(cumulative - totalCost);
+          } else {
+            const remYrs = (totalCost - cumulative) / yearTotal;   // rythme = économies de l'année
+            val.textContent = remYrs.toFixed(1) + ' ' + yrsLbl;
+          }
+        }
+        return;
+      }
       const annualPace = yearTotal + battAnnual;   // bénéfice annuel combiné
       // Production totale historique (kWh) → économies PV déjà cumulées depuis la mise en service.
       const pvTotal = c.pv_total ? this._getNum(c.pv_total) : 0;
@@ -4791,6 +4883,7 @@ class SolarFlowCardEditor extends HTMLElement {
     return [
       d.img_scene_mode, d.img_scene_variant, d.batt_bar_mode, d.pwr_mode,
       d.price_mode, !!d.price_entity, !!d.export_paid, !!d.endurance_entity,
+      d.savings_mode,
     ].join('|');
   }
 

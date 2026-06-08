@@ -461,6 +461,29 @@ co2_factor: 0.4           # kg CO₂/kWh évités (mix français 2024)
 
 > 💶 **Économies vs revenu** : l'autoconsommation est valorisée au prix que tu **évites de payer** (`electricity_price`/Tempo/HP-HC), le surplus exporté au prix de **revente** (`export_price`). Les deux sont additionnés dans les totaux.
 
+> ⏱️ **Économie du jour & variation tarifaire** : l'économie du jour est accumulée **en continu**, chaque kWh autoconsommé étant valorisé au tarif **du moment** (HC/HP/Tempo) → la journée somme bien HC + HP + HC. L'état est **persisté** (localStorage) pour survivre aux rechargements de page. Limite : la production faite **avant** le premier chargement du dashboard de la journée est estimée au prix courant (pas d'historique par tranche horaire) ; garde le dashboard ouvert ou recharge tôt pour une précision maximale.
+
+> 📐 **Pour des économies € fiables et historisées** (jour / mois / an / total, tous tarifs), calcule-les côté Home Assistant : voir le guide **[Créer ses capteurs d'économies](docs/CAPTEURS-ECONOMIES.md)** (prix fixe, HP/HC, Tempo, dynamique…).
+
+### Source des économies (`savings_mode`)
+
+Deux modes au choix dans l'éditeur (section *Économies & Tarification → Source des économies*) :
+
+| `savings_mode` | Comportement |
+|---|---|
+| `calc` *(défaut)* | La carte calcule les € à partir des entités de production (kWh) × prix. Aucun capteur supplémentaire requis. |
+| `entity` | La carte **affiche directement** des capteurs € que tu as créés dans HA (voir le [guide](docs/CAPTEURS-ECONOMIES.md)) — le plus précis. |
+
+En mode `entity`, renseigne les entités :
+```yaml
+savings_mode:         entity
+savings_day_entity:   sensor.economies_jour
+savings_month_entity: sensor.economies_mois
+savings_year_entity:  sensor.economies_annee
+savings_total_entity: sensor.economies_totales   # utilisé pour le ROI
+```
+> Le mode de tarification (prix fixe / Tempo…) ne sert alors qu'au **badge prix/Tempo** ; les montants viennent des capteurs.
+
 > **Note Tempo** : les plages HC/HP utilisées sont les heures standard EDF (HC : 22h–6h, HP : 6h–22h). La production solaire étant 100% diurne, elle tombe quasi-toujours en HP — le calcul est donc très fidèle même après un rechargement de page.
 
 > 🌈 **Couleur de demain** : si `tempo_color_tomorrow` est renseigné (ou si l'entité `tempo_color` expose un attribut `tomorrow`/`next_color`), un second badge « Demain : 🔵/⚪/🔴 » apparaît à côté de celui du jour, dès que la couleur du lendemain est connue (≈ 11h). Il se masque automatiquement si elle est inconnue.

@@ -457,6 +457,29 @@ co2_factor: 0.4           # kg CO₂/kWh avoided (French grid mix 2024)
 
 > 💶 **Savings vs revenue**: self-consumption is valued at the price you **avoid paying** (`electricity_price`/Tempo/peak-offpeak), exported surplus at the **sell-back** price (`export_price`). Both are summed in the totals.
 
+> ⏱️ **Daily savings & tariff variation**: the daily savings is accumulated **continuously**, each self-consumed kWh valued at the **current** tariff (off-peak/peak/Tempo) → the day correctly sums off-peak + peak + off-peak. The state is **persisted** (localStorage) to survive page reloads. Limitation: production made **before** the first dashboard load of the day is estimated at the current price (no per-time-slot history); keep the dashboard open or reload early for maximum accuracy.
+
+> 📐 **For reliable, recorded € savings** (day / month / year / total, all tariffs), compute them in Home Assistant: see the guide **[Building your savings sensors](docs/SAVINGS-SENSORS.md)** (fixed price, peak/off-peak, Tempo, dynamic…).
+
+### Savings source (`savings_mode`)
+
+Two modes, selectable in the editor (*Savings & Pricing → Savings source*):
+
+| `savings_mode` | Behaviour |
+|---|---|
+| `calc` *(default)* | The card computes € from production entities (kWh) × price. No extra sensor required. |
+| `entity` | The card **directly displays** € sensors you built in HA (see the [guide](docs/SAVINGS-SENSORS.md)) — most accurate. |
+
+In `entity` mode, set the entities:
+```yaml
+savings_mode:         entity
+savings_day_entity:   sensor.savings_day
+savings_month_entity: sensor.savings_month
+savings_year_entity:  sensor.savings_year
+savings_total_entity: sensor.total_savings   # used for ROI
+```
+> The pricing mode (fixed price / Tempo…) then only drives the **price/Tempo badge**; amounts come from the sensors.
+
 > **Tempo note**: the HP/HC windows used are the standard EDF hours (off-peak: 10pm–6am, peak: 6am–10pm). Since solar production is 100% diurnal, it almost always falls during peak hours — so the calculation stays very accurate even after a page reload.
 
 > 🌈 **Tomorrow's color**: if `tempo_color_tomorrow` is set (or the `tempo_color` entity exposes a `tomorrow`/`next_color` attribute), a second badge "Tomorrow: 🔵/⚪/🔴" appears next to today's, as soon as the next day's color is known (≈ 11am). It hides automatically when unknown.
