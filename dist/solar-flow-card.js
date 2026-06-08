@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.0.96';
+const VERSION = '1.0.98';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -177,7 +177,10 @@ const DEFAULTS = {
   export_price:      0.10,    // €/kWh prix de revente du surplus
   grid_export_month: '',      // sensor export ce mois (revenu mensuel)
   grid_export_year:  '',      // sensor export cette année (revenu annuel + ROI)
-  install_cost:      0,       // € coût installation (0 = ROI masqué)
+  install_cost:      0,       // € coût PV / panneaux (0 = ROI masqué)
+  batt_cost:         0,       // € coût batterie (ajouté au coût PV pour le ROI global)
+  batt_savings_kwh:  '',      // entité énergie déchargée cumulée batterie (kWh) ; vide → réutilise batt_cycles_energy
+  batt_savings_price:'',      // €/kWh valorisation de la décharge batterie (arbitrage) ; vide → prix courant
   co2_factor:        0.4,     // kg CO₂/kWh évités
   // ── Prévision de production ──
   pv_forecast_today:    '',   // sensor.xxx → kWh prévus aujourd'hui
@@ -371,7 +374,13 @@ const I18N = {
     ed_export_price:    "Prix de revente (€/kWh)",
     ed_export_month:    "Export ce mois (entité kWh)",
     ed_export_year:     "Export cette année (entité kWh)",
-    ed_install_cost:    "Coût installation (€)",
+    ed_install_cost:    "Coût PV / panneaux (€)",
+    ed_batt_cost:       "Coût batterie (€)",
+    ed_batt_savings_kwh:   "Entité énergie déchargée cumulée batterie (kWh)",
+    ed_batt_savings_price: "Valorisation décharge batterie (€/kWh)",
+    ed_roi_info:        "💡 ROI : renseignez l'entité « PV total » (section Production PV) pour afficher l'amortissement réel (production cumulée × bénéfice/kWh), même sur une installation ancienne. Sinon, projection théorique « années pour rentabiliser ».",
+    ed_batt_roi_info:   "🔋 Batterie : le coût batterie s'ajoute au coût PV pour un ROI global. Les économies batterie = énergie déchargée cumulée × valorisation. Vide pour l'entité → réutilise l'énergie déchargée de l'état de santé ; vide pour la valorisation → prix courant. ⚠️ N'activez la valorisation que si la batterie fait de l'arbitrage (charge réseau heures creuses), sinon l'énergie solaire est déjà comptée côté PV.",
+    sav_battery:        'Batterie',
     ed_co2_factor:      'Facteur CO₂ (kg/kWh)',
     ed_apply:         '💾 Appliquer les modifications',
     ed_saved:         '✓ Configuration sauvegardée',
@@ -594,7 +603,13 @@ const I18N = {
     ed_export_price:   'Sell price (€/kWh)',
     ed_export_month:   'Export this month (kWh entity)',
     ed_export_year:    'Export this year (kWh entity)',
-    ed_install_cost:   'Install cost (€)',
+    ed_install_cost:   'PV / panels cost (€)',
+    ed_batt_cost:      'Battery cost (€)',
+    ed_batt_savings_kwh:   'Battery cumulative discharged energy entity (kWh)',
+    ed_batt_savings_price: 'Battery discharge value (€/kWh)',
+    ed_roi_info:       "💡 ROI: set the 'PV total' entity (PV Production section) to show real payback (lifetime production × benefit/kWh), even on an older install. Otherwise, a theoretical 'years to break even' projection.",
+    ed_batt_roi_info:  "🔋 Battery: the battery cost is added to the PV cost for a global ROI. Battery savings = cumulative discharged energy × value. Empty entity → reuses the discharged energy from battery health; empty value → current price. ⚠️ Only enable the value if the battery does arbitrage (off-peak grid charging), otherwise solar energy is already counted on the PV side.",
+    sav_battery:       'Battery',
     ed_co2_factor:     'CO₂ factor (kg/kWh)',
     ed_apply:         '💾 Apply changes',
     ed_saved:         '✓ Configuration saved',
@@ -2507,7 +2522,12 @@ function buildCardHTML(cfg) {
         <span class="sfc-sav-val" id="sfcSavYear">— €</span>
         <span class="sfc-sav-co2" id="sfcCo2Year">—</span>
       </div>` : ''}
-      ${parseFloat(c.install_cost||0) > 0 && c.pv_year_kwh ? `
+      ${c.batt_savings_price ? `<div class="sfc-savings-row">
+        <span class="sfc-sav-lbl">🔋 ${t(c,'sav_battery')}</span>
+        <span class="sfc-sav-val" id="sfcSavBatt">— €</span>
+        <span class="sfc-sav-co2" id="sfcSavBattSub">—</span>
+      </div>` : ''}
+      ${(parseFloat(c.install_cost||0) > 0 || parseFloat(c.batt_cost||0) > 0) && c.pv_year_kwh ? `
       <div class="sfc-savings-sep"></div>
       <div class="sfc-roi-row">
         <span class="sfc-sav-lbl">${t(c,'sav_roi')}</span>
@@ -2950,10 +2970,21 @@ function buildEditorHTML(cfg) {
           <input class="sfc-ed-input sfc-ed-number" data-key="install_cost" type="number" placeholder="8000" value="${c.install_cost||''}"/>
         </div>
         <div class="sfc-ed-row">
+          <label class="sfc-ed-label">${t(c,'ed_batt_cost')}</label>
+          <input class="sfc-ed-input sfc-ed-number" data-key="batt_cost" type="number" placeholder="4000" value="${c.batt_cost||''}"/>
+        </div>
+        <div class="sfc-ed-row">
           <label class="sfc-ed-label">${t(c,'ed_co2_factor')}</label>
           <input class="sfc-ed-input sfc-ed-number" data-key="co2_factor" type="number" step="0.01" placeholder="0.4" value="${c.co2_factor||''}"/>
         </div>
       </div>
+      <div class="sfc-ed-info">${t(c,'ed_roi_info')}</div>
+      ${edEntity('batt_savings_kwh', t(c,'ed_batt_savings_kwh'), 'sensor.solarflow_2400_ac_total_decharges', c)}
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_batt_savings_price')}</label>
+        <input class="sfc-ed-input sfc-ed-number" data-key="batt_savings_price" type="number" step="0.0001" placeholder="0.20" value="${c.batt_savings_price||''}"/>
+      </div>
+      <div class="sfc-ed-info">${t(c,'ed_batt_roi_info')}</div>
     `)}
 
     <!-- SECTION: Prévision de production -->
@@ -3849,15 +3880,56 @@ class SolarFlowCard extends HTMLElement {
       const cy = this._el('sfcCo2Year'); if (cy) cy.textContent = fmtCo2(pvYear * co2k);
     }
 
-    // ROI — basé sur le bénéfice annuel total (économies + revente)
-    const cost = parseFloat(c.install_cost) || 0;
-    if (cost > 0 && yearTotal > 0) {
-      const roiYrs = cost / yearTotal;
-      const pct    = Math.min(100, yearTotal / cost * 100);
-      const bar = this._el('sfcRoiBar'); if (bar) bar.style.width = pct.toFixed(1) + '%';
+    // ── Économies batterie dédiées (arbitrage) ──
+    // N'est compté QUE si une valorisation €/kWh est saisie (opt-in explicite) → évite de
+    // double-compter l'énergie solaire déjà valorisée côté PV (autoconsommation).
+    const battRate = parseFloat(c.batt_savings_price) || 0;
+    const battDisEntity = c.batt_savings_kwh || c.batt_cycles_energy;   // repli sur l'entité de l'état de santé
+    const battDisTotal  = (battRate > 0 && battDisEntity) ? Math.max(0, this._getNum(battDisEntity)) : 0;
+    const battCumulative = battDisTotal * battRate;
+    // Bénéfice batterie annuel estimé (rythme du ROI) : décharge du jour × 365 × valorisation
+    const battDisToday = c.batt_dis_today ? Math.max(0, this._getNum(c.batt_dis_today)) : 0;
+    const battAnnual   = battDisToday * 365 * battRate;
+    const savBatt = this._el('sfcSavBatt');
+    if (savBatt) savBatt.textContent = battCumulative > 0 ? fmtEur(battCumulative) : '— €';
+    const savBattSub = this._el('sfcSavBattSub');
+    if (savBattSub) savBattSub.textContent = battDisTotal > 0 ? Math.round(battDisTotal) + ' kWh' : '—';
+
+    // ── ROI global — économies cumulées (PV + batterie) vs coût total (PV + batterie) ──
+    const pvCost    = parseFloat(c.install_cost) || 0;
+    const battCost  = parseFloat(c.batt_cost) || 0;
+    const totalCost = pvCost + battCost;
+    if (totalCost > 0 && yearTotal > 0) {
+      const bar = this._el('sfcRoiBar');
       const val = this._el('sfcRoiVal');
-      const lang = c.language === 'en' ? 'yrs' : 'ans';
-      if (val) val.textContent = roiYrs.toFixed(1) + ' ' + lang;
+      const yrsLbl = c.language === 'en' ? 'yrs' : 'ans';
+      const annualPace = yearTotal + battAnnual;   // bénéfice annuel combiné
+      // Production totale historique (kWh) → économies PV déjà cumulées depuis la mise en service.
+      const pvTotal = c.pv_total ? this._getNum(c.pv_total) : 0;
+      if (pvTotal > 0) {
+        // Bénéfice moyen par kWh produit, déduit de l'année en cours (mix autoconso/revente).
+        const ratePerKwh = pvYear > 0 ? yearTotal / pvYear : price;
+        const cumulative = pvTotal * ratePerKwh + battCumulative;
+        const pct = Math.min(100, cumulative / totalCost * 100);
+        if (bar) bar.style.width = pct.toFixed(1) + '%';
+        if (val) {
+          if (cumulative >= totalCost) {
+            // Amorti : afficher le gain net cumulé au-delà du coût
+            const net = cumulative - totalCost;
+            val.textContent = (c.language === 'en' ? 'Paid off ✓ +' : 'Amorti ✓ +') + fmtEur(net);
+          } else {
+            // Temps restant avant amortissement, au rythme du bénéfice annuel combiné
+            const remYrs = (totalCost - cumulative) / annualPace;
+            val.textContent = remYrs.toFixed(1) + ' ' + yrsLbl;
+          }
+        }
+      } else {
+        // Repli (pas d'entité « PV total ») : projection théorique années pour rentabiliser
+        const roiYrs = totalCost / annualPace;
+        const pct    = Math.min(100, annualPace / totalCost * 100);
+        if (bar) bar.style.width = pct.toFixed(1) + '%';
+        if (val) val.textContent = roiYrs.toFixed(1) + ' ' + yrsLbl;
+      }
     }
   }
 

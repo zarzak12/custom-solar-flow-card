@@ -433,8 +433,15 @@ export_price: 0.10                      # €/kWh prix de rachat du surplus
 grid_export_month: sensor.export_mois   # (optionnel) revenu mensuel
 grid_export_year:  sensor.export_annee  # (optionnel) revenu annuel + ROI
 
-# ROI (visible uniquement si install_cost > 0 ET pv_year_kwh configuré)
-install_cost: 8000        # € coût de l'installation
+# ROI (visible si install_cost OU batt_cost > 0, ET pv_year_kwh configuré)
+install_cost: 8000        # € coût PV / panneaux
+batt_cost:    4000        # € coût batterie (ajouté au coût PV → ROI global)
+
+# Économies batterie dédiées (arbitrage) — facultatif
+# ⚠️ Ne renseigner batt_savings_price QUE si la batterie est chargée depuis le réseau
+#    (heures creuses). Sinon l'énergie solaire est déjà comptée côté PV (double comptage).
+batt_savings_kwh:   sensor.batterie_decharge_totale   # kWh déchargés cumulés (vide → réutilise l'entité cycles de l'état de santé)
+batt_savings_price: 0.20                              # €/kWh valorisation de la décharge (vide = pas d'économies batterie comptées)
 
 # CO₂
 co2_factor: 0.4           # kg CO₂/kWh évités (mix français 2024)
@@ -447,7 +454,10 @@ co2_factor: 0.4           # kg CO₂/kWh évités (mix français 2024)
 - **Aujourd'hui** : économies (autoconsommation) **+ revenu de revente** (si `export_paid`) + kg CO₂ évités
 - **Ce mois** : économies × prix + revente (si `grid_export_month`)
 - **Cette année** : économies × prix + revente (si `grid_export_year`) + CO₂
-- **ROI** : basé sur le **bénéfice annuel total** (économies + revente)
+- **🔋 Batterie** (si `batt_savings_price` renseigné) : économies cumulées d'arbitrage = énergie déchargée cumulée × valorisation €/kWh
+- **ROI global** — coût pris en compte = `install_cost` (PV) **+** `batt_cost` (batterie) :
+  - Si `pv_total` (énergie produite depuis l'installation) est renseignée → **amortissement réel** : économies déjà cumulées (production PV × bénéfice/kWh **+** économies batterie) ÷ coût total. La barre progresse avec l'âge de l'installation et affiche le **temps restant**, puis « **Amorti ✓ + gain net** » une fois le coût remboursé.
+  - Sinon → **projection théorique** : coût total ÷ bénéfice annuel combiné = « années pour rentabiliser ».
 
 > 💶 **Économies vs revenu** : l'autoconsommation est valorisée au prix que tu **évites de payer** (`electricity_price`/Tempo/HP-HC), le surplus exporté au prix de **revente** (`export_price`). Les deux sont additionnés dans les totaux.
 
@@ -636,6 +646,8 @@ tempo_white_hp:  0.1894
 tempo_red_hc:   0.1568
 tempo_red_hp:   0.7562
 install_cost:   12000
+batt_cost:      4000
+batt_savings_price: 0.20
 co2_factor:     0.4
 
 # ── Routeur 1 : Spa (avec température eau) ──

@@ -429,8 +429,15 @@ export_price: 0.10                      # €/kWh surplus buy-back price
 grid_export_month: sensor.export_month  # (optional) monthly revenue
 grid_export_year:  sensor.export_year   # (optional) yearly revenue + ROI
 
-# ROI (shown only if install_cost > 0 AND pv_year_kwh configured)
-install_cost: 8000        # € installation cost
+# ROI (shown if install_cost OR batt_cost > 0, AND pv_year_kwh configured)
+install_cost: 8000        # € PV / panels cost
+batt_cost:    4000        # € battery cost (added to PV cost → global ROI)
+
+# Dedicated battery savings (arbitrage) — optional
+# ⚠️ Only set batt_savings_price if the battery is charged from the grid
+#    (off-peak). Otherwise solar energy is already counted on the PV side (double counting).
+batt_savings_kwh:   sensor.battery_total_discharge   # cumulative discharged kWh (empty → reuses the health cycles entity)
+batt_savings_price: 0.20                             # €/kWh discharge value (empty = no battery savings counted)
 
 # CO₂
 co2_factor: 0.4           # kg CO₂/kWh avoided (French grid mix 2024)
@@ -443,7 +450,10 @@ co2_factor: 0.4           # kg CO₂/kWh avoided (French grid mix 2024)
 - **Today**: savings (self-consumption) **+ sell-back revenue** (if `export_paid`) + kg CO₂ avoided
 - **This month**: savings × price + sell-back (if `grid_export_month`)
 - **This year**: savings × price + sell-back (if `grid_export_year`) + CO₂
-- **ROI**: based on **total annual benefit** (savings + sell-back)
+- **🔋 Battery** (if `batt_savings_price` is set): cumulative arbitrage savings = cumulative discharged energy × value €/kWh
+- **Global ROI** — cost = `install_cost` (PV) **+** `batt_cost` (battery):
+  - If `pv_total` (energy produced since installation) is set → **real payback**: savings already accumulated (PV production × benefit/kWh **+** battery savings) ÷ total cost. The bar progresses with the age of the install and shows the **remaining time**, then "**Paid off ✓ + net gain**" once recouped.
+  - Otherwise → **theoretical projection**: total cost ÷ combined annual benefit = "years to break even".
 
 > 💶 **Savings vs revenue**: self-consumption is valued at the price you **avoid paying** (`electricity_price`/Tempo/peak-offpeak), exported surplus at the **sell-back** price (`export_price`). Both are summed in the totals.
 
@@ -628,6 +638,8 @@ tempo_white_hp:  0.1894
 tempo_red_hc:   0.1568
 tempo_red_hp:   0.7562
 install_cost:   12000
+batt_cost:      4000
+batt_savings_price: 0.20
 co2_factor:     0.4
 
 # ── Router 1: Spa ──
