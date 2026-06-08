@@ -463,6 +463,8 @@ co2_factor: 0.4           # kg CO₂/kWh évités (mix français 2024)
   - Si `pv_total` (énergie produite depuis l'installation) est renseignée → **amortissement réel** : économies déjà cumulées (production PV × bénéfice/kWh **+** économies batterie) ÷ coût total. La barre progresse avec l'âge de l'installation et affiche le **temps restant**, puis « **Amorti ✓ + gain net** » une fois le coût remboursé.
   - Sinon → **projection théorique** : coût total ÷ bénéfice annuel combiné = « années pour rentabiliser ».
 
+> 🔗 **Plusieurs onduleurs / batteries** : dans **tout champ numérique** (ex. `pv_total`, `pv_power`, `pv_today`, `batt_power`, `batt_savings_kwh`…), saisis **plusieurs entités séparées par des virgules** — elles sont **additionnées**. Exemple : `pv_total: sensor.pv1_total, sensor.pv2_total, sensor.pv3_total`. ⚠️ Ne s'applique pas au **SOC** (`batt_soc`, un pourcentage) : utilise un seul capteur ou une moyenne via un capteur template.
+
 > 💶 **Économies vs revenu** : l'autoconsommation est valorisée au prix que tu **évites de payer** (`electricity_price`/Tempo/HP-HC), le surplus exporté au prix de **revente** (`export_price`). Les deux sont additionnés dans les totaux.
 
 > ⏱️ **Économie du jour & variation tarifaire** : l'économie du jour est accumulée **en continu**, chaque kWh autoconsommé étant valorisé au tarif **du moment** (HC/HP/Tempo) → la journée somme bien HC + HP + HC. L'état est **persisté** (localStorage) pour survivre aux rechargements de page. Limite : la production faite **avant** le premier chargement du dashboard de la journée est estimée au prix courant (pas d'historique par tranche horaire) ; garde le dashboard ouvert ou recharge tôt pour une précision maximale.

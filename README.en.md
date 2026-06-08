@@ -459,6 +459,8 @@ co2_factor: 0.4           # kg CO₂/kWh avoided (French grid mix 2024)
   - If `pv_total` (energy produced since installation) is set → **real payback**: savings already accumulated (PV production × benefit/kWh **+** battery savings) ÷ total cost. The bar progresses with the age of the install and shows the **remaining time**, then "**Paid off ✓ + net gain**" once recouped.
   - Otherwise → **theoretical projection**: total cost ÷ combined annual benefit = "years to break even".
 
+> 🔗 **Multiple inverters / batteries**: in **any numeric field** (e.g. `pv_total`, `pv_power`, `pv_today`, `batt_power`, `batt_savings_kwh`…), enter **several entities separated by commas** — they are **summed**. Example: `pv_total: sensor.pv1_total, sensor.pv2_total, sensor.pv3_total`. ⚠️ Does not apply to **SOC** (`batt_soc`, a percentage): use a single sensor or an average via a template sensor.
+
 > 💶 **Savings vs revenue**: self-consumption is valued at the price you **avoid paying** (`electricity_price`/Tempo/peak-offpeak), exported surplus at the **sell-back** price (`export_price`). Both are summed in the totals.
 
 > ⏱️ **Daily savings & tariff variation**: the daily savings is accumulated **continuously**, each self-consumed kWh valued at the **current** tariff (off-peak/peak/Tempo) → the day correctly sums off-peak + peak + off-peak. The state is **persisted** (localStorage) to survive page reloads. Limitation: production made **before** the first dashboard load of the day is estimated at the current price (no per-time-slot history); keep the dashboard open or reload early for maximum accuracy.

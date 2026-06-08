@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.1.0';
+const VERSION = '1.1.1';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -393,8 +393,8 @@ const I18N = {
     ed_batt_cost:       "Coût batterie (€)",
     ed_batt_savings_kwh:   "Entité énergie déchargée cumulée batterie (kWh)",
     ed_batt_savings_price: "Valorisation décharge batterie (€/kWh)",
-    ed_roi_info:        "💡 <b>Comment le ROI est calculé</b><br>• <b>Coût total</b> = <i>Coût PV / panneaux</i> + <i>Coût batterie</i> (ci-dessus).<br>• <b>Économies cumulées</b> = <i>PV total</i> × bénéfice moyen/kWh (+ économies batterie).<br>&nbsp;&nbsp;↳ <i>PV total</i> (kWh depuis le début) vient de la section <b>☀️ Production PV</b>.<br>&nbsp;&nbsp;↳ bénéfice moyen/kWh = économies de l'année ÷ <i>PV cette année</i> (mix autoconso/revente).<br>• <b>Barre</b> = cumulé ÷ coût total ; <b>texte</b> = années restantes, puis « Amorti ✓ + gain net ».<br>• Sans <i>PV total</i> → projection théorique : coût total ÷ bénéfice annuel.<br>• En mode « Capteurs € » → ROI = <i>Économies totales</i> ÷ coût total.",
-    ed_batt_roi_info:   "🔋 <b>Batterie dans le ROI</b><br>• Le <i>Coût batterie</i> s'ajoute au coût PV → ROI global.<br>• Économies batterie = énergie déchargée cumulée × <i>Valorisation</i>.<br>&nbsp;&nbsp;↳ entité vide → réutilise « énergie déchargée cumulée » de la section <b>🩺 État de santé</b>.<br>&nbsp;&nbsp;↳ rythme annuel estimé via <i>Décharge auj.</i> de la section <b>🔋 Batterie</b>.<br>⚠️ Ne renseignez la <i>Valorisation</i> QUE si la batterie fait de l'arbitrage (charge réseau en heures creuses) — sinon l'énergie solaire est déjà comptée côté PV (double comptage).",
+    ed_roi_info:        "💡 <b>Comment le ROI est calculé</b><br>• <b>Coût total</b> = <i>Coût PV / panneaux</i> + <i>Coût batterie</i> (ci-dessus).<br>• <b>Économies cumulées</b> = <i>PV total</i> × bénéfice moyen/kWh (+ économies batterie).<br>&nbsp;&nbsp;↳ <i>PV total</i> (kWh depuis le début) vient de la section <b>☀️ Production PV</b>.<br>&nbsp;&nbsp;↳ bénéfice moyen/kWh = économies de l'année ÷ <i>PV cette année</i> (mix autoconso/revente).<br>• <b>Barre</b> = cumulé ÷ coût total ; <b>texte</b> = années restantes, puis « Amorti ✓ + gain net ».<br>• Sans <i>PV total</i> → projection théorique : coût total ÷ bénéfice annuel.<br>• En mode « Capteurs € » → ROI = <i>Économies totales</i> ÷ coût total.<br>🔗 <b>Multi-installations</b> : sépare plusieurs entités par des <b>virgules</b> dans un même champ → elles sont <b>additionnées</b> (ex. 3 onduleurs dans <i>PV total</i>).",
+    ed_batt_roi_info:   "🔋 <b>Batterie dans le ROI</b><br>• Le <i>Coût batterie</i> s'ajoute au coût PV → ROI global.<br>• Économies batterie = énergie déchargée cumulée × <i>Valorisation</i>.<br>&nbsp;&nbsp;↳ entité vide → réutilise « énergie déchargée cumulée » de la section <b>🩺 État de santé</b>.<br>&nbsp;&nbsp;↳ rythme annuel estimé via <i>Décharge auj.</i> de la section <b>🔋 Batterie</b>.<br>🔗 Plusieurs batteries → liste les entités séparées par des <b>virgules</b> (additionnées).<br>⚠️ Ne renseignez la <i>Valorisation</i> QUE si la batterie fait de l'arbitrage (charge réseau en heures creuses) — sinon l'énergie solaire est déjà comptée côté PV (double comptage).",
     sav_battery:        'Batterie',
     ed_co2_factor:      'Facteur CO₂ (kg/kWh)',
     ed_apply:         '💾 Appliquer les modifications',
@@ -630,8 +630,8 @@ const I18N = {
     ed_batt_cost:      'Battery cost (€)',
     ed_batt_savings_kwh:   'Battery cumulative discharged energy entity (kWh)',
     ed_batt_savings_price: 'Battery discharge value (€/kWh)',
-    ed_roi_info:       "💡 <b>How the ROI is computed</b><br>• <b>Total cost</b> = <i>PV / panels cost</i> + <i>Battery cost</i> (above).<br>• <b>Cumulative savings</b> = <i>PV total</i> × average benefit/kWh (+ battery savings).<br>&nbsp;&nbsp;↳ <i>PV total</i> (kWh since the start) comes from the <b>☀️ PV Production</b> section.<br>&nbsp;&nbsp;↳ average benefit/kWh = this year's savings ÷ <i>PV this year</i> (self-consumption/sell-back mix).<br>• <b>Bar</b> = cumulative ÷ total cost; <b>text</b> = remaining years, then 'Paid off ✓ + net gain'.<br>• Without <i>PV total</i> → theoretical projection: total cost ÷ annual benefit.<br>• In '€ sensors' mode → ROI = <i>Total savings</i> ÷ total cost.",
-    ed_batt_roi_info:  "🔋 <b>Battery in the ROI</b><br>• The <i>Battery cost</i> is added to the PV cost → global ROI.<br>• Battery savings = cumulative discharged energy × <i>Value</i>.<br>&nbsp;&nbsp;↳ empty entity → reuses 'cumulative discharged energy' from the <b>🩺 Battery health</b> section.<br>&nbsp;&nbsp;↳ annual pace estimated via <i>Discharge today</i> from the <b>🔋 Battery</b> section.<br>⚠️ Only set the <i>Value</i> if the battery does arbitrage (off-peak grid charging) — otherwise solar energy is already counted on the PV side (double counting).",
+    ed_roi_info:       "💡 <b>How the ROI is computed</b><br>• <b>Total cost</b> = <i>PV / panels cost</i> + <i>Battery cost</i> (above).<br>• <b>Cumulative savings</b> = <i>PV total</i> × average benefit/kWh (+ battery savings).<br>&nbsp;&nbsp;↳ <i>PV total</i> (kWh since the start) comes from the <b>☀️ PV Production</b> section.<br>&nbsp;&nbsp;↳ average benefit/kWh = this year's savings ÷ <i>PV this year</i> (self-consumption/sell-back mix).<br>• <b>Bar</b> = cumulative ÷ total cost; <b>text</b> = remaining years, then 'Paid off ✓ + net gain'.<br>• Without <i>PV total</i> → theoretical projection: total cost ÷ annual benefit.<br>• In '€ sensors' mode → ROI = <i>Total savings</i> ÷ total cost.<br>🔗 <b>Multi-arrays</b>: list several entities separated by <b>commas</b> in one field → they are <b>summed</b> (e.g. 3 inverters in <i>PV total</i>).",
+    ed_batt_roi_info:  "🔋 <b>Battery in the ROI</b><br>• The <i>Battery cost</i> is added to the PV cost → global ROI.<br>• Battery savings = cumulative discharged energy × <i>Value</i>.<br>&nbsp;&nbsp;↳ empty entity → reuses 'cumulative discharged energy' from the <b>🩺 Battery health</b> section.<br>&nbsp;&nbsp;↳ annual pace estimated via <i>Discharge today</i> from the <b>🔋 Battery</b> section.<br>🔗 Multiple batteries → list the entities separated by <b>commas</b> (summed).<br>⚠️ Only set the <i>Value</i> if the battery does arbitrage (off-peak grid charging) — otherwise solar energy is already counted on the PV side (double counting).",
     sav_battery:       'Battery',
     ed_co2_factor:     'CO₂ factor (kg/kWh)',
     ed_apply:         '💾 Apply changes',
@@ -4074,6 +4074,19 @@ class SolarFlowCard extends HTMLElement {
 
   _getNum(entityId, fallback = 0) {
     if (!entityId || !this._hass) return fallback;
+    // Plusieurs entités séparées par des virgules → SOMME (ex. 3 onduleurs, plusieurs batteries).
+    // Une virgule n'apparaît jamais dans un id d'entité ni un nombre → séparateur sûr.
+    if (typeof entityId === 'string' && entityId.includes(',')) {
+      let sum = 0, any = false;
+      for (const part of entityId.split(',')) {
+        const id = part.trim();
+        if (!id) continue;
+        const s = this._hass.states[id];
+        const v = parseFloat(s ? s.state : id);
+        if (!isNaN(v)) { sum += v; any = true; }
+      }
+      return any ? sum : fallback;
+    }
     const s = this._hass.states[entityId];
     if (s) {
       const v = parseFloat(s.state);
