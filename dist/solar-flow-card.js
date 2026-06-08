@@ -1957,8 +1957,8 @@ function buildCardHTML(cfg) {
     <!-- ═══════════════════════════════════════
          SCÈNE UNIFIÉE : ciel + soleil + énergie
     ════════════════════════════════════════════ -->
-    <div class="sfc-unified-scene ${c.img_scene_mode === 'single' ? 'sfc-scene-mode-single-scene' : ''}" id="sfcUnifiedScene"
-         style="${c.show_images === false ? 'height:200px' : (c.img_scene_mode === 'single' ? (c.scene_full_width ? 'aspect-ratio:1536/1200;width:100%' : 'aspect-ratio:11/10;max-height:490px') : 'height:355px')};">
+    <div class="sfc-unified-scene ${c.img_scene_mode === 'single' && c.show_images !== false ? 'sfc-scene-mode-single-scene' : ''}" id="sfcUnifiedScene"
+         style="${c.show_images === false ? 'height:355px' : (c.img_scene_mode === 'single' ? (c.scene_full_width ? 'aspect-ratio:1536/1200;width:100%' : 'aspect-ratio:11/10;max-height:490px') : 'height:355px')};">
 
       <!-- Fond ciel dynamique -->
       <div class="sfc-sky" id="sfcSky"></div>
@@ -2007,7 +2007,7 @@ function buildCardHTML(cfg) {
         <ellipse id="sfcGlowEl" cx="260" cy="90" rx="55" ry="38" fill="url(#sfcGlowGrad)" style="transition:all 20s ease;"/>
       </svg>
       
-      <svg class="sfc-sun-flow" viewBox="0 0 520 380"
+      <svg class="sfc-sun-flow" viewBox="0 0 520 380" preserveAspectRatio="none"
              style="position:absolute;inset:0;pointer-events:none;z-index:5">
           
           <path id="sfcSunFlowLine"
@@ -2394,7 +2394,7 @@ function buildCardHTML(cfg) {
         <div class="sfc-img-node node-grid" id="sfcNodeGrid">
           <img src="${c.img_grid || '/local/solar-flow-card/img/grid.png'}" alt="grid"
             onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
-          <span style="display:none;font-size:36px;">🏗️</span>
+          <span style="display:none;font-size:36px;">🌐</span>
           <div class="sfc-img-label">${t(c,"node_grid")}</div>
           <div class="sfc-img-val c-grid" id="sfcGrid">0 W</div>
           <div class="sfc-img-sub" id="sfcGridDir">—</div>
@@ -2498,7 +2498,7 @@ function buildCardHTML(cfg) {
         </svg>
         <div class="sfc-batt-flow-power" id="sfcBattFlowPower">0 W</div>
         <div class="sfc-node">
-          <div class="sfc-node-icon">🏗️</div>
+          <div class="sfc-node-icon">🌐</div>
           <div class="sfc-node-label">${t(c,"node_grid")}</div>
           <div class="sfc-node-val c-grid" id="sfcGrid">0 W</div>
           <div class="sfc-node-sub" id="sfcGridDir">—</div>
@@ -4463,6 +4463,8 @@ class SolarFlowCard extends HTMLElement {
       'sfcSunFlowLine','sfcSunFlowTailLong','sfcSunFlowTailMid','sfcSunFlowGlow',
       'sfcSunFlowLine_s','sfcSunFlowTailLong_s','sfcSunFlowTailMid_s','sfcSunFlowGlow_s',
     ], sunActive);
+    // Mode séparé : aligner le flux solaire vertical sur le nœud Maison (décalé par les routeurs)
+    this._alignSunFlowToHome();
 
     // Flow nodes
     const gEl = this._el('sfcGrid');   if (gEl) gEl.textContent = this._fmt(Math.abs(gridW));
@@ -4747,6 +4749,24 @@ class SolarFlowCard extends HTMLElement {
     if (lbl) lbl.textContent = Math.round(pct) + '%';
   }
 
+  // Aligne le flux solaire (ligne verticale) sur le nœud Maison en mode séparé : la maison
+  // n'est pas centrée quand des routeurs sont présents. (preserveAspectRatio="none" sur le SVG.)
+  _alignSunFlowToHome() {
+    const c = this._cfg;
+    if (c.img_scene_mode === 'single' || c.show_images === false) return;
+    const home  = this._el('sfcNodeHome');
+    const scene = this._el('sfcUnifiedScene');
+    if (!home || !scene) return;
+    const hr = home.getBoundingClientRect();
+    const sr = scene.getBoundingClientRect();
+    if (!sr.width || !hr.width) return;
+    const x = Math.round(((hr.left + hr.width / 2 - sr.left) / sr.width) * 520);
+    ['sfcSunFlowLine','sfcSunFlowTailLong','sfcSunFlowTailMid','sfcSunFlowGlow'].forEach(id => {
+      const el = this._el(id);
+      if (el) el.setAttribute('d', `M ${x},140 L ${x},320`);
+    });
+  }
+
   _updateRouters() {
     const c = this._cfg;
     const activeRouters = [
@@ -4998,7 +5018,8 @@ class SolarFlowCard extends HTMLElement {
     // Ancien arc quadratique (viewBox 520×200) — utilisé pour le glow/arc du mode séparé
     const bx   = (1-tt)*(1-tt)*40  + 2*(1-tt)*tt*260 + tt*tt*480;
     const by   = (1-tt)*(1-tt)*175 + 2*(1-tt)*tt*30  + tt*tt*175;
-    const isSingleMode = c.img_scene_mode === 'single';
+    // Mode single « réel » = single ET images affichées (sans images, on retombe sur l'arc standard)
+    const isSingleMode = c.img_scene_mode === 'single' && c.show_images !== false;
     const skyFraction = isSingleMode ? 0.35 : 0.55;
     let pctX = (bx / 520) * 100;
     // Décalage fixe pour que le soleil reste au-dessus de l'arc
