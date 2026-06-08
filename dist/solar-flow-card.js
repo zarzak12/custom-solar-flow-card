@@ -3983,6 +3983,14 @@ class SolarFlowCard extends HTMLElement {
       const bar = this._el('sfcRoiBar');
       const val = this._el('sfcRoiVal');
       const yrsLbl = c.language === 'en' ? 'yrs' : 'ans';
+      // Rythme annuel : yearTotal est cumulé depuis le 1er janvier (year-to-date), PAS une année
+      // complète → on l'annualise pour estimer le « temps restant » (ex. 319 € au 8 juin ≈ 730 €/an).
+      // ⚠️ Annualisation calendaire simple (la production solaire étant saisonnière, c'est une
+      // approximation). N'affecte QUE le rythme — pas la valeur « Cette année » affichée, ni le
+      // taux €/kWh (ratio YTD/YTD, insensible au prorata).
+      const nowD = new Date();
+      const yearFrac = Math.max(0.04, (nowD - new Date(nowD.getFullYear(), 0, 1)) / (365.25 * 86400000));
+      const yearlyBenefit = yearTotal / yearFrac;
       // ── Mode 'entity' : économies cumulées fournies par un capteur € (déjà tout inclus) ──
       if (useEntities) {
         const cumulative = this._getNum(c.savings_total_entity);
@@ -3992,13 +4000,13 @@ class SolarFlowCard extends HTMLElement {
           if (cumulative >= totalCost) {
             val.textContent = (c.language === 'en' ? 'Paid off ✓ +' : 'Amorti ✓ +') + fmtEur(cumulative - totalCost);
           } else {
-            const remYrs = (totalCost - cumulative) / yearTotal;   // rythme = économies de l'année
+            const remYrs = (totalCost - cumulative) / yearlyBenefit;   // rythme = bénéfice annualisé
             val.textContent = remYrs.toFixed(1) + ' ' + yrsLbl;
           }
         }
         return;
       }
-      const annualPace = yearTotal + battAnnual;   // bénéfice annuel combiné
+      const annualPace = yearlyBenefit + battAnnual;   // bénéfice annuel combiné (annualisé)
       // Production totale historique (kWh) → économies PV déjà cumulées depuis la mise en service.
       const pvTotal = c.pv_total ? this._getNum(c.pv_total) : 0;
       if (pvTotal > 0) {
