@@ -7,7 +7,7 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.1.4-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.5-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -29,6 +29,7 @@ Solar Flow Card displays **all your energy flows** in real time on an immersive 
 - ⚡ **Animated flows** between PV production, grid, home, battery and solar routers (GSAP)
 - 🔋 **Liquid battery** with elastic GSAP physics, rising charge bubbles and a colored halo
 - 🌦️ **Dynamic weather** — blue sky → partly cloudy → overcast → rain → snow → storm, with particle effects
+- 👆 **Click for details** — clicking a zone (Grid, Home, Battery, PV, router, EV) opens a panel summarizing **all related entities** (configured on the card). Toggle via `details_on_click` (on by default).
 - 💰 **Savings & ROI** — real-time delta calculation using the exact price at the moment of production
 - 🎨 **Two scene modes**: separate view (icons) or immersive scene (photorealistic 1536×1024)
 - 🩺 **Battery health (SOH)** with a colored bar and cycle estimation

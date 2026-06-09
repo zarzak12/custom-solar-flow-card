@@ -7,7 +7,7 @@
 **🇫🇷 Français** · [🇬🇧 English](README.en.md)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.1.4-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.5-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Ouvrir dans Home Assistant et ajouter ce dépôt à HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -29,6 +29,7 @@ Solar Flow Card affiche en temps réel **tous vos flux d'énergie** sur une scè
 - ⚡ **Flux animés** entre production PV, réseau, maison, batterie et routeurs solaires (GSAP)
 - 🔋 **Batterie liquide** avec physique élastique GSAP, bulles de charge ascendantes et halo coloré
 - 🌦️ **Météo dynamique** — ciel bleu → partiellement nuageux → couvert → pluie → neige → orage avec effets de particules
+- 👆 **Détails au clic** — cliquer une zone (Réseau, Maison, Batterie, PV, routeur, EV) ouvre un panneau récapitulant **toutes les entités liées** (configurées sur la carte). Activable via `details_on_click` (défaut activé).
 - 💰 **Économies & ROI** — calcul delta en temps réel avec prix au moment exact de la production
 - 💶 **4 modes de tarification** : prix fixe, Heures Pleines/Creuses, Tempo EDF, ou entité dynamique
 - 🔮 **Prévision de production** affichée en haut du ciel (Solcast / Forecast.Solar)

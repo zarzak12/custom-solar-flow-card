@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.1.4';
+const VERSION = '1.1.5';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -148,6 +148,8 @@ const DEFAULTS = {
   sun_set: '',
   moon_phase: '',
   today_load: '',
+  // Clic sur une zone → panneau récap des entités liées (construit depuis la config)
+  details_on_click: true,
   // Couleurs
   color_solar: '#FFD700',
   color_grid: '#4FC3F7',
@@ -260,6 +262,13 @@ const I18N = {
     mode_charge:    'Charge',
     mode_discharge: 'Décharge',
     mode_idle:      'Veille',
+    // Tempo + HC/HP + unité jour
+    tempo_blue:  'BLEU',
+    tempo_white: 'BLANC',
+    tempo_red:   'ROUGE',
+    lbl_hc:      'HC',
+    lbl_hp:      'HP',
+    unit_day:    'j',
     // Section
     section_inverter: 'Onduleur',
     // Inverter cards
@@ -339,6 +348,12 @@ const I18N = {
     ed_show_endurance:'Autonomie batterie',
     ed_show_inverter: 'Section Onduleur',
     ed_show_savings:  'Bloc Économies',
+    ed_details_on_click: 'Clic sur une zone → détails',
+    det_pv:      'Production solaire',
+    det_grid:    'Réseau',
+    det_home:    'Maison',
+    det_battery: 'Batterie',
+    det_ev:      'Véhicule électrique',
     ed_section_order:      '🔃 Ordre des sections',
     ed_section_order_info: 'Réorganisez l\'ordre d\'affichage des sections sous l\'image avec ▲ / ▼.',
     ed_section_titles:     '🏷️ Titres des sections',
@@ -526,6 +541,13 @@ const I18N = {
     mode_charge:    'Charge',
     mode_discharge: 'Discharge',
     mode_idle:      'Idle',
+    // Tempo + peak/off-peak + day unit
+    tempo_blue:  'BLUE',
+    tempo_white: 'WHITE',
+    tempo_red:   'RED',
+    lbl_hc:      'OP',
+    lbl_hp:      'PK',
+    unit_day:    'd',
     // Section
     section_inverter: 'Inverter',
     // Inverter cards
@@ -605,6 +627,12 @@ const I18N = {
     ed_show_endurance:'Battery endurance',
     ed_show_inverter: 'Inverter section',
     ed_show_savings:  'Savings block',
+    ed_details_on_click: 'Click a zone → details',
+    det_pv:      'Solar production',
+    det_grid:    'Grid',
+    det_home:    'Home',
+    det_battery: 'Battery',
+    det_ev:      'Electric vehicle',
     ed_section_order:      '🔃 Sections order',
     ed_section_order_info: 'Reorder how sections are displayed under the image with ▲ / ▼.',
     ed_section_titles:     '🏷️ Section titles',
@@ -1759,6 +1787,37 @@ const CARD_CSS = `
   /* ── Spacer ── */
   .sfc-gap { height:8px; }
 
+  /* ── Panneau détails (clic sur une zone) ── */
+  .sfc-clickable [data-detail] { cursor: pointer; }
+  .sfc-detail {
+    position:absolute; inset:0; z-index:50;
+    display:none; align-items:center; justify-content:center;
+    background:rgba(2,6,16,0.72); backdrop-filter:blur(3px);
+    padding:18px;
+  }
+  .sfc-detail.open { display:flex; }
+  .sfc-detail-card {
+    width:100%; max-width:380px; max-height:86%;
+    background:var(--sfc-bg,#0b1830); border:1px solid var(--border);
+    border-radius:14px; overflow:hidden; display:flex; flex-direction:column;
+    box-shadow:0 12px 40px rgba(0,0,0,0.6);
+  }
+  .sfc-detail-head {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 14px; background:rgba(255,255,255,0.04); border-bottom:1px solid var(--border);
+  }
+  .sfc-det-title { font-size:13px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--sfc-text,#e8f4fd); }
+  .sfc-det-close { cursor:pointer; font-size:16px; color:var(--muted); padding:2px 6px; border-radius:6px; }
+  .sfc-det-close:hover { background:rgba(255,255,255,0.1); color:var(--sfc-text,#e8f4fd); }
+  .sfc-det-body { padding:6px 14px 12px; overflow:auto; }
+  .sfc-det-row {
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .sfc-det-row:last-child { border-bottom:none; }
+  .sfc-det-name { font-size:12px; color:var(--muted); }
+  .sfc-det-val  { font-family:monospace; font-size:13px; font-weight:700; color:var(--sfc-text,#e8f4fd); text-align:right; white-space:nowrap; }
+
   /* ═══════════════════════════════════════
      EDITOR STYLES
   ═══════════════════════════════════════ */
@@ -1938,7 +1997,7 @@ function buildCardHTML(cfg) {
   const showCells= c.show_cells;
 
   return `
-  <div class="sfc-root" id="sfcRoot" style="
+  <div class="sfc-root ${c.details_on_click !== false ? 'sfc-clickable' : ''}" id="sfcRoot" style="
     --sfc-solar:${c.color_solar};
     --sfc-grid:${c.color_grid};
     --sfc-batt:${c.color_battery};
@@ -2066,7 +2125,7 @@ function buildCardHTML(cfg) {
       ">🌙</div>
 
       <!-- Badge PV -->
-      <div class="sfc-pv-badge">
+      <div class="sfc-pv-badge" data-detail="pv">
         <span>☀️</span>
         <span class="sfc-pv-val" id="sfcPvBig">0 W</span>
       </div>
@@ -2264,7 +2323,7 @@ function buildCardHTML(cfg) {
 
           <!-- Spa (router1) — center x=265 -->
           ${c.router1_enabled ? `
-          <rect x="65" y="562" width="260" height="${c.router1_temp ? '142' : '108'}" rx="9"
+          <rect x="65" y="562" width="260" height="${c.router1_temp ? '142' : '108'}" rx="9" data-detail="router1" style="pointer-events:auto;cursor:pointer"
             fill="rgba(6,13,26,0.70)" stroke="rgba(255,160,64,0.25)" stroke-width="1.5"/>
           <text text-anchor="middle" x="195" y="593"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
@@ -2281,7 +2340,7 @@ function buildCardHTML(cfg) {
 
           <!-- ECS (router2) — center x=1268 -->
           ${c.router2_enabled ? `
-          <rect x="1133" y="330" width="270" height="108" rx="9"
+          <rect x="1133" y="330" width="270" height="108" rx="9" data-detail="router2" style="pointer-events:auto;cursor:pointer"
             fill="rgba(6,13,26,0.70)" stroke="rgba(255,160,64,0.25)" stroke-width="1.5"/>
           <text text-anchor="middle" x="1268" y="361"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
@@ -2293,7 +2352,7 @@ function buildCardHTML(cfg) {
 
           <!-- EV — center x=1101, positionné sous le chemin EV -->
           ${c.ev_enabled ? `
-          <rect x="975" y="678" width="253" height="${c.ev_soc ? '142' : '108'}" rx="9"
+          <rect x="975" y="678" width="253" height="${c.ev_soc ? '142' : '108'}" rx="9" data-detail="ev" style="pointer-events:auto;cursor:pointer"
             fill="rgba(6,13,26,0.72)" stroke="rgba(79,195,247,0.28)" stroke-width="1.5"/>
           <text text-anchor="middle" x="1101" y="709"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
@@ -2306,11 +2365,11 @@ function buildCardHTML(cfg) {
           ` : ''}
 
           <!-- Réseau — center x=280 -->
-          <rect x="58" y="836" width="304" height="143" rx="9"
+          <rect x="58" y="836" width="304" height="143" rx="9" data-detail="grid" style="pointer-events:auto;cursor:pointer"
             fill="rgba(6,13,26,0.70)" stroke="rgba(79,195,247,0.20)" stroke-width="1.5"/>
           <text text-anchor="middle" x="210" y="867"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
-                   fill:rgba(232,244,253,0.55)">RÉSEAU</text>
+                   fill:rgba(232,244,253,0.55)">${t(c,'node_grid').toUpperCase()}</text>
           <text id="sfcSGGridVal" text-anchor="middle" x="210" y="921"
             style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
                    fill:var(--sfc-grid,#4FC3F7);filter:drop-shadow(0 0 4px var(--sfc-grid,#4FC3F7))">0 W</text>
@@ -2318,21 +2377,21 @@ function buildCardHTML(cfg) {
             style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));fill:rgba(232,244,253,0.6)">—</text>
 
           <!-- Maison — center x=720 -->
-          <rect x="577" y="387" width="286" height="108" rx="9"
+          <rect x="577" y="387" width="286" height="108" rx="9" data-detail="home" style="pointer-events:auto;cursor:pointer"
             fill="rgba(6,13,26,0.70)" stroke="rgba(255,107,107,0.20)" stroke-width="1.5"/>
           <text text-anchor="middle" x="720" y="418"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
-                   fill:rgba(232,244,253,0.55)">MAISON</text>
+                   fill:rgba(232,244,253,0.55)">${t(c,'node_home').toUpperCase()}</text>
           <text id="sfcSGHomeVal" text-anchor="middle" x="720" y="475"
             style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
                    fill:var(--sfc-home,#FF6B6B);filter:drop-shadow(0 0 4px var(--sfc-home,#FF6B6B))">0 W</text>
 
           <!-- Batterie — center x=1414 -->
-          <rect x="1269" y="686" width="290" height="143" rx="9"
+          <rect x="1269" y="686" width="290" height="143" rx="9" data-detail="battery" style="pointer-events:auto;cursor:pointer"
             fill="rgba(6,13,26,0.70)" stroke="rgba(105,255,71,0.20)" stroke-width="1.5"/>
           <text text-anchor="middle" x="1414" y="717"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
-                   fill:rgba(232,244,253,0.55)">BATTERIE</text>
+                   fill:rgba(232,244,253,0.55)">${t(c,'node_battery').toUpperCase()}</text>
           <text id="sfcSGBattVal" text-anchor="middle" x="1414" y="771"
             style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
                    fill:var(--sfc-batt,#69FF47);filter:drop-shadow(0 0 4px var(--sfc-batt,#69FF47))">—</text>
@@ -2402,7 +2461,7 @@ function buildCardHTML(cfg) {
         </svg>
 
         <!-- ── RÉSEAU ── -->
-        <div class="sfc-img-node node-grid" id="sfcNodeGrid">
+        <div class="sfc-img-node node-grid" id="sfcNodeGrid" data-detail="grid">
           <img src="${c.img_grid || '/local/solar-flow-card/img/grid.png'}" alt="grid"
             onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
           <span style="display:none;font-size:36px;">🌐</span>
@@ -2412,7 +2471,7 @@ function buildCardHTML(cfg) {
         </div>
 
         <!-- ── MAISON (toujours centrale, plus grande) ── -->
-        <div class="sfc-img-node node-home" id="sfcNodeHome" style="flex:1.6;">
+        <div class="sfc-img-node node-home" id="sfcNodeHome" style="flex:1.6;" data-detail="home">
           <img src="${c.img_house || '/local/solar-flow-card/img/house.png'}" alt="home"
             onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
           <span style="display:none;font-size:44px;">🏠</span>
@@ -2430,7 +2489,7 @@ function buildCardHTML(cfg) {
         </div>` : ''}
         <!-- Mode 'spread' (défaut) : un nœud par routeur -->
         ${c.router_scene_mode !== 'sum' && c.router1_enabled ? `
-        <div class="sfc-img-node" id="sfcRouterNode1" style="flex:0.85;">
+        <div class="sfc-img-node" id="sfcRouterNode1" style="flex:0.85;" data-detail="router1">
           ${c.router1_img
             ? `<img src="${c.router1_img}" style="height:65px;mix-blend-mode:screen;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.7));"
                  onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
@@ -2440,7 +2499,7 @@ function buildCardHTML(cfg) {
           <div class="sfc-router-val inactive" id="sfcRouter1Val">0 W</div>
         </div>` : ''}
         ${c.router_scene_mode !== 'sum' && c.router2_enabled ? `
-        <div class="sfc-img-node" id="sfcRouterNode2" style="flex:0.85;">
+        <div class="sfc-img-node" id="sfcRouterNode2" style="flex:0.85;" data-detail="router2">
           ${c.router2_img
             ? `<img src="${c.router2_img}" style="height:65px;mix-blend-mode:screen;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.7));"
                  onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
@@ -2450,7 +2509,7 @@ function buildCardHTML(cfg) {
           <div class="sfc-router-val inactive" id="sfcRouter2Val">0 W</div>
         </div>` : ''}
         ${c.router_scene_mode !== 'sum' && c.router3_enabled ? `
-        <div class="sfc-img-node" id="sfcRouterNode3" style="flex:0.85;">
+        <div class="sfc-img-node" id="sfcRouterNode3" style="flex:0.85;" data-detail="router3">
           ${c.router3_img
             ? `<img src="${c.router3_img}" style="height:65px;mix-blend-mode:screen;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.7));"
                  onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
@@ -2460,7 +2519,7 @@ function buildCardHTML(cfg) {
           <div class="sfc-router-val inactive" id="sfcRouter3Val">0 W</div>
         </div>` : ''}
         ${c.router_scene_mode !== 'sum' && c.router4_enabled ? `
-        <div class="sfc-img-node" id="sfcRouterNode4" style="flex:0.85;">
+        <div class="sfc-img-node" id="sfcRouterNode4" style="flex:0.85;" data-detail="router4">
           ${c.router4_img
             ? `<img src="${c.router4_img}" style="height:65px;mix-blend-mode:screen;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.7));"
                  onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
@@ -2471,7 +2530,7 @@ function buildCardHTML(cfg) {
         </div>` : ''}
 
         <!-- ── BATTERIE avec niveau liquide ── -->
-        <div class="sfc-img-node node-battery" id="sfcNodeBatt">
+        <div class="sfc-img-node node-battery" id="sfcNodeBatt" data-detail="battery">
           <div class="sfc-batt-wrapper" id="sfcBattWrapper">
             <!-- Zone liquide calibrée à l'intérieur du cylindre -->
             <div class="sfc-batt-liquid-wrap">
@@ -2508,18 +2567,18 @@ function buildCardHTML(cfg) {
           <path id="sfcLBGlow" class="sfc-flow-neon" stroke="var(--sfc-batt,#69FF47)" style="--flow-color:var(--sfc-batt,#69FF47)" d="M 210,80 C 260,80 300,80 360,80"/>
         </svg>
         <div class="sfc-batt-flow-power" id="sfcBattFlowPower">0 W</div>
-        <div class="sfc-node">
+        <div class="sfc-node" data-detail="grid">
           <div class="sfc-node-icon">🌐</div>
           <div class="sfc-node-label">${t(c,"node_grid")}</div>
           <div class="sfc-node-val c-grid" id="sfcGrid">0 W</div>
           <div class="sfc-node-sub" id="sfcGridDir">—</div>
         </div>
-        <div class="sfc-node" style="transform:scale(1.12);">
+        <div class="sfc-node" style="transform:scale(1.12);" data-detail="home">
           <div class="sfc-node-icon">🏠</div>
           <div class="sfc-node-label">${t(c,"node_home")}</div>
           <div class="sfc-node-val c-home" id="sfcHome">0 W</div>
         </div>
-        <div class="sfc-node">
+        <div class="sfc-node" data-detail="battery">
           <div class="sfc-node-icon">🔋</div>
           <div class="sfc-node-label">${t(c,"node_battery")}</div>
           <div class="sfc-node-val c-batt" id="sfcBatt">—%</div>
@@ -2715,7 +2774,7 @@ function buildCardHTML(cfg) {
           ? `<img class="sfc-rt-ico-img" src="${c['router'+n+'_img']}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'sfc-rt-ico',textContent:'⚡',style:'color:${col}'}))"/>`
           : `<span class="sfc-rt-ico" style="color:${col}">⚡</span>`;
         return `
-      <div class="sfc-rt-card" style="--rt:${col};">
+      <div class="sfc-rt-card" style="--rt:${col};" data-detail="router${n}">
         ${icon}
         <div class="sfc-rt-name">${c['router'+n+'_label'] || ('Routeur '+n)}</div>
         <div class="sfc-rt-day" id="sfcRPwr${n}" style="color:${col}">0 W</div>
@@ -2728,7 +2787,7 @@ function buildCardHTML(cfg) {
       S.ev = c.ev_enabled ? `
     <div class="sfc-section">🚗 ${c.title_ev || t(c,'section_ev')}</div>
     <div class="sfc-gap" style="height:6px;"></div>
-    <div class="sfc-ev-card">
+    <div class="sfc-ev-card" data-detail="ev">
       <div class="sfc-ev-item">
         <span class="sfc-ev-lbl">${c.ev_label || t(c,'section_ev')}</span>
         <span class="sfc-ev-val" id="sfcEvSecState" style="color:var(--sfc-ev,#4FC3F7)">—</span>
@@ -2755,6 +2814,17 @@ function buildCardHTML(cfg) {
     })()}
 
     <div class="sfc-gap" style="height:10px;"></div>
+
+    <!-- Panneau détails (clic sur une zone) -->
+    <div class="sfc-detail" id="sfcDetail">
+      <div class="sfc-detail-card">
+        <div class="sfc-detail-head">
+          <span class="sfc-det-title"></span>
+          <span class="sfc-det-close" id="sfcDetClose">✕</span>
+        </div>
+        <div class="sfc-det-body"></div>
+      </div>
+    </div>
   </div>
   `;
 }
@@ -3323,6 +3393,7 @@ function buildEditorHTML(cfg) {
       ${edToggle('show_inverter', t(c,'ed_show_inverter'), c)}
       ${edToggle('show_autoconso', t(c,'ed_show_autoconso'), c)}
       ${edToggle('show_savings',  t(c,'ed_show_savings'),  c)}
+      ${edToggle('details_on_click', t(c,'ed_details_on_click'), c)}
     `)}
 
     <!-- SECTION: Ordre des sections -->
@@ -3479,6 +3550,75 @@ class SolarFlowCard extends HTMLElement {
     `;
     this._createStars();
     this._loadGSAP();
+    this._attachDetail();
+  }
+
+  // Clic sur une zone (élément [data-detail]) → panneau récapitulatif des entités liées.
+  _attachDetail() {
+    const root = this._el('sfcRoot');
+    if (root) {
+      root.addEventListener('click', (e) => {
+        if (this._cfg.details_on_click === false) return;
+        const el = e.target.closest && e.target.closest('[data-detail]');
+        if (el) { e.stopPropagation(); this._openDetail(el.dataset.detail); }
+      });
+    }
+    const close = this._el('sfcDetClose');
+    if (close) close.addEventListener('click', () => this._closeDetail());
+    const ov = this._el('sfcDetail');
+    if (ov) ov.addEventListener('click', (e) => { if (e.target === ov) this._closeDetail(); });
+  }
+
+  _closeDetail() { const el = this._el('sfcDetail'); if (el) el.classList.remove('open'); }
+
+  _openDetail(zone) {
+    const c = this._cfg, h = this._hass;
+    const el = this._el('sfcDetail');
+    if (!h || !el) return;
+
+    // Groupes d'entités par zone (clés de config). Routeurs gérés dynamiquement.
+    const groups = {
+      pv:      ['pv_power','pv_today','pv_total','pv_month_kwh','pv_year_kwh','pv_forecast_today','pv_forecast_tomorrow'],
+      grid:    ['grid_power','grid_export_today','today_load'],
+      home:    ['home_power','today_load'],
+      battery: ['batt_soc','batt_power','batt_voltage','batt_temp','batt_chg_today','batt_dis_today','remaining','endurance_entity','min_cell','max_cell','batt_soh','batt_full_kwh','batt_cycles','batt_cycles_energy'],
+      ev:      ['ev_power','ev_soc'],
+    };
+    let keys, title;
+    if (zone && zone.indexOf('router') === 0) {
+      const n = zone.slice(6);
+      keys  = ['router'+n+'_power','router'+n+'_opening','router'+n+'_energy','router'+n+'_energy_month','router'+n+'_energy_year','router'+n+'_energy_total','router'+n+'_temp'];
+      title = c['router'+n+'_label'] || ('Routeur ' + n);
+    } else {
+      keys  = groups[zone] || [];
+      title = t(c, 'det_' + zone) || zone;
+    }
+
+    // Construire les lignes depuis les entités configurées (les listes à virgules sont éclatées)
+    const rows = [];
+    const seen = new Set();
+    keys.forEach(k => {
+      const cfgVal = c[k];
+      if (!cfgVal) return;
+      String(cfgVal).split(',').map(s => s.trim()).filter(Boolean).forEach(id => {
+        if (seen.has(id)) return; seen.add(id);
+        const st = h.states[id];
+        if (!st) return;
+        const name = (st.attributes && st.attributes.friendly_name) || id;
+        let disp;
+        try { disp = (typeof h.formatEntityState === 'function')
+                ? h.formatEntityState(st)
+                : st.state + (st.attributes && st.attributes.unit_of_measurement ? ' ' + st.attributes.unit_of_measurement : ''); }
+        catch (e2) { disp = st.state; }
+        rows.push(`<div class="sfc-det-row"><span class="sfc-det-name">${name}</span><span class="sfc-det-val">${disp}</span></div>`);
+      });
+    });
+
+    const titleEl = el.querySelector('.sfc-det-title');
+    const bodyEl  = el.querySelector('.sfc-det-body');
+    if (titleEl) titleEl.textContent = title;
+    if (bodyEl)  bodyEl.innerHTML = rows.length ? rows.join('') : `<div class="sfc-det-row"><span class="sfc-det-name">—</span></div>`;
+    el.classList.add('open');
   }
 
   _loadGSAP() {
@@ -4148,16 +4288,21 @@ class SolarFlowCard extends HTMLElement {
     const priceEl = this._el('sfcCurrentPrice');
     if (priceEl) priceEl.textContent = price.toFixed(4).replace(/\.?0+$/,'') + ' €/kWh';
 
-    // Badge Tempo
+    // Badge Tempo (nom de couleur localisé)
     const colorMap = { blue:'blue',bleu:'blue',white:'white',blanc:'white',red:'red',rouge:'red' };
-    const tempoIcon = { blue:'🔵 BLEU', white:'⚪ BLANC', red:'🔴 ROUGE' };
+    const tempoIcon = {
+      blue:  '🔵 ' + t(c,'tempo_blue'),
+      white: '⚪ ' + t(c,'tempo_white'),
+      red:   '🔴 ' + t(c,'tempo_red'),
+    };
+    const hcHp = (isHC) => isHC ? t(c,'lbl_hc') : t(c,'lbl_hp');
     const tempoBadge = this._el('sfcTempoBadge');
     if (tempoBadge && c.price_mode === 'tempo' && c.tempo_color) {
       const raw = (this._getState(c.tempo_color) || '').toLowerCase();
       const isHC = this._isHCPeriod();
       const cls = colorMap[raw];
       if (cls) {
-        tempoBadge.textContent = `${tempoIcon[cls]} · ${isHC ? 'HC' : 'HP'}`;
+        tempoBadge.textContent = `${tempoIcon[cls]} · ${hcHp(isHC)}`;
         tempoBadge.className   = `sfc-tempo-badge sfc-tempo-${cls}`;
         tempoBadge.style.display = '';
       }
@@ -4419,7 +4564,7 @@ class SolarFlowCard extends HTMLElement {
     const dayRemainder = totalMinutes % 1440;
     const wholeHours = Math.floor(dayRemainder / 60);
     const minutes = dayRemainder % 60;
-    if (days > 0) return days + 'j ' + wholeHours + 'h';
+    if (days > 0) return days + t(this._cfg, 'unit_day') + ' ' + wholeHours + 'h';
     if (wholeHours > 0) return wholeHours + 'h ' + minutes + 'min';
     return minutes + 'min';
   }
@@ -4935,10 +5080,15 @@ class SolarFlowCard extends HTMLElement {
     // ── Section Routeurs : sous-lignes énergie jour / mois / année / total ──
     // Une période n'est affichée que si son entité est configurée ET disponible (non vide).
     const fmtKwh = v => v >= 1000 ? (v / 1000).toFixed(2) + ' MWh' : v.toFixed(v < 10 ? 2 : 1) + ' kWh';
-    const hasState = id => {
-      if (!id) return false;
-      const st = this._hass.states[id];
-      return !!st && st.state !== 'unavailable' && st.state !== 'unknown' && st.state !== '';
+    // Gère les listes à virgules : vrai si AU MOINS une entité a une valeur exploitable.
+    const hasState = ids => {
+      if (!ids) return false;
+      return String(ids).split(',').some(part => {
+        const id = part.trim();
+        if (!id) return false;
+        const st = this._hass.states[id];
+        return !!st && st.state !== 'unavailable' && st.state !== 'unknown' && st.state !== '';
+      });
     };
     activeRouters.forEach(n => {
       const subEl = this._el('sfcREn' + n + 'Sub');
