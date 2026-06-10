@@ -17,6 +17,7 @@
 > Carte Lovelace pour Home Assistant qui transforme vos données solaires en une visualisation vivante, animée et enrichie d'économies en temps réel.
 >
 > <img width="804" height="2158" alt="image" src="https://github.com/user-attachments/assets/43ded533-957e-4d71-b6fe-82d897793668" />
+<img width="804" height="3180" alt="image" src="https://github.com/user-attachments/assets/dc059514-0944-4881-a2a5-3c7137986ac6" />
 
 
 ---
