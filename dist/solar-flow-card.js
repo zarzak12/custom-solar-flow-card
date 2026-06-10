@@ -288,6 +288,7 @@ const I18N = {
     lbl_co2_today:'CO₂ évité',
     lbl_min_cell: 'Cell. min',
     lbl_max_cell: 'Cell. max',
+    lbl_batt_chg: 'Charge',
     lbl_batt_dis: 'Décharge',
     lbl_endurance:'Autonomie',
     // Mode values
@@ -590,6 +591,7 @@ const I18N = {
     lbl_co2_today:'CO₂ saved',
     lbl_min_cell: 'Min Cell',
     lbl_max_cell: 'Max Cell',
+    lbl_batt_chg: 'Charge',
     lbl_batt_dis: 'Batt Dis.',
     lbl_endurance:'Endurance',
     // Mode values
@@ -2819,9 +2821,8 @@ function buildCardHTML(cfg) {
         <div class="sfc-mc-val" style="color:#aaa;" id="sfcRemaining">— kWh</div>
       </div>
       <div class="sfc-mc">
-        <div class="sfc-mc-header">${"🔋 " + t(c,"inv_chg_dis")}</div>
+        <div class="sfc-mc-header">${"🔋 " + t(c,"lbl_batt_chg")}</div>
         <div class="sfc-mc-val c-batt" id="sfcChgDis">— kWh</div>
-        <div class="sfc-mc-sub" id="sfcChgDisSub"></div>
       </div>
       <div class="sfc-mc">
         <div class="sfc-mc-header">${"⚡ " + t(c,"lbl_batt_dis")}</div>
@@ -5076,7 +5077,6 @@ class SolarFlowCard extends HTMLElement {
     // Inverter
     const tp  = this._el('sfcTodayPv');    if (tp)  tp.textContent  = todayPv  ? todayPv.toFixed(2)+' kWh'  : '— kWh';
     const cd  = this._el('sfcChgDis');     if (cd)  cd.textContent  = battChg  ? battChg.toFixed(2)+' kWh'  : '— kWh';
-    const cds = this._el('sfcChgDisSub');  if (cds) cds.textContent = battDis  ? battDis.toFixed(2)+' kWh'  : '';
     const re  = this._el('sfcRemaining');  if (re)  re.textContent  = rem      ? rem.toFixed(2)+' kWh'      : '— kWh';
     const tl  = this._el('sfcTodayLoad'); if (tl)  tl.textContent  = todayLoad? todayLoad.toFixed(2)+' kWh': '— kWh';
     // Bloc PV : PV total ; Bloc Conso : injection du jour
