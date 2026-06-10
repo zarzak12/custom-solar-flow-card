@@ -112,7 +112,7 @@ router1_energy_year:  sensor.spa_energie_annee   # année
 router1_energy_total: sensor.spa_energie_totale  # total
 ```
 
-➡️ La puissance s'affiche dans la scène, et la **section « Routeurs »** montre l'énergie **jour** (en grand) + **mois / année / total**.
+➡️ La puissance s'affiche dans la scène, et la **section « Routeurs »** montre la **puissance** (en grand) + l'énergie **jour / mois / année / total** en sous-lignes.
 
 > 🔁 **Tu préfères garder le mode `calc` ?** Laisse `router1_mode: calc` avec `router1_resistance_w` + `router1_opening` : la carte calcule la puissance, et tu peux **quand même** renseigner les `router1_energy*` ci-dessus pour l'énergie. Les deux mécanismes sont indépendants.
 

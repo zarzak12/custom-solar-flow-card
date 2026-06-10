@@ -7,7 +7,7 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.1.6-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -29,8 +29,11 @@ Solar Flow Card displays **all your energy flows** in real time on an immersive 
 - ⚡ **Animated flows** between PV production, grid, home, battery and solar routers (GSAP)
 - 🔋 **Liquid battery** with elastic GSAP physics, rising charge bubbles and a colored halo
 - 🌦️ **Dynamic weather** — blue sky → partly cloudy → overcast → rain → snow → storm, with particle effects
+- 🧱 **Thematic block layout** — PV / Consumption-Grid / Battery / Battery health / Routers / Savings / EV: each block reorderable, hideable and titleable
+- 🏠 **"Expert" consumption tracking** — instant + day/month/year totals + net grid balance + daily cost, with per-tile visibility (no duplicates)
 - 👆 **Click for details** — clicking a zone (Grid, Home, Battery, PV, router, EV) opens a panel summarizing **all related entities** (configured on the card). Toggle via `details_on_click` (on by default).
-- 💰 **Savings & ROI** — real-time delta calculation using the exact price at the moment of production
+- ⚡ **Up to 4 solar routers** with power + day/month/year/total energy
+- 💰 **Savings & ROI** — real-time delta calculation, dated ROI (start → landing), based on cumulative ÷ age
 - 🎨 **Two scene modes**: separate view (icons) or immersive scene (photorealistic 1536×1024)
 - 🩺 **Battery health (SOH)** with a colored bar and cycle estimation
 - 📈 **Self-consumption & self-sufficiency rates** with colored gauges
@@ -154,7 +157,13 @@ batt_soc: sensor.battery_soc
 | `home_power` | W | Instantaneous home consumption |
 | `pwr_percent` | % | Inverter output power percentage |
 | `today_load` | kWh | Home consumption today |
-| `grid_export_today` | kWh | Energy exported to the grid today (refines the self-consumption calculation) |
+| `grid_export_today` | kWh | Energy exported to the grid today (refines self-consumption + Consumption block) |
+| `grid_import_today` | kWh | Energy imported from the grid today (Consumption / Grid block) |
+| `grid_import_month` / `grid_import_year` | kWh | Grid import month / year (Consumption block sub-lines) |
+| `home_month_kwh` / `home_year_kwh` | kWh | Home consumption month / year (Consumption block sub-lines) |
+
+> The **Consumption / Grid** block (expert tracking) shows: **instant Home & Grid** (± import/export), today's **totals** (Consumption, Import, Export) with **month/year** sub-lines, the **net grid balance** (import − export) and the **daily grid cost** (import × price). Each tile/sub-line appears only if its entity is set.
+> 👁️ **Per-tile visibility**: each Consumption tile has its own toggle (`show_conso_home/grid/day/import/export/net/cost`, on by default) → hide duplicates with the scene (e.g. instant Home/Grid already shown at the top).
 
 ### Entities — Battery
 
@@ -599,17 +608,26 @@ scale_value: 1.0   # numeric value size: 547 W, 95 %… (0.6 → 1.8)
 ### Display options
 
 ```yaml
-show_progress_bars: true   # PV / PWR / BAT bars at the bottom of the scene
-show_mode:         true    # Mode badge (Idle / Charge / Discharge)
-show_bms_temp:     true    # BMS temperature
-show_total_pv:     true    # CO₂ avoided today (card repurposed)
-show_cells:        true    # Min/max cell voltages + delta
-show_endurance:    true    # Estimated battery endurance
-show_inverter:     true    # Inverter section (today PV, Chg/Dch, Remaining, Today load)
-show_autoconso:    true    # Self-consumption / self-sufficiency section
-show_savings:      true    # Savings & ROI section
-show_health:       true    # Battery health section (SOH + cycles)
+show_progress_bars: true   # PV / PWR / BAT bars
+show_mode:         true    # Mode tile (Battery block)
+show_bms_temp:     true    # BMS temperature tile (Battery block)
+show_total_pv:     true    # CO₂ avoided today tile (PV block)
+show_cells:        true    # Min/max cell voltages (Battery block)
+show_endurance:    true    # Estimated battery endurance (Battery block)
+show_autoconso:    true    # Self-consumption / self-sufficiency bars (PV block)
+show_health:       true    # Battery health block (SOH + cycles)
+show_savings:      true    # Savings & ROI block
 show_images:       true    # Images (false = emoji fallback)
+details_on_click:  true    # Click a zone → panel summarizing related entities
+
+# Per-tile visibility for the Consumption / Grid block (avoid scene duplicates)
+show_conso_home:   true    # Home (instant)
+show_conso_grid:   true    # Grid (instant)
+show_conso_day:    true    # Consumption today
+show_conso_import: true    # Import today
+show_conso_export: true    # Export today
+show_conso_net:    true    # Net grid balance
+show_conso_cost:   true    # Daily grid cost
 ```
 
 ### Section order
@@ -619,13 +637,13 @@ Reorder how the blocks under the scene are displayed, from the editor (**🔃 Se
 ```yaml
 section_order:
   - bars        # PV / PWR / BAT bars
-  - metrics     # Mode / BMS / CO₂
-  - cells       # Cell voltages
-  - endurance   # Endurance
-  - inverter    # Inverter
-  - autoconso   # Self-consumption
-  - health      # Battery health
+  - pv          # PV / Solar (PV today, PV total, CO₂, self-consumption)
+  - conso       # Consumption / Grid (today load, export)
+  - battery     # Battery (mode, remaining, charge/discharge, cells, endurance)
+  - health      # Battery health (SOH, capacity, cycles)
+  - routers     # Routers (energy)
   - savings     # Savings & ROI
+  - ev          # Electric vehicle
 ```
 
 > Any omitted key is automatically appended at the end (nothing disappears). A section hidden by its `show_*` toggle stays absent regardless of its rank. The header and scene remain fixed at the top.
@@ -635,20 +653,20 @@ section_order:
 Customize the title of **every** section, from the editor (**🏷️ Section titles** section) or in YAML:
 
 ```yaml
-# Sections without a default header → a title only appears if you set one
-title_bars:      Power            # above the PV/PWR/BAT bars
-title_metrics:   Info             # above Mode / BMS / CO₂
-title_cells:     Cells
-title_endurance: Endurance
+# "Bars" has no default header → a title only appears if you set one
+title_bars:    Power
 
-# Sections with a header → empty = default translated label
-title_inverter:  Inverter        # default: "Inverter"
-title_autoconso: My self-cons.   # default: "Self-consumption"
-title_health:    Battery health  # default: "Battery health"
-title_savings:   My savings      # default: "Savings & ROI"
+# The other blocks have a header → empty = default translated label
+title_pv:      PV / Solar         # default: "PV / Solar"
+title_conso:   Consumption / Grid # default: "Consumption / Grid"
+title_battery: Battery            # default: "Battery"
+title_health:  Battery health     # default: "Battery health"
+title_routers: My routers         # default: "Routers"
+title_savings: My savings         # default: "Savings & ROI"
+title_ev:      Car                # default: "Electric vehicle"
 ```
 
-> For **Bars**, **Mode/BMS/CO₂**, **Cells** and **Endurance** (no original header), a title is shown **only if** you set one. For the other 4, leaving it empty keeps the default label.
+> Only **Bars** has no original header (title shown only if set). For the other blocks, leaving it empty keeps the default label.
 
 ---
 
@@ -685,12 +703,20 @@ pv_total:   sensor.pv_energy_total
 pv_month_kwh: sensor.pv_energy_month
 pv_year_kwh:  sensor.pv_energy_year
 
-# ── Grid & Home ──
+# ── Grid & Home (Consumption block) ──
 grid_power:        sensor.grid_power
 home_power:        sensor.home_consumption
 pwr_percent:       sensor.inverter_power_pct
 today_load:        sensor.home_load_today
+home_month_kwh:    sensor.home_consumption_month
+home_year_kwh:     sensor.home_consumption_year
 grid_export_today: sensor.energy_exported
+grid_import_today: sensor.energy_imported
+grid_import_month: sensor.grid_import_month
+grid_import_year:  sensor.grid_import_year
+# No duplicate: instant Home/Grid already in the scene
+show_conso_home: false
+show_conso_grid: false
 
 # ── Battery ──
 batt_soc:       sensor.battery_soc
@@ -728,6 +754,7 @@ tempo_red_hc:   0.1568
 tempo_red_hp:   0.7562
 install_cost:   12000
 batt_cost:      4000
+install_date:   '2023-04-15'   # ROI: rate = cumulative ÷ age (start → landing)
 batt_savings_price: 0.20
 co2_factor:     0.4
 

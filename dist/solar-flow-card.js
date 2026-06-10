@@ -8,7 +8,28 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.1.6';
+const VERSION = '1.2.0';
+
+// ══════════════════════════════════════════════════════════
+//  SOMMAIRE / TABLE OF CONTENTS   (Ctrl-F le libellé « //  NOM »)
+// ──────────────────────────────────────────────────────────
+//  CONFIG & i18n
+//    DEFAULTS ................. valeurs par défaut de la config
+//    I18N ..................... traductions FR / EN + helper t()
+//  HELPERS PURS (sans état, réutilisables)
+//    ASTRONOMY ................ position du soleil, lever / coucher
+//    WEATHER .................. mapping des conditions météo
+//    MOON ..................... phases de lune
+//    SKY GRADIENT ............. dégradé du ciel selon l'élévation
+//  RENDU (génération du DOM)
+//    CSS ...................... styles de la carte (CARD_CSS)
+//    CARD HTML TEMPLATE ....... buildCardHTML() — scène + sections
+//    EDITOR HTML .............. buildEditorHTML() + helpers ed* (edSection, edEntity…)
+//  COMPOSANTS (Web Components)
+//    SOLAR FLOW CARD ELEMENT .. classe principale <solar-flow-card>
+//    EDITOR ................... classe éditeur de configuration
+//    REGISTER ................. customElements.define + window.customCards
+// ══════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -166,16 +187,22 @@ const DEFAULTS = {
   show_total_pv: true,
   show_mode: true,
   show_autoconso: true,   // taux d'autoconsommation / autoproduction
+  // Visibilité fine des tuiles du bloc Conso / Réseau (éviter les doublons avec la scène)
+  show_conso_home:   true,   // Maison instantanée (déjà dans la scène → désactivable)
+  show_conso_grid:   true,   // Réseau instantané (déjà dans la scène → désactivable)
+  show_conso_day:    true,   // Conso du jour
+  show_conso_import: true,   // Import du jour
+  show_conso_export: true,   // Injection du jour
+  show_conso_net:    true,   // Bilan net réseau du jour
+  show_conso_cost:   true,   // Coût réseau du jour
   // Ordre d'affichage des sections sous la scène (réordonnable via l'éditeur)
-  section_order: ['bars','metrics','cells','endurance','inverter','autoconso','health','savings','routers','ev'],
+  section_order: ['bars','pv','conso','battery','health','routers','savings','ev'],
   // Titres personnalisés des sections (vide = libellé par défaut, ou aucun en-tête
   // pour les sections qui n'en ont pas : barres, métriques, cellules, autonomie)
   title_bars:      '',
-  title_metrics:   '',
-  title_cells:     '',
-  title_endurance: '',
-  title_inverter:  '',
-  title_autoconso: '',
+  title_pv:        '',
+  title_conso:     '',
+  title_battery:   '',
   title_health:    '',
   title_savings:   '',
   title_routers:   '',
@@ -212,6 +239,11 @@ const DEFAULTS = {
   pv_month_kwh:      '',      // sensor.pv_energie_mois
   pv_year_kwh:       '',      // sensor.pv_energie_annee
   grid_export_today: '',      // sensor.energie_injectee (affine autoconso)
+  grid_import_today: '',      // sensor.energie_soutiree → bloc Conso (import réseau du jour, kWh)
+  grid_import_month: '',      // import réseau ce mois (kWh) — sous-ligne bloc Conso
+  grid_import_year:  '',      // import réseau cette année (kWh)
+  home_month_kwh:    '',      // conso maison ce mois (kWh) — sous-ligne bloc Conso
+  home_year_kwh:     '',      // conso maison cette année (kWh)
   export_paid:       false,   // l'export est-il rémunéré (revente) ?
   export_price:      0.10,    // €/kWh prix de revente du surplus
   grid_export_month: '',      // sensor export ce mois (revenu mensuel)
@@ -366,10 +398,20 @@ const I18N = {
     sec_autoconso: 'Autoconsommation',
     sec_health:    'État de santé',
     sec_savings:   'Économies & ROI',
+    sec_pv:        'PV / Solaire',
+    sec_conso:     'Conso / Réseau',
+    sec_battery:   'Batterie',
     sec_routers:   'Routeurs (énergie)',
     sec_ev:        'Véhicule électrique',
+    section_pv:      'PV / Solaire',
+    section_conso:   'Conso / Réseau',
+    section_battery: 'Batterie',
     section_routers: 'Routeurs',
     section_ev:      'Véhicule électrique',
+    lbl_injection:   'Injection',
+    lbl_import:      'Import',
+    lbl_net_grid:    'Bilan réseau',
+    lbl_grid_cost:   'Coût réseau',
     ev_st_charge:    'Charge',
     ev_st_v2h:       'V2H (décharge)',
     ev_st_idle:      'Repos',
@@ -451,6 +493,19 @@ const I18N = {
     ed_pv_month:        'PV ce mois (entité kWh)',
     ed_pv_year:         'PV cette année (entité kWh)',
     ed_grid_export:     "Export réseau auj. (entité kWh)",
+    ed_grid_import:     "Import réseau auj. (entité kWh) — bloc Conso",
+    ed_grid_import_month: "Import réseau ce mois (kWh)",
+    ed_grid_import_year:  "Import réseau cette année (kWh)",
+    ed_home_month:      "Conso maison ce mois (kWh)",
+    ed_home_year:       "Conso maison cette année (kWh)",
+    ed_conso_vis:       'Affichage du bloc Conso (anti-doublon scène)',
+    ed_show_conso_home:   'Maison (instantané)',
+    ed_show_conso_grid:   'Réseau (instantané)',
+    ed_show_conso_day:    'Conso du jour',
+    ed_show_conso_import: 'Import',
+    ed_show_conso_export: 'Injection',
+    ed_show_conso_net:    'Bilan net réseau',
+    ed_show_conso_cost:   'Coût réseau du jour',
     ed_export_paid:     "Export rémunéré (revente du surplus)",
     ed_export_price:    "Prix de revente (€/kWh)",
     ed_export_month:    "Export ce mois (entité kWh)",
@@ -645,10 +700,20 @@ const I18N = {
     sec_autoconso: 'Self-consumption',
     sec_health:    'Battery health',
     sec_savings:   'Savings & ROI',
+    sec_pv:        'PV / Solar',
+    sec_conso:     'Consumption / Grid',
+    sec_battery:   'Battery',
     sec_routers:   'Routers (energy)',
     sec_ev:        'Electric vehicle',
+    section_pv:      'PV / Solar',
+    section_conso:   'Consumption / Grid',
+    section_battery: 'Battery',
     section_routers: 'Routers',
     section_ev:      'Electric vehicle',
+    lbl_injection:   'Export',
+    lbl_import:      'Import',
+    lbl_net_grid:    'Grid balance',
+    lbl_grid_cost:   'Grid cost',
     ev_st_charge:    'Charging',
     ev_st_v2h:       'V2H (discharge)',
     ev_st_idle:      'Idle',
@@ -725,6 +790,19 @@ const I18N = {
     ed_pv_month:       'PV this month (kWh entity)',
     ed_pv_year:        'PV this year (kWh entity)',
     ed_grid_export:    'Grid export today (kWh entity)',
+    ed_grid_import:    'Grid import today (kWh entity) — Consumption block',
+    ed_grid_import_month: 'Grid import this month (kWh)',
+    ed_grid_import_year:  'Grid import this year (kWh)',
+    ed_home_month:      'Home consumption this month (kWh)',
+    ed_home_year:       'Home consumption this year (kWh)',
+    ed_conso_vis:       'Consumption block display (avoid scene duplicates)',
+    ed_show_conso_home:   'Home (instant)',
+    ed_show_conso_grid:   'Grid (instant)',
+    ed_show_conso_day:    'Consumption today',
+    ed_show_conso_import: 'Import',
+    ed_show_conso_export: 'Export',
+    ed_show_conso_net:    'Net grid balance',
+    ed_show_conso_cost:   'Daily grid cost',
     ed_export_paid:    'Export remunerated (sell surplus)',
     ed_export_price:   'Sell price (€/kWh)',
     ed_export_month:   'Export this month (kWh entity)',
@@ -2618,83 +2696,27 @@ function buildCardHTML(cfg) {
       </div>
     </div>` : '';
 
-      S.metrics = `
-    ${c.title_metrics ? `<div class="sfc-section">${c.title_metrics}</div><div class="sfc-gap" style="height:6px;"></div>` : ''}
+      // ☀️ Bloc PV / Solaire
+      S.pv = `
+    <div class="sfc-section">☀️ ${c.title_pv || t(c,'section_pv')}</div>
+    <div class="sfc-gap" style="height:6px;"></div>
     <div class="sfc-metrics cols-3">
-      ${c.show_mode ? `
       <div class="sfc-mc">
-        <div class="sfc-mc-header">${"⚙️ " + t(c,"lbl_mode")}</div>
-        <span class="sfc-mode idle" id="sfcMode">Idle</span>
-      </div>` : ''}
-      ${c.show_bms_temp ? `
+        <div class="sfc-mc-header">${"☀️ " + t(c,"inv_today_pv")}</div>
+        <div class="sfc-mc-val c-solar" id="sfcTodayPv">— kWh</div>
+      </div>
+      ${c.pv_total ? `
       <div class="sfc-mc">
-        <div class="sfc-mc-header">${"🌡️ " + t(c,"lbl_bms_temp")}</div>
-        <div class="sfc-mc-val" style="color:#FFA040;" id="sfcBmsT">—°C</div>
+        <div class="sfc-mc-header">${"🔆 " + t(c,"lbl_total_pv")}</div>
+        <div class="sfc-mc-val c-solar" id="sfcPvTotal">— kWh</div>
       </div>` : ''}
       ${c.show_total_pv ? `
       <div class="sfc-mc">
         <div class="sfc-mc-header">${"🌱 " + t(c,"lbl_co2_today")}</div>
         <div class="sfc-mc-val" style="color:#6bd47e;" id="sfcMcCo2">— kg</div>
       </div>` : ''}
-    </div>`;
-
-      S.cells = showCells ? `
-    ${c.title_cells ? `<div class="sfc-section">${c.title_cells}</div><div class="sfc-gap" style="height:6px;"></div>` : ''}
-    <div class="sfc-metrics cols-3">
-      <div class="sfc-mc">
-        <div class="sfc-mc-header">${"🔋 " + t(c,"lbl_min_cell")}</div>
-        <div class="sfc-mc-val c-batt" id="sfcMinCell">—V</div>
-      </div>
-      <div class="sfc-mc">
-        <div class="sfc-mc-header">${"🔋 " + t(c,"lbl_max_cell")}</div>
-        <div class="sfc-mc-val c-batt" id="sfcMaxCell">—V</div>
-        <div class="sfc-mc-sub" id="sfcCellDelta">Δ —mV</div>
-      </div>
-      <div class="sfc-mc">
-        <div class="sfc-mc-header">${"⚡ " + t(c,"lbl_batt_dis")}</div>
-        <div class="sfc-mc-val c-home" id="sfcBattDis">— kWh</div>
-      </div>
-    </div>` : '';
-
-      S.endurance = showEnd ? `
-    ${c.title_endurance ? `<div class="sfc-section">${c.title_endurance}</div><div class="sfc-gap" style="height:6px;"></div>` : ''}
-    <div class="sfc-endurance">
-      <div class="sfc-end-left">${"⏱️ " + t(c,"lbl_endurance")}</div>
-      <div>
-        <span class="sfc-end-val" id="sfcEndVal">— h</span>
-        <span class="sfc-end-sub" id="sfcEndSub"></span>
-      </div>
-    </div>` : '';
-
-      S.inverter = showInv ? `
-    <div class="sfc-section">${c.title_inverter || t(c,"section_inverter")}</div>
-    <div class="sfc-gap" style="height:6px;"></div>
-    <div class="sfc-inv">
-      <div class="sfc-inv-card">
-        <span class="sfc-inv-icon">☀️</span>
-        <span class="sfc-inv-label">${t(c,"inv_today_pv")}</span>
-        <span class="sfc-inv-val c-solar" id="sfcTodayPv">— kWh</span>
-      </div>
-      <div class="sfc-inv-card">
-        <span class="sfc-inv-icon">🔋</span>
-        <span class="sfc-inv-label">${t(c,"inv_chg_dis")}</span>
-        <span class="sfc-inv-val c-batt" id="sfcChgDis">— kWh</span>
-        <span class="sfc-inv-sub" id="sfcChgDisSub"></span>
-      </div>
-      <div class="sfc-inv-card">
-        <span class="sfc-inv-icon">⚡</span>
-        <span class="sfc-inv-label">${t(c,"inv_remaining")}</span>
-        <span class="sfc-inv-val" style="color:#aaa;" id="sfcRemaining">— kWh</span>
-      </div>
-      <div class="sfc-inv-card">
-        <span class="sfc-inv-icon">🏡</span>
-        <span class="sfc-inv-label">${t(c,"inv_today_load")}</span>
-        <span class="sfc-inv-val c-home" id="sfcTodayLoad">— kWh</span>
-      </div>
-    </div>` : '';
-
-      S.autoconso = showAuto ? `
-    <div class="sfc-section">📈 ${c.title_autoconso || t(c,'section_autoconso')}</div>
+    </div>
+    ${showAuto ? `
     <div class="sfc-gap" style="height:6px;"></div>
     <div class="sfc-health" id="sfcAuto">
       <div class="sfc-health-row">
@@ -2707,8 +2729,117 @@ function buildCardHTML(cfg) {
         <div class="sfc-health-bar-wrap"><div class="sfc-health-bar" id="sfcSelfProdBar"></div></div>
         <span class="sfc-health-val" id="sfcSelfProdVal">— %</span>
       </div>
+    </div>` : ''}`;
+
+      // 🏠 Bloc Conso / Réseau — suivi conso complet : instantané + bilan du jour
+      // Chaque tuile = entité configurée ET son interrupteur d'affichage actif (anti-doublon scène)
+      const cTile = {
+        home:   c.home_power        && c.show_conso_home   !== false,
+        grid:   c.grid_power        && c.show_conso_grid   !== false,
+        day:    c.today_load        && c.show_conso_day    !== false,
+        import: c.grid_import_today  && c.show_conso_import !== false,
+        export: c.grid_export_today  && c.show_conso_export !== false,
+        net:    c.grid_import_today  && c.grid_export_today && c.show_conso_net  !== false,
+        cost:   c.grid_import_today  && c.show_conso_cost   !== false,
+      };
+      S.conso = Object.values(cTile).some(Boolean) ? `
+    <div class="sfc-section">🏠 ${c.title_conso || t(c,'section_conso')}</div>
+    <div class="sfc-gap" style="height:6px;"></div>
+    <div class="sfc-metrics cols-3">
+      ${cTile.home ? `
+      <div class="sfc-mc">
+        <div class="sfc-mc-header">${"🏠 " + t(c,"node_home")}</div>
+        <div class="sfc-mc-val c-home" id="sfcConsoHome">0 W</div>
+      </div>` : ''}
+      ${cTile.grid ? `
+      <div class="sfc-mc">
+        <div class="sfc-mc-header">${"🔌 " + t(c,"node_grid")}</div>
+        <div class="sfc-mc-val c-grid" id="sfcConsoGrid">0 W</div>
+        <div class="sfc-mc-sub" id="sfcConsoGridDir">—</div>
+      </div>` : ''}
+      ${cTile.day ? `
+      <div class="sfc-mc">
+        <div class="sfc-mc-header">${"🏡 " + t(c,"inv_today_load")}</div>
+        <div class="sfc-mc-val c-home" id="sfcTodayLoad">— kWh</div>
+        <div class="sfc-mc-sub" id="sfcConsoSub"></div>
+      </div>` : ''}
+      ${cTile.import ? `
+      <div class="sfc-mc">
+        <div class="sfc-mc-header">${"↓ " + t(c,"lbl_import")}</div>
+        <div class="sfc-mc-val c-grid" id="sfcImportToday">— kWh</div>
+        <div class="sfc-mc-sub" id="sfcImportSub"></div>
+      </div>` : ''}
+      ${cTile.export ? `
+      <div class="sfc-mc">
+        <div class="sfc-mc-header">${"↑ " + t(c,"lbl_injection")}</div>
+        <div class="sfc-mc-val" style="color:#6bd47e;" id="sfcInjectionToday">— kWh</div>
+        <div class="sfc-mc-sub" id="sfcInjectionSub"></div>
+      </div>` : ''}
+      ${cTile.net ? `
+      <div class="sfc-mc">
+        <div class="sfc-mc-header">${"⚖️ " + t(c,"lbl_net_grid")}</div>
+        <div class="sfc-mc-val" id="sfcNetGrid">— kWh</div>
+      </div>` : ''}
+      ${cTile.cost ? `
+      <div class="sfc-mc">
+        <div class="sfc-mc-header">${"💶 " + t(c,"lbl_grid_cost")}</div>
+        <div class="sfc-mc-val" style="color:#FF6B6B;" id="sfcCostToday">— €</div>
+      </div>` : ''}
     </div>` : '';
 
+      // 🔋 Bloc Batterie (mode, restant, charge/décharge, cellules, autonomie, santé)
+      S.battery = `
+    <div class="sfc-section">🔋 ${c.title_battery || t(c,'section_battery')}</div>
+    <div class="sfc-gap" style="height:6px;"></div>
+    <div class="sfc-metrics cols-3">
+      ${c.show_mode ? `
+      <div class="sfc-mc">
+        <div class="sfc-mc-header">${"⚙️ " + t(c,"lbl_mode")}</div>
+        <span class="sfc-mode idle" id="sfcMode">Idle</span>
+      </div>` : ''}
+      ${c.show_bms_temp ? `
+      <div class="sfc-mc">
+        <div class="sfc-mc-header">${"🌡️ " + t(c,"lbl_bms_temp")}</div>
+        <div class="sfc-mc-val" style="color:#FFA040;" id="sfcBmsT">—°C</div>
+      </div>` : ''}
+      <div class="sfc-mc">
+        <div class="sfc-mc-header">${"⚡ " + t(c,"inv_remaining")}</div>
+        <div class="sfc-mc-val" style="color:#aaa;" id="sfcRemaining">— kWh</div>
+      </div>
+      <div class="sfc-mc">
+        <div class="sfc-mc-header">${"🔋 " + t(c,"inv_chg_dis")}</div>
+        <div class="sfc-mc-val c-batt" id="sfcChgDis">— kWh</div>
+        <div class="sfc-mc-sub" id="sfcChgDisSub"></div>
+      </div>
+      <div class="sfc-mc">
+        <div class="sfc-mc-header">${"⚡ " + t(c,"lbl_batt_dis")}</div>
+        <div class="sfc-mc-val c-home" id="sfcBattDis">— kWh</div>
+      </div>
+    </div>
+    ${showCells ? `
+    <div class="sfc-gap" style="height:6px;"></div>
+    <div class="sfc-metrics cols-2">
+      <div class="sfc-mc">
+        <div class="sfc-mc-header">${"🔋 " + t(c,"lbl_min_cell")}</div>
+        <div class="sfc-mc-val c-batt" id="sfcMinCell">—V</div>
+      </div>
+      <div class="sfc-mc">
+        <div class="sfc-mc-header">${"🔋 " + t(c,"lbl_max_cell")}</div>
+        <div class="sfc-mc-val c-batt" id="sfcMaxCell">—V</div>
+        <div class="sfc-mc-sub" id="sfcCellDelta">Δ —mV</div>
+      </div>
+    </div>` : ''}
+    ${showEnd ? `
+    <div class="sfc-gap" style="height:6px;"></div>
+    <div class="sfc-endurance">
+      <div class="sfc-end-left">${"⏱️ " + t(c,"lbl_endurance")}</div>
+      <div>
+        <span class="sfc-end-val" id="sfcEndVal">— h</span>
+        <span class="sfc-end-sub" id="sfcEndSub"></span>
+      </div>
+    </div>` : ''}`;
+
+      // 🩺 Bloc État de santé batterie (séparé du bloc Batterie pour alléger)
       S.health = showHealth ? `
     <div class="sfc-section">🩺 ${c.title_health || t(c,'section_health')}</div>
     <div class="sfc-gap" style="height:6px;"></div>
@@ -2812,7 +2943,7 @@ function buildCardHTML(cfg) {
       </div>` : ''}
     </div>` : '';
 
-      const defOrder = ['bars','metrics','cells','endurance','inverter','autoconso','health','savings','routers','ev'];
+      const defOrder = ['bars','pv','conso','battery','health','routers','savings','ev'];
       let order = (Array.isArray(c.section_order) && c.section_order.length) ? c.section_order.slice() : defOrder.slice();
       defOrder.forEach(k => { if (!order.includes(k)) order.push(k); });   // clés manquantes en fin (compat.)
       // Chaque bloc présent est précédé d'un espaceur uniforme.
@@ -3013,6 +3144,21 @@ function buildEditorHTML(cfg) {
         ? `<div class="sfc-ed-info">Barre PWR = puissance réseau (W) ÷ puissance souscrite (kVA, section Général). Export = 0%.</div>`
         : edEntity('pwr_percent', t(c,'ed_pwr_pct'), 'sensor.zendure_output_pack_power', c)}
       ${edEntity('today_load', t(c,'ed_today_load'), 'sensor.today_home_consumption', c)}
+      ${edEntity('home_month_kwh', t(c,'ed_home_month'), 'sensor.conso_maison_mois', c)}
+      ${edEntity('home_year_kwh', t(c,'ed_home_year'), 'sensor.conso_maison_annee', c)}
+      ${edEntity('grid_import_today', t(c,'ed_grid_import'), 'sensor.energie_soutiree', c)}
+      ${edEntity('grid_import_month', t(c,'ed_grid_import_month'), 'sensor.import_mois', c)}
+      ${edEntity('grid_import_year', t(c,'ed_grid_import_year'), 'sensor.import_annee', c)}
+      <div style="font-size:10px;font-weight:700;color:var(--sfc-solar,#FFD700);margin:10px 0 2px;letter-spacing:1px;">
+        🏠 ${t(c,'ed_conso_vis')}
+      </div>
+      ${edToggle('show_conso_home',   t(c,'ed_show_conso_home'),   c)}
+      ${edToggle('show_conso_grid',   t(c,'ed_show_conso_grid'),   c)}
+      ${edToggle('show_conso_day',    t(c,'ed_show_conso_day'),    c)}
+      ${edToggle('show_conso_import', t(c,'ed_show_conso_import'), c)}
+      ${edToggle('show_conso_export', t(c,'ed_show_conso_export'), c)}
+      ${edToggle('show_conso_net',    t(c,'ed_show_conso_net'),    c)}
+      ${edToggle('show_conso_cost',   t(c,'ed_show_conso_cost'),   c)}
     `)}
 
     <!-- SECTION: Météo & Soleil -->
@@ -3412,11 +3558,9 @@ function buildEditorHTML(cfg) {
     ${edSection('titles', t(c,'ed_section_titles'), false, `
       <div class="sfc-ed-info">${t(c,'ed_section_titles_info')}</div>
       ${edEntity('title_bars',      t(c,'sec_bars'),      '—', c)}
-      ${edEntity('title_metrics',   t(c,'sec_metrics'),   '—', c)}
-      ${edEntity('title_cells',     t(c,'sec_cells'),     '—', c)}
-      ${edEntity('title_endurance', t(c,'sec_endurance'), '—', c)}
-      ${edEntity('title_inverter',  t(c,'sec_inverter'),  t(c,'section_inverter'),  c)}
-      ${edEntity('title_autoconso', t(c,'sec_autoconso'), t(c,'section_autoconso'), c)}
+      ${edEntity('title_pv',        t(c,'sec_pv'),        t(c,'section_pv'),        c)}
+      ${edEntity('title_conso',     t(c,'sec_conso'),     t(c,'section_conso'),     c)}
+      ${edEntity('title_battery',   t(c,'sec_battery'),   t(c,'section_battery'),   c)}
       ${edEntity('title_health',    t(c,'sec_health'),    t(c,'section_health'),    c)}
       ${edEntity('title_savings',   t(c,'sec_savings'),   t(c,'section_savings'),   c)}
       ${edEntity('title_routers',   t(c,'sec_routers'),   t(c,'section_routers'),   c)}
@@ -3472,7 +3616,7 @@ function edToggle(key, label, cfg) {
 }
 
 // Ordre par défaut des sections (utilisé par la carte ET l'éditeur)
-const SECTION_ORDER_DEFAULT = ['bars','metrics','cells','endurance','inverter','autoconso','health','savings','routers','ev'];
+const SECTION_ORDER_DEFAULT = ['bars','pv','conso','battery','health','routers','savings','ev'];
 
 // Normalise un ordre : garde les clés valides, complète avec les manquantes.
 function normalizeSectionOrder(arr) {
@@ -3506,6 +3650,10 @@ function edRange(key, label, min, max, step, cfg) {
 //  SOLAR FLOW CARD ELEMENT
 // ══════════════════════════════════════════════════════════
 class SolarFlowCard extends HTMLElement {
+  // ────────────────────────────────────────────────────────
+  //  CYCLE DE VIE & CONFIG
+  // ────────────────────────────────────────────────────────
+  // Initialise le shadow DOM et l'état interne (timers, accumulateurs économies/routeurs).
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -3523,28 +3671,34 @@ class SolarFlowCard extends HTMLElement {
     this._snowAnim = null;
   }
 
+  // Setter HA : à chaque mise à jour de l'objet hass, rafraîchit toute la carte.
   set hass(hass) {
     this._hass = hass;
     this._update();
   }
 
+  // Applique la config (fusionnée aux DEFAULTS), (re)génère le DOM et lance le timer soleil.
   setConfig(config) {
     this._cfg = { ...DEFAULTS, ...config };
     this._render();
     this._startSunTimer();
   }
 
+  // Fournit l'élément d'édition visuelle (éditeur Lovelace) de la carte.
   static getConfigElement() {
     return document.createElement('solar-flow-card-editor');
   }
 
+  // Config minimale proposée lors de l'ajout de la carte au dashboard.
   static getStubConfig() {
     // Pas de coordonnées ici : la carte prend par défaut la localisation de la maison HA.
     return { title: 'Solar Flow' };
   }
 
+  // Hauteur estimée (unités Lovelace) pour la mise en page en colonnes.
   getCardSize() { return 8; }
 
+  // (Re)génère le HTML complet (styles + scène) puis initialise étoiles, GSAP et clics détails.
   _render() {
     this._starsCreated = false;
     this.shadowRoot.innerHTML = `
@@ -3559,7 +3713,10 @@ class SolarFlowCard extends HTMLElement {
     this._attachDetail();
   }
 
-  // Clic sur une zone (élément [data-detail]) → panneau récapitulatif des entités liées.
+  // ────────────────────────────────────────────────────────
+  //  PANNEAU DÉTAILS (clic sur une zone)
+  // ────────────────────────────────────────────────────────
+  // Branche les clics : sur une zone [data-detail] → ouvre le panneau ; sur la croix/fond → ferme.
   _attachDetail() {
     const root = this._el('sfcRoot');
     if (root) {
@@ -3575,8 +3732,10 @@ class SolarFlowCard extends HTMLElement {
     if (ov) ov.addEventListener('click', (e) => { if (e.target === ov) this._closeDetail(); });
   }
 
+  // Ferme le panneau de détails.
   _closeDetail() { const el = this._el('sfcDetail'); if (el) el.classList.remove('open'); }
 
+  // Ouvre le panneau de détails d'une zone : liste les entités configurées de la zone + leurs états.
   _openDetail(zone) {
     const c = this._cfg, h = this._hass;
     const el = this._el('sfcDetail');
@@ -3627,6 +3786,10 @@ class SolarFlowCard extends HTMLElement {
     el.classList.add('open');
   }
 
+  // ────────────────────────────────────────────────────────
+  //  ANIMATIONS (GSAP : chargement, flux, batterie)
+  // ────────────────────────────────────────────────────────
+  // Charge GSAP + DrawSVGPlugin (CDN, une seule fois) puis démarre les animations de flux.
   _loadGSAP() {
     if (window.gsap && window.DrawSVGPlugin) {
       gsap.registerPlugin(DrawSVGPlugin);
@@ -3647,6 +3810,7 @@ class SolarFlowCard extends HTMLElement {
     document.head.appendChild(s1);
   }
 
+  // Lance les tweens de tous les tubes de flux (segment à vitesse constante) + animations batterie.
   _initFlowAnimations() {
     this._gsapReady = true;
     const sr = this.shadowRoot;
@@ -3699,6 +3863,7 @@ class SolarFlowCard extends HTMLElement {
     this._initBatterySVGAnimation();
   }
 
+  // Prépare l'animation batterie mode séparé (HTML) : crée 6 bulles de charge (particules DOM).
   _initBatteryAnimation() {
     if (!window.gsap || this._battAnimReady) return;
     const wrapper    = this._el('sfcBattWrapper');
@@ -3727,6 +3892,7 @@ class SolarFlowCard extends HTMLElement {
     this._battGlowTl    = null;
   }
 
+  // Anime la batterie mode séparé : niveau liquide élastique, vitesse de vague, glow, bulles.
   _updateBatteryGSAP(soc, state) {
     if (!window.gsap) return;
     if (!this._battAnimReady) { this._initBatteryAnimation(); if (!this._battAnimReady) return; }
@@ -3803,6 +3969,7 @@ class SolarFlowCard extends HTMLElement {
     }
   }
 
+  // Prépare l'animation batterie mode single (SVG) : bulles dans le cylindre + vagues de surface.
   _initBatterySVGAnimation() {
     if (!window.gsap || this._battSVGAnimReady) return;
     const svgEl = this._el('sfcSingleFlowSvg');
@@ -3864,6 +4031,9 @@ class SolarFlowCard extends HTMLElement {
     });
   }
 
+  // ────────────────────────────────────────────────────────
+  //  BATTERIE — couleurs & vagues SVG
+  // ────────────────────────────────────────────────────────
   // Éclaircit une couleur "r,g,b" vers le blanc (t : 0 = inchangé, 1 = blanc)
   _lighten(rgb, t) {
     const p = rgb.split(',').map(Number);
@@ -3957,6 +4127,7 @@ class SolarFlowCard extends HTMLElement {
          :                           '0,220,255';
   }
 
+  // Anime la batterie mode single (SVG) : niveau élastique, couleur selon %, pulse/clignotement, bulles.
   _updateBatterySVGGSAP(battSoc, state) {
     if (!window.gsap) return;
     if (!this._battSVGAnimReady) { this._initBatterySVGAnimation(); if (!this._battSVGAnimReady) return; }
@@ -4017,7 +4188,10 @@ class SolarFlowCard extends HTMLElement {
     }
   }
 
-  // ── Véhicule électrique ──────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────
+  //  BLOC EV (véhicule électrique)
+  // ────────────────────────────────────────────────────────
+  // Met à jour le bloc EV : flux charge/V2H, chip puissance/SOC, section dédiée (état, kWh).
   _updateEV() {
     const c = this._cfg;
     if (!c.ev_enabled) return;
@@ -4082,8 +4256,10 @@ class SolarFlowCard extends HTMLElement {
     }
   }
 
-  // ── Prix électricité ─────────────────────────────────────────────────────
-  // Période heures creuses, selon hc_start / hc_end (gère le passage de minuit)
+  // ────────────────────────────────────────────────────────
+  //  TARIFICATION (HC/HP, prix courant)
+  // ────────────────────────────────────────────────────────
+  // Période heures creuses, selon hc_start / hc_end (gère le passage de minuit).
   _isHCPeriod() {
     const c = this._cfg;
     const h = new Date().getHours();
@@ -4092,6 +4268,7 @@ class SolarFlowCard extends HTMLElement {
     return s <= e ? (h >= s && h < e) : (h >= s || h < e);
   }
 
+  // Prix courant €/kWh selon le mode tarifaire : Tempo / HP-HC / entité dynamique / prix fixe.
   _getCurrentPrice() {
     const c = this._cfg;
     const mode = c.price_mode || 'fixed';
@@ -4134,7 +4311,10 @@ class SolarFlowCard extends HTMLElement {
     return parseFloat(c.electricity_price) || 0.23;
   }
 
-  // ── Taux d'autoconsommation / autoproduction ──────────────────────────────
+  // ────────────────────────────────────────────────────────
+  //  BLOC AUTOCONSOMMATION
+  // ────────────────────────────────────────────────────────
+  // Calcule les taux d'autoconsommation (PV consommé/produit) et d'autoproduction (couverture conso).
   _updateAutoConso() {
     const c = this._cfg;
     if (c.show_autoconso === false || !c.pv_today) return;
@@ -4149,6 +4329,7 @@ class SolarFlowCard extends HTMLElement {
     this._setAutoBar('sfcSelfProdBar',  'sfcSelfProdVal',  selfProd);
   }
 
+  // Met à jour une barre + sa valeur d'autoconso (couleur selon le niveau, « — % » si indisponible).
   _setAutoBar(barId, valId, pct) {
     const bar = this._el(barId), val = this._el(valId);
     if (pct === null) {
@@ -4161,7 +4342,10 @@ class SolarFlowCard extends HTMLElement {
     if (bar) { bar.style.width = pct.toFixed(0) + '%'; bar.className = 'sfc-health-bar soh-' + cls + '-bg'; }
   }
 
-  // ── État de santé batterie (SOH) ──────────────────────────────────────────
+  // ────────────────────────────────────────────────────────
+  //  BLOC SANTÉ BATTERIE
+  // ────────────────────────────────────────────────────────
+  // Bloc santé batterie : SOH, capacité réelle/théorique, cycles (mesurés ou estimés EFC).
   _updateHealth() {
     const c = this._cfg;
     if (c.show_health === false) return;
@@ -4220,7 +4404,10 @@ class SolarFlowCard extends HTMLElement {
     }
   }
 
-  // ── Bloc Économies ────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────
+  //  BLOC ÉCONOMIES / ROI
+  // ────────────────────────────────────────────────────────
+  // Bloc Économies & ROI : montants jour/mois/an, CO₂, badges Tempo, amortissement (PV + batterie).
   _updateSavingsBlock(pvTodayKwh) {
     const c = this._cfg;
     if (c.show_savings === false) return;
@@ -4483,6 +4670,10 @@ class SolarFlowCard extends HTMLElement {
     }
   }
 
+  // ────────────────────────────────────────────────────────
+  //  DÉCOR & CYCLE DE VIE (étoiles, timer soleil, connect/disconnect)
+  // ────────────────────────────────────────────────────────
+  // Crée le champ d'étoiles (45 points, une seule fois) affiché la nuit.
   _createStars() {
     if (this._starsCreated) return;
     const container = this.shadowRoot.getElementById('sfcStars');
@@ -4501,11 +4692,13 @@ class SolarFlowCard extends HTMLElement {
     }
   }
 
+  // (Re)démarre le rafraîchissement périodique du soleil/ciel (toutes les 30 s).
   _startSunTimer() {
     if (this._sunTimer) clearInterval(this._sunTimer);
     this._sunTimer = setInterval(() => this._updateSun(), 30000);
   }
 
+  // Nettoyage à la déconnexion : arrête timers et tweens GSAP (évite les fuites mémoire).
   disconnectedCallback() {
     if (this._sunTimer) { clearInterval(this._sunTimer); this._sunTimer = null; }
     if (this._lightningTimer) { clearTimeout(this._lightningTimer); this._lightningTimer = null; }
@@ -4516,6 +4709,7 @@ class SolarFlowCard extends HTMLElement {
     if (this._waveTweens) { this._waveTweens.forEach(t => t.kill()); this._waveTweens = null; }
   }
 
+  // Reconnexion (édition dashboard, scroll virtualisé) : relance timer et tweens si nécessaire.
   connectedCallback() {
     // Restaurer les animations si la carte est reconnectée (édition dashboard, scroll virtualisé…)
     if (!this._cfg || !Object.keys(this._cfg).length) return;
@@ -4527,6 +4721,10 @@ class SolarFlowCard extends HTMLElement {
     }
   }
 
+  // ────────────────────────────────────────────────────────
+  //  HELPERS — lecture d'entités & formatage
+  // ────────────────────────────────────────────────────────
+  // Valeur numérique d'une entité ; liste séparée par des virgules → SOMME ; fallback sinon.
   _getNum(entityId, fallback = 0) {
     if (!entityId || !this._hass) return fallback;
     // Plusieurs entités séparées par des virgules → SOMME (ex. 3 onduleurs, plusieurs batteries).
@@ -4551,6 +4749,7 @@ class SolarFlowCard extends HTMLElement {
     return isNaN(raw) ? fallback : raw;
   }
 
+  // État brut (chaîne) d'une entité, ou null.
   _getState(entityId) {
     if (!entityId || !this._hass) return null;
     return this._hass.states[entityId]?.state || null;
@@ -4568,11 +4767,13 @@ class SolarFlowCard extends HTMLElement {
     return String(s.state).replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
   }
 
+  // Formate une puissance W → « x W » / « x.xx kW » (ou « valeur unité » pour une autre unité).
   _fmt(w, unit = 'W') {
     if (unit === 'W') return w >= 1000 ? (w/1000).toFixed(2) + ' kW' : Math.round(w) + ' W';
     return w.toFixed(2) + ' ' + unit;
   }
 
+  // Formate une durée en heures → « Jj Hh » / « Hh Mmin » / « Mmin ».
   _formatDuration(hours) {
     if (!Number.isFinite(hours) || hours < 0) return '—';
     const totalMinutes = Math.max(0, Math.round(hours * 60));
@@ -4585,16 +4786,23 @@ class SolarFlowCard extends HTMLElement {
     return minutes + 'min';
   }
 
+  // Raccourci getElementById dans le shadow DOM.
   _el(id) { return this.shadowRoot.getElementById(id); }
 
+  // Active/désactive (classe .inactive) un ensemble de tubes de flux.
   _setFlowActive(ids, active) {
     ids.forEach(id => this._el(id)?.classList.toggle('inactive', !active));
   }
 
+  // Définit l'attribut `d` (tracé SVG) d'un ensemble de tubes de flux.
   _setFlowPath(ids, path) {
     ids.forEach(id => this._el(id)?.setAttribute('d', path));
   }
 
+  // ────────────────────────────────────────────────────────
+  //  BOUCLE PRINCIPALE — _update()
+  // ────────────────────────────────────────────────────────
+  // Boucle principale : lit toutes les entités et met à jour scène, badges, barres, nœuds et blocs.
   _update() {
     if (!this._hass) return;
     const c = this._cfg;
@@ -4853,6 +5061,38 @@ class SolarFlowCard extends HTMLElement {
     const cds = this._el('sfcChgDisSub');  if (cds) cds.textContent = battDis  ? battDis.toFixed(2)+' kWh'  : '';
     const re  = this._el('sfcRemaining');  if (re)  re.textContent  = rem      ? rem.toFixed(2)+' kWh'      : '— kWh';
     const tl  = this._el('sfcTodayLoad'); if (tl)  tl.textContent  = todayLoad? todayLoad.toFixed(2)+' kWh': '— kWh';
+    // Bloc PV : PV total ; Bloc Conso : injection du jour
+    const ptot = this._el('sfcPvTotal');
+    if (ptot) ptot.textContent = totalPv ? (totalPv >= 1000 ? (totalPv/1000).toFixed(2)+' MWh' : totalPv.toFixed(0)+' kWh') : '— kWh';
+    const inj = this._el('sfcInjectionToday');
+    if (inj) { const v = c.grid_export_today ? this._getNum(c.grid_export_today) : null; inj.textContent = (v !== null) ? v.toFixed(2)+' kWh' : '— kWh'; }
+    // Bloc Conso : maison & réseau instantanés + import du jour
+    const cHome = this._el('sfcConsoHome');  if (cHome) cHome.textContent = this._fmt(homeW);
+    const cGrid = this._el('sfcConsoGrid');  if (cGrid) cGrid.textContent = this._fmt(Math.abs(gridW));
+    const cGridD = this._el('sfcConsoGridDir'); if (cGridD) cGridD.textContent = gridW > 50 ? t(c,'dir_import') : gridW < -50 ? t(c,'dir_export') : '—';
+    const imp = this._el('sfcImportToday');
+    if (imp) { const v = c.grid_import_today ? this._getNum(c.grid_import_today) : null; imp.textContent = (v !== null) ? v.toFixed(2)+' kWh' : '— kWh'; }
+    // Sous-lignes mois/année (Conso, Import, Injection)
+    const fmtK = v => v >= 1000 ? (v/1000).toFixed(2)+' MWh' : v.toFixed(1)+' kWh';
+    const subOf = (mKey, yKey) => {
+      const p = [];
+      if (c[mKey]) p.push(t(c,'rt_month') + ' ' + fmtK(this._getNum(c[mKey])));
+      if (c[yKey]) p.push(t(c,'rt_year')  + ' ' + fmtK(this._getNum(c[yKey])));
+      return p.join('<br>');
+    };
+    const csub = this._el('sfcConsoSub');     if (csub) csub.innerHTML = subOf('home_month_kwh','home_year_kwh');
+    const isub = this._el('sfcImportSub');     if (isub) isub.innerHTML = subOf('grid_import_month','grid_import_year');
+    const jsub = this._el('sfcInjectionSub');  if (jsub) jsub.innerHTML = subOf('grid_export_month','grid_export_year');
+    // Bilan net réseau du jour (import − injection)
+    const netEl = this._el('sfcNetGrid');
+    if (netEl) {
+      const net = this._getNum(c.grid_import_today) - this._getNum(c.grid_export_today);
+      netEl.textContent = (net >= 0 ? '+' : '−') + Math.abs(net).toFixed(1) + ' kWh';
+      netEl.style.color = net >= 0 ? 'var(--sfc-home,#FF6B6B)' : 'var(--sfc-batt,#69FF47)';
+    }
+    // Coût de l'électricité soutirée aujourd'hui (import × prix courant)
+    const costEl = this._el('sfcCostToday');
+    if (costEl) { const v = c.grid_import_today ? this._getNum(c.grid_import_today) * this._getCurrentPrice() : 0; costEl.textContent = v.toFixed(2) + ' €'; }
 
     // ── Labels et batterie SVG mode single (sfcSingleFlowSvg, coords 1536×1024) ──
     // Ces éléments n'existent qu'en mode single → les guards évitent les erreurs en mode séparé
@@ -4922,6 +5162,10 @@ class SolarFlowCard extends HTMLElement {
     this._updateWeatherFx(wi);
   }
 
+  // ────────────────────────────────────────────────────────
+  //  RENDU & ROUTEURS (barres, alignement flux, énergie routeurs)
+  // ────────────────────────────────────────────────────────
+  // Met à jour une barre de progression (largeur %) et son libellé.
   _setPct(barId, pctId, pct) {
     const bar = this._el(barId); const lbl = this._el(pctId);
     if (bar) bar.style.width = Math.round(pct) + '%';
@@ -4975,6 +5219,8 @@ class SolarFlowCard extends HTMLElement {
     try { localStorage.setItem(key, JSON.stringify({ day: st.day, kwh: st.kwh })); } catch (e) { /* ignore */ }
   }
 
+  // Met à jour les routeurs : puissance (mode calc/power), flux, nœuds scène, mode somme, et
+  // sous-lignes énergie jour/mois/année/total de la section Routeurs.
   _updateRouters() {
     const c = this._cfg;
     const activeRouters = [
@@ -5142,6 +5388,9 @@ class SolarFlowCard extends HTMLElement {
     return { x: (px / pr.width * 100).toFixed(2), y: (py / pr.height * 100).toFixed(2) };
   }
 
+  // ────────────────────────────────────────────────────────
+  //  SOLEIL & MÉTÉO (coords, lever/coucher, FX météo)
+  // ────────────────────────────────────────────────────────
   // Coordonnées utilisées pour le calcul du soleil, par ordre de priorité :
   // 1) latitude/longitude renseignées dans la config de la carte (prioritaire — toujours modifiable)
   // 2) localisation de la maison Home Assistant (hass.config) — repli automatique
@@ -5184,6 +5433,8 @@ class SolarFlowCard extends HTMLElement {
     return null;
   }
 
+  // Met à jour le soleil/la lune (position sur l'arc), lever/coucher, ciel, étoiles, nuages et
+  // l'image de scène jour/nuit, à partir de l'élévation (entité HA ou calcul interne).
   _updateSun(cloudyOverride) {
 
     const c   = this._cfg;
@@ -5365,6 +5616,7 @@ class SolarFlowCard extends HTMLElement {
     if (stl) stl.textContent = now.toLocaleTimeString(c.language==='en'?'en-GB':'fr-FR',{hour:'2-digit',minute:'2-digit'}) + ' · ' + Math.round(elevation) + '°';
   }
 
+  // Effets météo : pluie, neige, foudre (génère les particules + planifie les flashs d'orage).
   _updateWeatherFx(wi) {
     const rainEl  = this._el('sfcRain');
     const snowEl  = this._el('sfcSnow');
@@ -5456,7 +5708,7 @@ class SolarFlowCard extends HTMLElement {
 }
 
 // ══════════════════════════════════════════════════════════
-//  EDITOR — iOS-safe (v1.0.0)
+//  EDITOR (classe éditeur de configuration)
 // ══════════════════════════════════════════════════════════
 const EDITOR_EXTRA_CSS = `
   /* Bouton Appliquer supprimé — sauvegarde via bouton natif HA */
@@ -5474,6 +5726,10 @@ const EDITOR_EXTRA_CSS = `
 `;
 
 class SolarFlowCardEditor extends HTMLElement {
+  // ────────────────────────────────────────────────────────
+  //  CYCLE DE VIE & CONFIG
+  // ────────────────────────────────────────────────────────
+  // Initialise l'état de l'éditeur : brouillon de config + drapeaux ready/dirty.
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -5489,8 +5745,10 @@ class SolarFlowCardEditor extends HTMLElement {
     this._hass = hass;
     this._refreshEntityDatalist();
   }
+  // Getter hass (requis par certains contextes HA).
   get hass() { return this._hass; }
 
+  // Reçoit la config : 1er appel → construit le DOM ; ensuite → rebuild si champ structurel, sinon repopulate.
   setConfig(config) {
     const incoming = { ...DEFAULTS, ...config };
     if (!this._ready) {
@@ -5508,7 +5766,10 @@ class SolarFlowCardEditor extends HTMLElement {
     }
   }
 
-  // Signature des champs qui conditionnent l'affichage de sections dans l'éditeur.
+  // ────────────────────────────────────────────────────────
+  //  RENDU & PEUPLEMENT DU FORMULAIRE
+  // ────────────────────────────────────────────────────────
+  // Signature des champs qui conditionnent l'affichage de sections dans l'éditeur (déclenche un rebuild).
   _structSig(d) {
     d = d || {};
     return [
@@ -5518,6 +5779,7 @@ class SolarFlowCardEditor extends HTMLElement {
     ].join('|');
   }
 
+  // Construit le DOM au premier attachement, si ce n'est pas déjà fait.
   connectedCallback() {
     if (!this._ready) {
       if (this._pendingConfig) { this._draft = this._pendingConfig; this._pendingConfig = null; }
@@ -5526,6 +5788,7 @@ class SolarFlowCardEditor extends HTMLElement {
     }
   }
 
+  // Génère le HTML de l'éditeur, peuple les champs, attache les écouteurs et la datalist d'entités.
   _buildDOM() {
     this.shadowRoot.innerHTML = `<style>${CARD_CSS}${EDITOR_EXTRA_CSS}</style>` + buildEditorHTML(this._draft);
     this._populateAll();
@@ -5549,6 +5812,7 @@ class SolarFlowCardEditor extends HTMLElement {
       .join('');
   }
 
+  // Recopie les valeurs du brouillon dans les champs du formulaire (non destructif).
   _populateAll() {
     const d = this._draft;
     this.shadowRoot.querySelectorAll('[data-key]').forEach(el => {
@@ -5573,6 +5837,11 @@ class SolarFlowCardEditor extends HTMLElement {
     });
   }
 
+  // ────────────────────────────────────────────────────────
+  //  ÉCOUTEURS & SAUVEGARDE
+  // ────────────────────────────────────────────────────────
+  // Branche tous les écouteurs : en-têtes de sections, champs, toggles, sliders, couleurs,
+  // autocomplétion entités, boutons d'ordre des sections et reset.
   _attachListeners() {
     this.shadowRoot.querySelectorAll('.sfc-ed-section-header').forEach(h => {
       h.addEventListener('click', () => {
@@ -5649,12 +5918,14 @@ class SolarFlowCardEditor extends HTMLElement {
     if (rst) rst.addEventListener('click', () => { this._draft = { ...DEFAULTS }; this._populateAll(); this._apply(); });
   }
 
+  // Marque l'éditeur comme modifié et programme un dispatch config-changed debouncé.
   _setDirty() {
     // Dispatch automatique avec debounce 300ms — le bouton Save de HA prend le relais
     clearTimeout(this._applyTimer);
     this._applyTimer = setTimeout(() => this._apply(), 300);
   }
 
+  // Émet l'événement config-changed avec le brouillon courant (HA persiste la config).
   _apply() {
     this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: { ...this._draft } }, bubbles: true, composed: true }));
   }

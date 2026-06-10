@@ -7,7 +7,7 @@
 **🇫🇷 Français** · [🇬🇧 English](README.en.md)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.1.6-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Ouvrir dans Home Assistant et ajouter ce dépôt à HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -29,8 +29,11 @@ Solar Flow Card affiche en temps réel **tous vos flux d'énergie** sur une scè
 - ⚡ **Flux animés** entre production PV, réseau, maison, batterie et routeurs solaires (GSAP)
 - 🔋 **Batterie liquide** avec physique élastique GSAP, bulles de charge ascendantes et halo coloré
 - 🌦️ **Météo dynamique** — ciel bleu → partiellement nuageux → couvert → pluie → neige → orage avec effets de particules
+- 🧱 **Affichage en blocs thématiques** — PV / Conso-Réseau / Batterie / Santé batterie / Routeurs / Économies / EV : chaque bloc réordonnable, masquable et titrable
+- 🏠 **Suivi conso « expert »** — instantané + bilan jour/mois/année + bilan net réseau + coût du jour, avec visibilité par tuile (anti-doublon)
 - 👆 **Détails au clic** — cliquer une zone (Réseau, Maison, Batterie, PV, routeur, EV) ouvre un panneau récapitulant **toutes les entités liées** (configurées sur la carte). Activable via `details_on_click` (défaut activé).
-- 💰 **Économies & ROI** — calcul delta en temps réel avec prix au moment exact de la production
+- ⚡ **Jusqu'à 4 routeurs solaires** avec puissance + énergie jour/mois/année/total
+- 💰 **Économies & ROI** — calcul delta en temps réel, ROI daté (départ → atterrissage), basé sur cumul ÷ âge
 - 💶 **4 modes de tarification** : prix fixe, Heures Pleines/Creuses, Tempo EDF, ou entité dynamique
 - 🔮 **Prévision de production** affichée en haut du ciel (Solcast / Forecast.Solar)
 - 🚗 **Véhicule électrique** avec flux bidirectionnel charge / V2H et SOC
@@ -159,7 +162,13 @@ batt_soc: sensor.battery_soc
 | `home_power` | W | Consommation maison instantanée |
 | `pwr_percent` | % | Pourcentage de puissance de sortie de l'onduleur |
 | `today_load` | kWh | Consommation maison du jour |
-| `grid_export_today` | kWh | Énergie injectée sur le réseau aujourd'hui (affine le calcul d'autoconsommation) |
+| `grid_export_today` | kWh | Énergie injectée sur le réseau aujourd'hui (affine l'autoconso + bloc Conso) |
+| `grid_import_today` | kWh | Énergie soutirée du réseau aujourd'hui (bloc Conso / Réseau) |
+| `grid_import_month` / `grid_import_year` | kWh | Import réseau mois / année (sous-lignes du bloc Conso) |
+| `home_month_kwh` / `home_year_kwh` | kWh | Conso maison mois / année (sous-lignes du bloc Conso) |
+
+> Le bloc **Conso / Réseau** (suivi expert) affiche : **Maison & Réseau instantanés** (± import/export), le **bilan du jour** (Conso, Import, Injection) avec sous-lignes **mois/année**, le **Bilan net réseau** (import − injection) et le **Coût réseau du jour** (import × prix). Chaque tuile/sous-ligne n'apparaît que si son entité est renseignée.
+> 👁️ **Visibilité par tuile** : chaque tuile du bloc Conso a son interrupteur (`show_conso_home/grid/day/import/export/net/cost`, défaut activé) → masque les redondances avec la scène (ex. Maison/Réseau instantanés déjà affichés en haut).
 
 ### Entités — Batterie
 
@@ -603,17 +612,26 @@ scale_value: 1.0   # taille des valeurs chiffrées : 547 W, 95 %… (0.6 → 1.8
 ### Options d'affichage
 
 ```yaml
-show_progress_bars: true   # Barres PV / PWR / BAT en bas de scène
-show_mode:         true    # Badge mode (Veille / Charge / Décharge)
-show_bms_temp:     true    # Température BMS
-show_total_pv:     true    # Carte CO₂ évité du jour
-show_cells:        true    # Tensions min/max cellules + delta
-show_endurance:    true    # Autonomie estimée de la batterie
-show_inverter:     true    # Section Onduleur (PV jour, Chg/Dch, Restant, Conso jour)
-show_autoconso:    true    # Section Autoconsommation / Autoproduction
-show_savings:      true    # Section Économies & ROI
-show_health:       true    # Section État de santé batterie (SOH + cycles)
+show_progress_bars: true   # Barres PV / PWR / BAT
+show_mode:         true    # Tuile Mode (bloc Batterie)
+show_bms_temp:     true    # Tuile Température BMS (bloc Batterie)
+show_total_pv:     true    # Tuile CO₂ évité du jour (bloc PV)
+show_cells:        true    # Tensions min/max cellules (bloc Batterie)
+show_endurance:    true    # Autonomie estimée (bloc Batterie)
+show_autoconso:    true    # Barres Autoconso / Autoprod (bloc PV)
+show_health:       true    # Bloc État de santé batterie (SOH + cycles)
+show_savings:      true    # Bloc Économies & ROI
 show_images:       true    # Images (false = fallback émojis)
+details_on_click:  true    # Clic sur une zone → panneau récap des entités liées
+
+# Visibilité fine des tuiles du bloc Conso / Réseau (anti-doublon avec la scène)
+show_conso_home:   true    # Maison instantanée
+show_conso_grid:   true    # Réseau instantané
+show_conso_day:    true    # Conso du jour
+show_conso_import: true    # Import du jour
+show_conso_export: true    # Injection du jour
+show_conso_net:    true    # Bilan net réseau
+show_conso_cost:   true    # Coût réseau du jour
 ```
 
 ### Ordre des sections
@@ -623,13 +641,13 @@ Réorganisez l'ordre d'affichage des blocs sous la scène depuis l'éditeur (sec
 ```yaml
 section_order:
   - bars        # Barres PV / PWR / BAT
-  - metrics     # Mode / BMS / CO₂
-  - cells       # Tensions cellules
-  - endurance   # Autonomie
-  - inverter    # Onduleur
-  - autoconso   # Autoconsommation
-  - health      # État de santé
+  - pv          # PV / Solaire (PV jour, PV total, CO₂, autoconso/autoprod)
+  - conso       # Conso / Réseau (conso jour, injection)
+  - battery     # Batterie (mode, restant, charge/décharge, cellules, autonomie)
+  - health      # État de santé batterie (SOH, capacité, cycles)
+  - routers     # Routeurs (énergie)
   - savings     # Économies & ROI
+  - ev          # Véhicule électrique
 ```
 
 > Toute clé omise est ajoutée automatiquement à la fin (rien ne disparaît). Une section masquée par son toggle `show_*` reste absente quel que soit son rang. L'en-tête et la scène restent fixes en haut.
@@ -639,20 +657,20 @@ section_order:
 Personnalisez le titre de **chaque** section depuis l'éditeur (section **🏷️ Titres des sections**) ou en YAML :
 
 ```yaml
-# Sections sans en-tête par défaut → un titre n'apparaît que si tu le renseignes
-title_bars:      Puissances        # au-dessus des barres PV/PWR/BAT
-title_metrics:   Infos             # au-dessus de Mode / BMS / CO₂
-title_cells:     Cellules
-title_endurance: Autonomie
+# « Barres » n'a pas d'en-tête par défaut → un titre n'apparaît que si tu le renseignes
+title_bars:    Puissances
 
-# Sections à en-tête → vide = libellé par défaut traduit
-title_inverter:  Onduleur          # défaut : « Onduleur »
-title_autoconso: Mon autoconso     # défaut : « Autoconsommation »
-title_health:    Santé batterie    # défaut : « État de santé batterie »
-title_savings:   Mes économies     # défaut : « Économies & ROI »
+# Les autres blocs ont un en-tête → vide = libellé par défaut traduit
+title_pv:      PV / Solaire        # défaut : « PV / Solaire »
+title_conso:   Conso / Réseau      # défaut : « Conso / Réseau »
+title_battery: Batterie            # défaut : « Batterie »
+title_health:  Santé batterie      # défaut : « État de santé batterie »
+title_routers: Mes routeurs        # défaut : « Routeurs »
+title_savings: Mes économies       # défaut : « Économies & ROI »
+title_ev:      Voiture             # défaut : « Véhicule électrique »
 ```
 
-> Pour **Barres**, **Mode/BMS/CO₂**, **Cellules** et **Autonomie** (sans en-tête d'origine), un titre n'est affiché **que si** tu en saisis un. Pour les 4 autres, laisser vide garde le libellé par défaut.
+> Seul **Barres** est sans en-tête d'origine (titre affiché uniquement si saisi). Pour les autres blocs, laisser vide garde le libellé par défaut.
 
 ---
 
@@ -689,12 +707,20 @@ pv_total:   sensor.pv_energie_totale
 pv_month_kwh: sensor.pv_energie_mois
 pv_year_kwh:  sensor.pv_energie_annee
 
-# ── Réseau & Maison ──
+# ── Réseau & Maison (bloc Conso) ──
 grid_power:        sensor.puissance_reseau
 home_power:        sensor.consommation_maison
 pwr_percent:       sensor.onduleur_puissance_pct
 today_load:        sensor.conso_maison_jour
+home_month_kwh:    sensor.conso_maison_mois
+home_year_kwh:     sensor.conso_maison_annee
 grid_export_today: sensor.energie_injectee
+grid_import_today: sensor.energie_soutiree
+grid_import_month: sensor.import_reseau_mois
+grid_import_year:  sensor.import_reseau_annee
+# Anti-doublon : Maison/Réseau instantanés déjà dans la scène
+show_conso_home: false
+show_conso_grid: false
 
 # ── Batterie ──
 batt_soc:       sensor.soc_batterie
@@ -736,6 +762,7 @@ tempo_red_hc:   0.1568
 tempo_red_hp:   0.7562
 install_cost:   12000
 batt_cost:      4000
+install_date:   '2023-04-15'   # ROI : rythme = cumul ÷ âge (départ → atterrissage)
 batt_savings_price: 0.20
 co2_factor:     0.4
 

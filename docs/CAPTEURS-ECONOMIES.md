@@ -249,6 +249,7 @@ savings_total_entity: sensor.economies_totales   # utilisé pour le ROI
 ```
 
 - La carte affiche alors les montants **tels quels** (jour / mois / année), et calcule le **ROI** à partir de `savings_total_entity` ÷ coût (PV + batterie).
+- 💡 **Temps restant fiable** : renseigne aussi **`install_date`** (date de mise en service) → le rythme annuel = **cumul ÷ âge** (cohérent avec le Total, insensible à un capteur « année » créé en cours d'année).
 - Le **mode de tarification** (prix fixe / HP-HC / Tempo…) ne sert plus qu'au **badge prix/Tempo** affiché en haut du bloc — les montants viennent de tes capteurs.
 - Mode par défaut = **`calc`** (calcul interne kWh × prix) : si tu ne renseignes rien, rien ne change.
 

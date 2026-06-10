@@ -248,6 +248,7 @@ savings_total_entity: sensor.total_savings   # used for ROI
 ```
 
 - The card then shows the amounts **as-is** (day / month / year), and computes the **ROI** from `savings_total_entity` ÷ cost (PV + battery).
+- 💡 **Reliable remaining time**: also set **`install_date`** (commissioning date) → the annual rate = **cumulative ÷ age** (consistent with the Total, immune to a "this year" sensor created mid-year).
 - The **pricing mode** (fixed price / peak-offpeak / Tempo…) then only drives the **price/Tempo badge** at the top of the block — amounts come from your sensors.
 - Default mode = **`calc`** (internal kWh × price): if you set nothing, nothing changes.
 

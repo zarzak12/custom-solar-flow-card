@@ -112,7 +112,7 @@ router1_energy_year:  sensor.spa_energy_year     # year
 router1_energy_total: sensor.spa_total_energy    # total
 ```
 
-➡️ Power shows in the scene, and the **"Routers" section** displays **daily** energy (large) + **month / year / total**.
+➡️ Power shows in the scene, and the **"Routers" section** displays the **power** (large) + **day / month / year / total** energy as sub-lines.
 
 > 🔁 **Prefer to keep `calc` mode?** Leave `router1_mode: calc` with `router1_resistance_w` + `router1_opening`: the card computes the power, and you can **still** fill the `router1_energy*` fields above for energy. Both mechanisms are independent.
 
