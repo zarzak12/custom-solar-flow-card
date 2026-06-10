@@ -109,7 +109,7 @@ type: module
 >
 > L'aperçu se met à jour en direct, et la sauvegarde se fait avec le bouton **Enregistrer** natif de HA.
 
-<img width="1206" height="2284" alt="image" src="https://github.com/user-attachments/assets/821e7388-cbb7-4f52-a7c3-77508afd2a31" />
+<img width="1206" height="100%" alt="image" src="https://github.com/user-attachments/assets/821e7388-cbb7-4f52-a7c3-77508afd2a31" />
 
 
 Vous préférez le YAML ? L'équivalent minimal :
