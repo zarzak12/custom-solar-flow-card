@@ -7,7 +7,7 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.1.5-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.6-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -517,6 +517,7 @@ co2_factor: 0.4           # kg CO₂/kWh avoided (French grid mix 2024)
   - If `pv_total` (energy produced since installation) is set → **real payback**: savings already accumulated (PV production × benefit/kWh **+** battery savings) ÷ total cost. The bar progresses with the age of the install and shows the **remaining time**, then "**Paid off ✓ + net gain**" once recouped.
   - Otherwise → **theoretical projection**: total cost ÷ combined annual benefit = "years to break even".
   - **Dates**: a line `📅 start → estimated landing` appears under the ROI. The **start** = `install_date` if set, otherwise **auto-estimated** from `pv_total ÷ annual production` (`~` prefix). Once recouped: `📅 start → paid off ~<date> · +<net gain>` (full bar, "Paid off ✓").
+  - **Remaining-time rate**: if `install_date` is set, the annual rate = **cumulative ÷ age** (consistent with the Total, reliable even if your 'this year' sensor is partial/created mid-year). Otherwise → annualized 'this year' sensor.
 
 > 🔗 **Multiple inverters / batteries**: in **any numeric field** (e.g. `pv_total`, `pv_power`, `pv_today`, `batt_power`, `batt_savings_kwh`…), enter **several entities separated by commas** — they are **summed**. Example: `pv_total: sensor.pv1_total, sensor.pv2_total, sensor.pv3_total`. ⚠️ Does not apply to **SOC** (`batt_soc`, a percentage): use a single sensor or an average via a template sensor.
 

@@ -7,7 +7,7 @@
 **🇫🇷 Français** · [🇬🇧 English](README.en.md)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.1.5-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.6-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Ouvrir dans Home Assistant et ajouter ce dépôt à HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -521,6 +521,7 @@ co2_factor: 0.4           # kg CO₂/kWh évités (mix français 2024)
   - Si `pv_total` (énergie produite depuis l'installation) est renseignée → **amortissement réel** : économies déjà cumulées (production PV × bénéfice/kWh **+** économies batterie) ÷ coût total. La barre progresse avec l'âge de l'installation et affiche le **temps restant**, puis « **Amorti ✓ + gain net** » une fois le coût remboursé.
   - Sinon → **projection théorique** : coût total ÷ bénéfice annuel combiné = « années pour rentabiliser ».
   - **Dates** : une ligne `📅 départ → atterrissage estimé` s'affiche sous le ROI. Le **départ** = `install_date` si renseignée, sinon **estimé automatiquement** depuis `pv_total ÷ production annuelle` (préfixe `~`). Une fois remboursé : `📅 départ → amorti ~<date> · +<bénéfice net>` (barre pleine, « Amorti ✓ »).
+  - **Rythme du temps restant** : si `install_date` est renseignée, le rythme annuel = **cumul ÷ âge** (cohérent avec le Total, fiable même si ton capteur « cette année » est partiel/créé en cours d'année). Sinon → capteur « cette année » annualisé.
 
 > 🔗 **Plusieurs onduleurs / batteries** : dans **tout champ numérique** (ex. `pv_total`, `pv_power`, `pv_today`, `batt_power`, `batt_savings_kwh`…), saisis **plusieurs entités séparées par des virgules** — elles sont **additionnées**. Exemple : `pv_total: sensor.pv1_total, sensor.pv2_total, sensor.pv3_total`. ⚠️ Ne s'applique pas au **SOC** (`batt_soc`, un pourcentage) : utilise un seul capteur ou une moyenne via un capteur template.
 

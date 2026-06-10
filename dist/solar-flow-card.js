@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.1.5';
+const VERSION = '1.1.6';
 
 // ══════════════════════════════════════════════════════════
 //  DEFAULTS
@@ -460,7 +460,7 @@ const I18N = {
     ed_batt_cost:       "Coût batterie (€)",
     ed_batt_savings_kwh:   "Entité énergie déchargée cumulée batterie (kWh)",
     ed_batt_savings_price: "Valorisation décharge batterie (€/kWh)",
-    ed_roi_info:        "💡 <b>Comment le ROI est calculé</b><br>• <b>Coût total</b> = <i>Coût PV / panneaux</i> + <i>Coût batterie</i> (ci-dessus).<br>• <b>Économies cumulées</b> = <i>PV total</i> × bénéfice moyen/kWh (+ économies batterie).<br>&nbsp;&nbsp;↳ <i>PV total</i> (kWh depuis le début) vient de la section <b>☀️ Production PV</b>.<br>&nbsp;&nbsp;↳ bénéfice moyen/kWh = économies de l'année ÷ <i>PV cette année</i> (mix autoconso/revente).<br>• <b>Barre</b> = cumulé ÷ coût total ; <b>texte</b> = années restantes, puis « Amorti ✓ + gain net ».<br>• Sans <i>PV total</i> → projection théorique : coût total ÷ bénéfice annuel.<br>• En mode « Capteurs € » → ROI = <i>Économies totales</i> ÷ coût total.<br>🔗 <b>Multi-installations</b> : sépare plusieurs entités par des <b>virgules</b> dans un même champ → elles sont <b>additionnées</b> (ex. 3 onduleurs dans <i>PV total</i>).",
+    ed_roi_info:        "💡 <b>Comment le ROI est calculé</b><br>• <b>Coût total</b> = <i>Coût PV / panneaux</i> + <i>Coût batterie</i> (ci-dessus).<br>• <b>Économies cumulées</b> = <i>PV total</i> × bénéfice moyen/kWh (+ économies batterie).<br>&nbsp;&nbsp;↳ <i>PV total</i> (kWh depuis le début) vient de la section <b>☀️ Production PV</b>.<br>&nbsp;&nbsp;↳ bénéfice moyen/kWh = économies de l'année ÷ <i>PV cette année</i> (mix autoconso/revente).<br>• <b>Barre</b> = cumulé ÷ coût total ; <b>texte</b> = années restantes, puis « Amorti ✓ + gain net ».<br>• Sans <i>PV total</i> → projection théorique : coût total ÷ bénéfice annuel.<br>• En mode « Capteurs € » → ROI = <i>Économies totales</i> ÷ coût total.<br>📅 <b>Temps restant fiable</b> : renseigne la <i>Date de mise en service</i> → le rythme annuel = cumul ÷ âge (cohérent avec le Total, et insensible à un capteur « année » partiel/créé en cours d'année). Sinon, rythme = capteur « cette année » annualisé.<br>🔗 <b>Multi-installations</b> : sépare plusieurs entités par des <b>virgules</b> dans un même champ → elles sont <b>additionnées</b> (ex. 3 onduleurs dans <i>PV total</i>).",
     ed_batt_roi_info:   "🔋 <b>Batterie dans le ROI</b><br>• Le <i>Coût batterie</i> s'ajoute au coût PV → ROI global.<br>• Économies batterie = énergie déchargée cumulée × <i>Valorisation</i>.<br>&nbsp;&nbsp;↳ entité vide → réutilise « énergie déchargée cumulée » de la section <b>🩺 État de santé</b>.<br>&nbsp;&nbsp;↳ rythme annuel estimé via <i>Décharge auj.</i> de la section <b>🔋 Batterie</b>.<br>🔗 Plusieurs batteries → liste les entités séparées par des <b>virgules</b> (additionnées).<br>⚠️ Ne renseignez la <i>Valorisation</i> QUE si la batterie fait de l'arbitrage (charge réseau en heures creuses) — sinon l'énergie solaire est déjà comptée côté PV (double comptage).",
     sav_battery:        'Batterie',
     ed_co2_factor:      'Facteur CO₂ (kg/kWh)',
@@ -734,7 +734,7 @@ const I18N = {
     ed_batt_cost:      'Battery cost (€)',
     ed_batt_savings_kwh:   'Battery cumulative discharged energy entity (kWh)',
     ed_batt_savings_price: 'Battery discharge value (€/kWh)',
-    ed_roi_info:       "💡 <b>How the ROI is computed</b><br>• <b>Total cost</b> = <i>PV / panels cost</i> + <i>Battery cost</i> (above).<br>• <b>Cumulative savings</b> = <i>PV total</i> × average benefit/kWh (+ battery savings).<br>&nbsp;&nbsp;↳ <i>PV total</i> (kWh since the start) comes from the <b>☀️ PV Production</b> section.<br>&nbsp;&nbsp;↳ average benefit/kWh = this year's savings ÷ <i>PV this year</i> (self-consumption/sell-back mix).<br>• <b>Bar</b> = cumulative ÷ total cost; <b>text</b> = remaining years, then 'Paid off ✓ + net gain'.<br>• Without <i>PV total</i> → theoretical projection: total cost ÷ annual benefit.<br>• In '€ sensors' mode → ROI = <i>Total savings</i> ÷ total cost.<br>🔗 <b>Multi-arrays</b>: list several entities separated by <b>commas</b> in one field → they are <b>summed</b> (e.g. 3 inverters in <i>PV total</i>).",
+    ed_roi_info:       "💡 <b>How the ROI is computed</b><br>• <b>Total cost</b> = <i>PV / panels cost</i> + <i>Battery cost</i> (above).<br>• <b>Cumulative savings</b> = <i>PV total</i> × average benefit/kWh (+ battery savings).<br>&nbsp;&nbsp;↳ <i>PV total</i> (kWh since the start) comes from the <b>☀️ PV Production</b> section.<br>&nbsp;&nbsp;↳ average benefit/kWh = this year's savings ÷ <i>PV this year</i> (self-consumption/sell-back mix).<br>• <b>Bar</b> = cumulative ÷ total cost; <b>text</b> = remaining years, then 'Paid off ✓ + net gain'.<br>• Without <i>PV total</i> → theoretical projection: total cost ÷ annual benefit.<br>• In '€ sensors' mode → ROI = <i>Total savings</i> ÷ total cost.<br>📅 <b>Reliable remaining time</b>: set the <i>Commissioning date</i> → annual rate = cumulative ÷ age (consistent with the Total, immune to a partial/mid-year 'this year' sensor). Otherwise, rate = annualized 'this year' sensor.<br>🔗 <b>Multi-arrays</b>: list several entities separated by <b>commas</b> in one field → they are <b>summed</b> (e.g. 3 inverters in <i>PV total</i>).",
     ed_batt_roi_info:  "🔋 <b>Battery in the ROI</b><br>• The <i>Battery cost</i> is added to the PV cost → global ROI.<br>• Battery savings = cumulative discharged energy × <i>Value</i>.<br>&nbsp;&nbsp;↳ empty entity → reuses 'cumulative discharged energy' from the <b>🩺 Battery health</b> section.<br>&nbsp;&nbsp;↳ annual pace estimated via <i>Discharge today</i> from the <b>🔋 Battery</b> section.<br>🔗 Multiple batteries → list the entities separated by <b>commas</b> (summed).<br>⚠️ Only set the <i>Value</i> if the battery does arbitrage (off-peak grid charging) — otherwise solar energy is already counted on the PV side (double counting).",
     sav_battery:       'Battery',
     ed_co2_factor:     'CO₂ factor (kg/kWh)',
@@ -2323,8 +2323,9 @@ function buildCardHTML(cfg) {
 
           <!-- Spa (router1) — center x=265 -->
           ${c.router1_enabled ? `
-          <rect x="65" y="562" width="260" height="${c.router1_temp ? '142' : '108'}" rx="9" data-detail="router1" style="pointer-events:auto;cursor:pointer"
+          <rect x="65" y="562" width="260" height="${c.router1_temp ? '142' : '108'}" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(255,160,64,0.25)" stroke-width="1.5"/>
+          <rect x="45" y="517" width="300" height="${c.router1_temp ? '232' : '198'}" fill="transparent" data-detail="router1" style="pointer-events:all;cursor:pointer"/>
           <text text-anchor="middle" x="195" y="593"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${(c.router1_label||'SPA').toUpperCase()}</text>
@@ -2340,8 +2341,9 @@ function buildCardHTML(cfg) {
 
           <!-- ECS (router2) — center x=1268 -->
           ${c.router2_enabled ? `
-          <rect x="1133" y="330" width="270" height="108" rx="9" data-detail="router2" style="pointer-events:auto;cursor:pointer"
+          <rect x="1133" y="330" width="270" height="108" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(255,160,64,0.25)" stroke-width="1.5"/>
+          <rect x="1113" y="285" width="310" height="198" fill="transparent" data-detail="router2" style="pointer-events:all;cursor:pointer"/>
           <text text-anchor="middle" x="1268" y="361"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${(c.router2_label||'ECS').toUpperCase()}</text>
@@ -2352,8 +2354,9 @@ function buildCardHTML(cfg) {
 
           <!-- EV — center x=1101, positionné sous le chemin EV -->
           ${c.ev_enabled ? `
-          <rect x="975" y="678" width="253" height="${c.ev_soc ? '142' : '108'}" rx="9" data-detail="ev" style="pointer-events:auto;cursor:pointer"
+          <rect x="975" y="678" width="253" height="${c.ev_soc ? '142' : '108'}" rx="9"
             fill="rgba(6,13,26,0.72)" stroke="rgba(79,195,247,0.28)" stroke-width="1.5"/>
+          <rect x="955" y="633" width="293" height="${c.ev_soc ? '232' : '198'}" fill="transparent" data-detail="ev" style="pointer-events:all;cursor:pointer"/>
           <text text-anchor="middle" x="1101" y="709"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${(c.ev_label||'VOITURE').toUpperCase()}</text>
@@ -2365,8 +2368,9 @@ function buildCardHTML(cfg) {
           ` : ''}
 
           <!-- Réseau — center x=280 -->
-          <rect x="58" y="836" width="304" height="143" rx="9" data-detail="grid" style="pointer-events:auto;cursor:pointer"
+          <rect x="58" y="836" width="304" height="143" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(79,195,247,0.20)" stroke-width="1.5"/>
+          <rect x="38" y="791" width="344" height="233" fill="transparent" data-detail="grid" style="pointer-events:all;cursor:pointer"/>
           <text text-anchor="middle" x="210" y="867"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${t(c,'node_grid').toUpperCase()}</text>
@@ -2377,8 +2381,9 @@ function buildCardHTML(cfg) {
             style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));fill:rgba(232,244,253,0.6)">—</text>
 
           <!-- Maison — center x=720 -->
-          <rect x="577" y="387" width="286" height="108" rx="9" data-detail="home" style="pointer-events:auto;cursor:pointer"
+          <rect x="577" y="387" width="286" height="108" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(255,107,107,0.20)" stroke-width="1.5"/>
+          <rect x="557" y="342" width="326" height="198" fill="transparent" data-detail="home" style="pointer-events:all;cursor:pointer"/>
           <text text-anchor="middle" x="720" y="418"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${t(c,'node_home').toUpperCase()}</text>
@@ -2387,8 +2392,9 @@ function buildCardHTML(cfg) {
                    fill:var(--sfc-home,#FF6B6B);filter:drop-shadow(0 0 4px var(--sfc-home,#FF6B6B))">0 W</text>
 
           <!-- Batterie — center x=1414 -->
-          <rect x="1269" y="686" width="290" height="143" rx="9" data-detail="battery" style="pointer-events:auto;cursor:pointer"
+          <rect x="1269" y="686" width="290" height="143" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(105,255,71,0.20)" stroke-width="1.5"/>
+          <rect x="1249" y="641" width="330" height="233" fill="transparent" data-detail="battery" style="pointer-events:all;cursor:pointer"/>
           <text text-anchor="middle" x="1414" y="717"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${t(c,'node_battery').toUpperCase()}</text>
@@ -4435,6 +4441,16 @@ class SolarFlowCard extends HTMLElement {
           startTxt = '~' + fmtMY(est);
         }
       }
+
+      // Rythme annuel retenu pour le « temps restant » :
+      // si une date de mise en service est fournie ET qu'on a un cumul → rythme = cumul ÷ âge
+      // (cohérent avec le Total, insensible à un capteur « année » partiel/créé en cours d'année).
+      // Sinon → rythme = capteur année annualisé (annualPace).
+      let pace = annualPace;
+      if (cumulative !== null && cumulative > 0 && sd && !isNaN(sd)) {
+        const ageY = (Date.now() - sd.getTime()) / Y;
+        if (ageY > 0.25) pace = cumulative / ageY;
+      }
       let datesLine = '';
 
       if (cumulative === null) {
@@ -4449,14 +4465,14 @@ class SolarFlowCard extends HTMLElement {
         const net = cumulative - totalCost;
         if (bar) bar.style.width = '100%';
         if (val) val.textContent = en ? 'Paid off ✓' : 'Amorti ✓';
-        const sincePayoff = annualPace > 0 ? net / annualPace : 0;
+        const sincePayoff = pace > 0 ? net / pace : 0;
         const payoff = new Date(Date.now() - sincePayoff * Y);
         datesLine = (startTxt ? '📅 ' + startTxt + ' → ' : '📅 ')
           + (en ? 'paid off ~' : 'amorti ~') + fmtMY(payoff)
           + `  ·  <span class="sfc-roi-gain">+${fmtEur(net)}</span>`;
       } else {
         // En cours : avancement réel + date d'atterrissage estimée
-        const remYrs = (totalCost - cumulative) / annualPace;
+        const remYrs = (totalCost - cumulative) / pace;
         if (bar) bar.style.width = Math.min(100, cumulative / totalCost * 100).toFixed(1) + '%';
         if (val) val.textContent = remYrs.toFixed(1) + ' ' + yrsLbl;
         const landing = new Date(Date.now() + remYrs * Y);
@@ -5335,7 +5351,8 @@ class SolarFlowCard extends HTMLElement {
     const clouds = this._el('sfcClouds');
     if (clouds) {
       const cover = wi.cloud || 0;
-      clouds.style.opacity = cover >= 0.8 ? '0.6' : cover >= 0.3 ? '0.7' : '0.15';
+      // Ciel clair/ensoleillé : quelques nuages très transparents (0.35) au lieu de quasi-invisibles.
+      clouds.style.opacity = cover >= 0.8 ? '0.6' : cover >= 0.3 ? '0.7' : '0.35';
     }
     // Nuages distincts (cumulus) — partiellement nuageux uniquement
     const partlyClouds = this._el('sfcPartlyClouds');
