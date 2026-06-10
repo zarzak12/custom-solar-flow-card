@@ -7,7 +7,7 @@
 **🇫🇷 Français** · [🇬🇧 English](README.en.md)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Ouvrir dans Home Assistant et ajouter ce dépôt à HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -29,7 +29,7 @@ Solar Flow Card affiche en temps réel **tous vos flux d'énergie** sur une scè
 - ⚡ **Flux animés** entre production PV, réseau, maison, batterie et routeurs solaires (GSAP)
 - 🔋 **Batterie liquide** avec physique élastique GSAP, bulles de charge ascendantes et halo coloré
 - 🌦️ **Météo dynamique** — ciel bleu → partiellement nuageux → couvert → pluie → neige → orage avec effets de particules
-- 🧱 **Affichage en blocs thématiques** — PV / Conso-Réseau / Batterie / Santé batterie / Routeurs / Économies / EV : chaque bloc réordonnable, masquable et titrable
+- 🧱 **Affichage en blocs thématiques** — PV / Conso-Réseau / Batterie / Santé batterie / Routeurs / Économies / EV : chaque bloc réordonnable, masquable et titrable ; les tuiles **s'ajustent automatiquement à la largeur** (3 par ligne max, la dernière ligne s'étire : 2 tuiles → 50 %, 1 → 100 %)
 - 🏠 **Suivi conso « expert »** — instantané + bilan jour/mois/année + bilan net réseau + coût du jour, avec visibilité par tuile (anti-doublon)
 - 👆 **Détails au clic** — cliquer une zone (Réseau, Maison, Batterie, PV, routeur, EV) ouvre un panneau récapitulant **toutes les entités liées** (configurées sur la carte). Activable via `details_on_click` (défaut activé).
 - ⚡ **Jusqu'à 4 routeurs solaires** avec puissance + énergie jour/mois/année/total

@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.2.0';
+const VERSION = '1.2.1';
 
 // ══════════════════════════════════════════════════════════
 //  SOMMAIRE / TABLE OF CONTENTS   (Ctrl-F le libellé « //  NOM »)
@@ -870,6 +870,7 @@ const I18N = {
   },
 };
 
+// Traduit une clé i18n selon cfg.language (repli sur FR, puis sur la clé brute).
 function t(cfg, key) {
   const lang = (cfg && cfg.language) || 'fr';
   const dict = I18N[lang] || I18N['fr'];
@@ -880,9 +881,12 @@ function t(cfg, key) {
 // ══════════════════════════════════════════════════════════
 //  ASTRONOMY
 // ══════════════════════════════════════════════════════════
+// Degrés → radians.
 function deg2rad(d) { return d * Math.PI / 180; }
+// Radians → degrés.
 function rad2deg(r) { return r * 180 / Math.PI; }
 
+// Position du soleil (élévation + azimut, en degrés) pour une date et des coordonnées (algo NOAA).
 function computeSunPosition(date, lat, lon) {
   const JD = date.getTime() / 86400000 + 2440587.5;
   const n = JD - 2451545.0;
@@ -912,6 +916,7 @@ function computeSunPosition(date, lat, lon) {
   return { elevation, azimuth };
 }
 
+// Heures de lever et coucher du soleil (objets Date, timestamps UTC) pour la date et les coordonnées.
 function computeSunriseSunset(date, lat, lon) {
   // Calcule lever/coucher en travaillant UNIQUEMENT en millisecondes UTC.
   // Aucun appel à getHours(), setHours(), getTimezoneOffset() pour éviter
@@ -969,6 +974,7 @@ function computeSunriseSunset(date, lat, lon) {
     sunset:  new Date(jdToMs(JD_set)),
   };
 }
+// Formate une Date en heure locale « HH:MM » (« --:-- » si absente).
 function formatTime(d) {
   if (!d) return '--:--';
   return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -996,6 +1002,7 @@ const WEATHER_MAP = {
   'clear-night':       { icon:'🌙',  label:'Nuit claire',  cloudy:false, rain:false, snow:false, fog:false, storm:false, cloud:0.0, sun:false },
   'partly-cloudy-night':{ icon:'🌛', label:'Nuit nuageuse',cloudy:true,  rain:false, snow:false, fog:false, storm:false, cloud:0.4, sun:false },
 };
+// Métadonnées météo (icône, nuages, pluie, neige…) d'une condition HA, avec repli neutre.
 function getWeather(cond) {
   return WEATHER_MAP[cond] || { icon:'🌡️', label:cond||'—', cloudy:false, rain:false, snow:false, fog:false, storm:false, cloud:0, sun:true };
 }
@@ -1018,6 +1025,7 @@ const MOON_PHASES = {
 // ══════════════════════════════════════════════════════════
 //  SKY GRADIENT
 // ══════════════════════════════════════════════════════════
+// Dégradé CSS du ciel selon l'élévation solaire et la météo (jour/nuit, nuages, pluie, brouillard…).
 function skyGradient(elev, wi) {
   // wi peut être un objet weather ou un booléen (compat. ancien code)
   const cloudy = (typeof wi === 'boolean') ? wi : (wi && wi.cloudy);
@@ -1690,9 +1698,11 @@ const CARD_CSS = `
   .sfc-ppct { width:32px;text-align:right;font-family:monospace;font-size:calc(9px*var(--sfc-sv,1));font-weight:600; }
 
   /* ── Metric cards ── */
-  .sfc-metrics { display:grid;gap:7px;padding:0 10px; }
-  .sfc-metrics.cols-3 { grid-template-columns:1fr 1fr 1fr; }
-  .sfc-metrics.cols-2 { grid-template-columns:1fr 1fr; }
+  /* Tuiles en flex : 3 par ligne au maximum, et la dernière ligne s'étire pour remplir toute
+     la largeur (2 tuiles → 50 % chacune, 1 tuile → 100 %) via flex-grow — plus de trou à droite. */
+  .sfc-metrics { display:flex;flex-wrap:wrap;gap:7px;padding:0 10px; }
+  .sfc-metrics > * { flex:1 1 calc(33.333% - 5px);min-width:0; }      /* cols-3 (défaut) */
+  .sfc-metrics.cols-2 > * { flex-basis:calc(50% - 4px); }            /* cols-2 */
   .sfc-mc {
     background:var(--card);border:1px solid var(--border);border-radius:11px;
     padding:9px 11px;display:flex;flex-direction:column;align-items:center;gap:3px;
@@ -2064,6 +2074,8 @@ const CARD_CSS = `
 // ══════════════════════════════════════════════════════════
 //  CARD HTML TEMPLATE
 // ══════════════════════════════════════════════════════════
+// Construit le HTML complet de la carte : scène (mode single/séparé), barres %, et toutes les
+// sections (PV, conso, batterie, santé, routeurs, économies, EV) assemblées selon section_order.
 function buildCardHTML(cfg) {
   const c = { ...DEFAULTS, ...cfg };
   const showBars    = c.show_progress_bars;
@@ -2969,6 +2981,7 @@ function buildCardHTML(cfg) {
 // ══════════════════════════════════════════════════════════
 //  EDITOR HTML
 // ══════════════════════════════════════════════════════════
+// Construit le HTML de l'éditeur de configuration : toutes les sections pliables et leurs champs.
 function buildEditorHTML(cfg) {
   const c = cfg || {};
   return `
@@ -3575,6 +3588,7 @@ function buildEditorHTML(cfg) {
   `;
 }
 
+// Génère une section pliable de l'éditeur (en-tête cliquable + corps).
 function edSection(id, title, open, body) {
   return `
   <div class="sfc-ed-section">
@@ -3588,6 +3602,7 @@ function edSection(id, title, open, body) {
   </div>`;
 }
 
+// Génère un champ texte/entité (libellé + input lié à data-key, avec placeholder).
 function edEntity(key, label, placeholder, cfg) {
   const val = (cfg && cfg[key] !== undefined && cfg[key] !== null) ? String(cfg[key]) : '';
   return `<div class="sfc-ed-row">
@@ -3596,6 +3611,7 @@ function edEntity(key, label, placeholder, cfg) {
   </div>`;
 }
 
+// Génère un sélecteur de couleur (pastille + champ texte hexadécimal synchronisés).
 function edColor(key, label, def, cfg) {
   const val = (cfg && cfg[key]) ? cfg[key] : def;
   return `<div class="sfc-ed-row">
@@ -3607,6 +3623,7 @@ function edColor(key, label, def, cfg) {
   </div>`;
 }
 
+// Génère un interrupteur on/off (activé par défaut sauf si la clé vaut false).
 function edToggle(key, label, cfg) {
   const on = (!cfg || cfg[key] !== false) ? 'on' : '';
   return `<div class="sfc-ed-toggle-row">
@@ -3638,6 +3655,7 @@ function edOrderList(cfg) {
     </div>`).join('');
 }
 
+// Génère un curseur (slider) avec sa valeur affichée (ex. multiplicateur ×).
 function edRange(key, label, min, max, step, cfg) {
   const v = (cfg && cfg[key] !== undefined && cfg[key] !== '') ? parseFloat(cfg[key]) : 1;
   return `<div class="sfc-ed-row">

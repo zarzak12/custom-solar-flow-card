@@ -7,7 +7,7 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -29,7 +29,7 @@ Solar Flow Card displays **all your energy flows** in real time on an immersive 
 - ⚡ **Animated flows** between PV production, grid, home, battery and solar routers (GSAP)
 - 🔋 **Liquid battery** with elastic GSAP physics, rising charge bubbles and a colored halo
 - 🌦️ **Dynamic weather** — blue sky → partly cloudy → overcast → rain → snow → storm, with particle effects
-- 🧱 **Thematic block layout** — PV / Consumption-Grid / Battery / Battery health / Routers / Savings / EV: each block reorderable, hideable and titleable
+- 🧱 **Thematic block layout** — PV / Consumption-Grid / Battery / Battery health / Routers / Savings / EV: each block reorderable, hideable and titleable; tiles **auto-fit the width** (max 3 per row, the last row stretches: 2 tiles → 50%, 1 → 100%)
 - 🏠 **"Expert" consumption tracking** — instant + day/month/year totals + net grid balance + daily cost, with per-tile visibility (no duplicates)
 - 👆 **Click for details** — clicking a zone (Grid, Home, Battery, PV, router, EV) opens a panel summarizing **all related entities** (configured on the card). Toggle via `details_on_click` (on by default).
 - ⚡ **Up to 4 solar routers** with power + day/month/year/total energy
