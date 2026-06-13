@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.2.1';
+const VERSION = '1.2.2';
 
 // ══════════════════════════════════════════════════════════
 //  SOMMAIRE / TABLE OF CONTENTS   (Ctrl-F le libellé « //  NOM »)
@@ -150,6 +150,8 @@ const DEFAULTS = {
   min_cell: '',
   max_cell: '',
   remaining: '',
+  // ── Bilan & Performance (note de l'installation) ──
+  show_balance:     true,
   // ── État de santé batterie (SOH) ──
   show_health:      true,
   batt_soh:         '',   // entité SOH % directe (prioritaire si fournie)
@@ -195,13 +197,18 @@ const DEFAULTS = {
   show_conso_export: true,   // Injection du jour
   show_conso_net:    true,   // Bilan net réseau du jour
   show_conso_cost:   true,   // Coût réseau du jour
+  // Mode single : afficher l'énergie du jour en sous-ligne sur les chips de la scène
+  // (Réseau : import/export · Maison : conso · Batterie : charge/décharge · Spa/routeurs : énergie).
+  // Indépendant du pop-up (details_on_click) et des blocs du bas → cumulable.
+  show_scene_secondary: false,
   // Ordre d'affichage des sections sous la scène (réordonnable via l'éditeur)
-  section_order: ['bars','pv','conso','battery','health','routers','savings','ev'],
+  section_order: ['bars','pv','conso','balance','battery','health','routers','savings','ev'],
   // Titres personnalisés des sections (vide = libellé par défaut, ou aucun en-tête
   // pour les sections qui n'en ont pas : barres, métriques, cellules, autonomie)
   title_bars:      '',
   title_pv:        '',
   title_conso:     '',
+  title_balance:   '',
   title_battery:   '',
   title_health:    '',
   title_savings:   '',
@@ -401,11 +408,29 @@ const I18N = {
     sec_savings:   'Économies & ROI',
     sec_pv:        'PV / Solaire',
     sec_conso:     'Conso / Réseau',
+    sec_balance:   'Bilan & Performance',
     sec_battery:   'Batterie',
     sec_routers:   'Routeurs (énergie)',
     sec_ev:        'Véhicule électrique',
     section_pv:      'PV / Solaire',
     section_conso:   'Conso / Réseau',
+    section_balance: 'Bilan & Performance',
+    bal_production:   'Production',
+    bal_consumption:  'Consommation',
+    bal_autonomy:     'Autonomie',
+    bal_self:         'Autoconsommée',
+    bal_stored:       'stockée',
+    bal_injected:     'Injectée',
+    bal_solar:        'Solaire directe',
+    bal_battery:      'Batterie',
+    bal_grid:         'Réseau',
+    bal_note:         'Note',
+    bal_q_excellent:  'Excellent',
+    bal_q_verygood:   'Très bon',
+    bal_q_good:       'Bon',
+    bal_q_average:    'Moyen',
+    bal_q_low:        'À optimiser',
+    bal_hint:         'Note = moyenne autoconso. + autonomie',
     section_battery: 'Batterie',
     section_routers: 'Routeurs',
     section_ev:      'Véhicule électrique',
@@ -443,7 +468,7 @@ const I18N = {
     // Autoconsommation
     section_autoconso: 'Autoconsommation',
     lbl_selfconso:     'Autoconso.',
-    lbl_selfprod:      'Autoprod.',
+    lbl_selfprod:      'Autonomie',
     ed_show_autoconso: 'Bloc autoconsommation',
     // Santé batterie
     section_health:    'État de santé batterie',
@@ -452,6 +477,8 @@ const I18N = {
     lbl_cycles:        'Cycles',
     ed_health:         '🩺 État de santé batterie',
     ed_show_health:    'Bloc état de santé',
+    ed_show_balance:   'Bloc Bilan & Performance',
+    ed_show_scene_secondary: 'Infos énergie sur la scène (mode single)',
     ed_batt_soh:       'Méthode A — Entité SOH (%) directe',
     ed_batt_full:      'Méthode B — Entité capacité totale réelle (kWh)',
     ed_batt_cycles:    'Entité cycles directe (si dispo)',
@@ -704,11 +731,29 @@ const I18N = {
     sec_savings:   'Savings & ROI',
     sec_pv:        'PV / Solar',
     sec_conso:     'Consumption / Grid',
+    sec_balance:   'Balance & Performance',
     sec_battery:   'Battery',
     sec_routers:   'Routers (energy)',
     sec_ev:        'Electric vehicle',
     section_pv:      'PV / Solar',
     section_conso:   'Consumption / Grid',
+    section_balance: 'Balance & Performance',
+    bal_production:   'Production',
+    bal_consumption:  'Consumption',
+    bal_autonomy:     'Self-suff.',
+    bal_self:         'Self-used',
+    bal_stored:       'stored',
+    bal_injected:     'Exported',
+    bal_solar:        'Direct solar',
+    bal_battery:      'Battery',
+    bal_grid:         'Grid',
+    bal_note:         'Grade',
+    bal_q_excellent:  'Excellent',
+    bal_q_verygood:   'Very good',
+    bal_q_good:       'Good',
+    bal_q_average:    'Average',
+    bal_q_low:        'To improve',
+    bal_hint:         'Grade = average of self-cons. + self-suff.',
     section_battery: 'Battery',
     section_routers: 'Routers',
     section_ev:      'Electric vehicle',
@@ -752,6 +797,8 @@ const I18N = {
     lbl_cycles:        'Cycles',
     ed_health:         '🩺 Battery health',
     ed_show_health:    'Health block',
+    ed_show_balance:   'Balance & Performance block',
+    ed_show_scene_secondary: 'Energy info on the scene (single mode)',
     ed_batt_soh:       'Method A — Direct SOH entity (%)',
     ed_batt_full:      'Method B — Real total capacity entity (kWh)',
     ed_batt_cycles:    'Direct cycle entity (if available)',
@@ -1718,6 +1765,26 @@ const CARD_CSS = `
     text-shadow:0 0 6px currentColor;transition:all .5s; }
   .sfc-mc-sub { font-size:calc(10px*var(--sfc-sv,1));color:var(--muted);font-family:monospace; }
 
+  /* ── Bilan & Performance ── */
+  .sfc-balance { margin:0 10px;background:var(--card);border:1px solid var(--border);border-radius:11px;
+    padding:11px 13px;display:flex;flex-direction:column;gap:9px; }
+  .sfc-bal-grade { display:flex;align-items:center;gap:12px; }
+  .sfc-bal-letter { font-family:monospace;font-size:calc(30px*var(--sfc-sv,1));font-weight:800;line-height:1;
+    min-width:46px;text-align:center;text-shadow:0 0 10px currentColor; }
+  .sfc-bal-meta { display:flex;flex-direction:column;gap:1px; }
+  .sfc-bal-score { font-family:monospace;font-size:calc(14px*var(--sfc-sv,1));font-weight:700; }
+  .sfc-bal-qual { font-size:calc(11px*var(--sfc-sl,1));color:var(--muted); }
+  .sfc-bal-rates { margin-left:auto;display:flex;flex-direction:column;gap:3px;text-align:right; }
+  .sfc-bal-rate { font-family:monospace;font-size:calc(13px*var(--sfc-sv,1));font-weight:700; }
+  .sfc-bal-rate-lbl { display:block;font-size:calc(8px*var(--sfc-sl,1));letter-spacing:.6px;
+    text-transform:uppercase;color:var(--muted);font-weight:700; }
+  .sfc-bal-flow { border-top:1px solid var(--border);padding-top:7px; }
+  .sfc-bal-flow-head { font-size:calc(9px*var(--sfc-sl,1));letter-spacing:1px;text-transform:uppercase;
+    color:var(--muted);font-weight:700;margin-bottom:3px; }
+  .sfc-bal-flow-body { font-family:monospace;font-size:calc(12px*var(--sfc-sv,1));line-height:1.6; }
+  .sfc-bal-dim { color:var(--muted); }
+  .sfc-bal-hint { font-size:calc(8px*var(--sfc-sl,1));color:var(--muted);font-style:italic;text-align:right;margin-top:-4px; }
+
   /* ── Mode badge ── */
   .sfc-mode { display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:2px 10px;
     border-radius:20px;font-size:10px;font-weight:700;transition:all .5s;
@@ -2028,6 +2095,12 @@ const CARD_CSS = `
     display: none !important;
   }
 
+  /* Mode single : la rangée de nœuds HTML est purement décorative (libellés dessinés sur
+     l'image) et couvre le bas de la scène en z-index 3. Sans ceci elle capte les clics et
+     masque les zones cliquables SVG du bas (réseau, batterie, spa, EV…). On la rend
+     transparente aux événements → les clics atteignent les hit-rects de #sfcSingleFlowSvg. */
+  .sfc-energy-row.sfc-scene-mode-single { pointer-events: none; }
+
   /* Mode single : lever/coucher affichés dans le SVG global (masquer les HTML) */
   .sfc-scene-mode-single-scene .sfc-sunrise,
   .sfc-scene-mode-single-scene .sfc-sunset {
@@ -2087,6 +2160,11 @@ function buildCardHTML(cfg) {
   const showHealth  = c.show_health !== false;
   const showAuto    = c.show_autoconso !== false && c.pv_today;
   const showCells= c.show_cells;
+  // Bilan & Performance : visible si au moins une donnée d'énergie du jour est disponible
+  const showBalance = c.show_balance !== false &&
+    (c.pv_today || c.today_load || c.grid_import_today || c.grid_export_today || c.batt_chg_today || c.batt_dis_today);
+  // Mode single : sous-lignes d'énergie du jour sur les chips de la scène
+  const secSc = c.show_scene_secondary === true;
 
   return `
   <div class="sfc-root ${c.details_on_click !== false ? 'sfc-clickable' : ''}" id="sfcRoot" style="
@@ -2415,9 +2493,9 @@ function buildCardHTML(cfg) {
 
           <!-- Spa (router1) — center x=265 -->
           ${c.router1_enabled ? `
-          <rect x="65" y="562" width="260" height="${c.router1_temp ? '142' : '108'}" rx="9"
+          <rect x="65" y="562" width="260" height="${(c.router1_temp ? 142 : 108) + (secSc ? 42 : 0)}" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(255,160,64,0.25)" stroke-width="1.5"/>
-          <rect x="45" y="517" width="300" height="${c.router1_temp ? '232' : '198'}" fill="transparent" data-detail="router1" style="pointer-events:all;cursor:pointer"/>
+          <rect x="45" y="517" width="300" height="${(c.router1_temp ? 232 : 198) + (secSc ? 42 : 0)}" fill="transparent" data-detail="router1" style="pointer-events:all;cursor:pointer"/>
           <text text-anchor="middle" x="195" y="593"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${(c.router1_label||'SPA').toUpperCase()}</text>
@@ -2429,6 +2507,8 @@ function buildCardHTML(cfg) {
             style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));font-weight:600;
                    fill:#7ecfff;filter:drop-shadow(0 0 3px rgba(126,207,255,0.5))">🌡 — °C</text>
           ` : ''}
+          ${secSc ? `<text id="sfcSGSpaEnergy" text-anchor="middle" x="195" y="${c.router1_temp ? '726' : '692'}"
+            style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));fill:rgba(232,244,253,0.6)">—</text>` : ''}
           ` : ''}
 
           <!-- ECS (router2) — center x=1268 -->
@@ -2473,7 +2553,7 @@ function buildCardHTML(cfg) {
             style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));fill:rgba(232,244,253,0.6)">—</text>
 
           <!-- Maison — center x=720 -->
-          <rect x="577" y="387" width="286" height="108" rx="9"
+          <rect x="577" y="387" width="286" height="${secSc ? '150' : '108'}" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(255,107,107,0.20)" stroke-width="1.5"/>
           <rect x="557" y="342" width="326" height="198" fill="transparent" data-detail="home" style="pointer-events:all;cursor:pointer"/>
           <text text-anchor="middle" x="720" y="418"
@@ -2482,6 +2562,8 @@ function buildCardHTML(cfg) {
           <text id="sfcSGHomeVal" text-anchor="middle" x="720" y="475"
             style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
                    fill:var(--sfc-home,#FF6B6B);filter:drop-shadow(0 0 4px var(--sfc-home,#FF6B6B))">0 W</text>
+          ${secSc ? `<text id="sfcSGHomeSub" text-anchor="middle" x="720" y="517"
+            style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));fill:rgba(232,244,253,0.6)">—</text>` : ''}
 
           <!-- Batterie — center x=1414 -->
           <rect x="1269" y="686" width="290" height="143" rx="9"
@@ -2801,6 +2883,34 @@ function buildCardHTML(cfg) {
       </div>` : ''}
     </div>` : '';
 
+      // 📊 Bloc Bilan & Performance — note de l'installation + répartition production/consommation.
+      //    S'adapte aux entités présentes (cas sans PV, sans batterie, etc. — voir _updateBalance).
+      S.balance = showBalance ? `
+    <div class="sfc-section">📊 ${c.title_balance || t(c,'section_balance')}</div>
+    <div class="sfc-gap" style="height:6px;"></div>
+    <div class="sfc-balance" id="sfcBalance">
+      <div class="sfc-bal-grade">
+        <div class="sfc-bal-letter" id="sfcBalGrade">—</div>
+        <div class="sfc-bal-meta">
+          <div class="sfc-bal-score" id="sfcBalScore">—/100</div>
+          <div class="sfc-bal-qual" id="sfcBalQual"></div>
+        </div>
+        <div class="sfc-bal-rates">
+          <div><span class="sfc-bal-rate-lbl">${t(c,'lbl_selfconso')}</span><span class="sfc-bal-rate c-solar" id="sfcBalAutoConso">— %</span></div>
+          <div><span class="sfc-bal-rate-lbl">${t(c,'bal_autonomy')}</span><span class="sfc-bal-rate c-batt" id="sfcBalAutonomie">— %</span></div>
+        </div>
+      </div>
+      <div class="sfc-bal-flow" id="sfcBalProdRow">
+        <div class="sfc-bal-flow-head">${t(c,'bal_production')} · <span id="sfcBalProdTot">—</span></div>
+        <div class="sfc-bal-flow-body" id="sfcBalProd"></div>
+      </div>
+      <div class="sfc-bal-flow" id="sfcBalConsoRow">
+        <div class="sfc-bal-flow-head">${t(c,'bal_consumption')} · <span id="sfcBalConsoTot">—</span></div>
+        <div class="sfc-bal-flow-body" id="sfcBalConso"></div>
+      </div>
+      <div class="sfc-bal-hint">${t(c,'bal_hint')}</div>
+    </div>` : '';
+
       // 🔋 Bloc Batterie (mode, restant, charge/décharge, cellules, autonomie, santé)
       S.battery = `
     <div class="sfc-section">🔋 ${c.title_battery || t(c,'section_battery')}</div>
@@ -2956,7 +3066,7 @@ function buildCardHTML(cfg) {
       </div>` : ''}
     </div>` : '';
 
-      const defOrder = ['bars','pv','conso','battery','health','routers','savings','ev'];
+      const defOrder = ['bars','pv','conso','balance','battery','health','routers','savings','ev'];
       let order = (Array.isArray(c.section_order) && c.section_order.length) ? c.section_order.slice() : defOrder.slice();
       defOrder.forEach(k => { if (!order.includes(k)) order.push(k); });   // clés manquantes en fin (compat.)
       // Chaque bloc présent est précédé d'un espaceur uniforme.
@@ -3042,6 +3152,7 @@ function buildEditorHTML(cfg) {
         </select>
       </div>
       ${c.img_scene_mode === 'single' ? edToggle('scene_full_width', t(c,'ed_scene_full_width'), c) : ''}
+      ${c.img_scene_mode === 'single' ? edToggle('show_scene_secondary', t(c,'ed_show_scene_secondary'), c) : ''}
 
       ${c.img_scene_mode === 'separate' ? `
       ${edEntity('img_house',   t(c,'ed_img_house'),   '/local/solar-flow-card/img/house.png', c)}
@@ -3558,6 +3669,7 @@ function buildEditorHTML(cfg) {
       ${edToggle('show_endurance', t(c,'ed_show_endurance'), c)}
       ${edToggle('show_inverter', t(c,'ed_show_inverter'), c)}
       ${edToggle('show_autoconso', t(c,'ed_show_autoconso'), c)}
+      ${edToggle('show_balance',  t(c,'ed_show_balance'),  c)}
       ${edToggle('show_savings',  t(c,'ed_show_savings'),  c)}
       ${edToggle('details_on_click', t(c,'ed_details_on_click'), c)}
     `)}
@@ -3574,6 +3686,7 @@ function buildEditorHTML(cfg) {
       ${edEntity('title_bars',      t(c,'sec_bars'),      '—', c)}
       ${edEntity('title_pv',        t(c,'sec_pv'),        t(c,'section_pv'),        c)}
       ${edEntity('title_conso',     t(c,'sec_conso'),     t(c,'section_conso'),     c)}
+      ${edEntity('title_balance',   t(c,'sec_balance'),   t(c,'section_balance'),   c)}
       ${edEntity('title_battery',   t(c,'sec_battery'),   t(c,'section_battery'),   c)}
       ${edEntity('title_health',    t(c,'sec_health'),    t(c,'section_health'),    c)}
       ${edEntity('title_savings',   t(c,'sec_savings'),   t(c,'section_savings'),   c)}
@@ -3634,7 +3747,7 @@ function edToggle(key, label, cfg) {
 }
 
 // Ordre par défaut des sections (utilisé par la carte ET l'éditeur)
-const SECTION_ORDER_DEFAULT = ['bars','pv','conso','battery','health','routers','savings','ev'];
+const SECTION_ORDER_DEFAULT = ['bars','pv','conso','balance','battery','health','routers','savings','ev'];
 
 // Normalise un ordre : garde les clés valides, complète avec les manquantes.
 function normalizeSectionOrder(arr) {
@@ -4339,11 +4452,15 @@ class SolarFlowCard extends HTMLElement {
     if (c.show_autoconso === false || !c.pv_today) return;
     const pv   = this._getNum(c.pv_today);
     const exp  = c.grid_export_today ? Math.max(0, this._getNum(c.grid_export_today)) : null;
-    const load = c.today_load ? this._getNum(c.today_load) : 0;
-    // PV consommé sur place = produit − exporté (nécessite l'entité d'export)
+    const imp  = c.grid_import_today ? Math.max(0, this._getNum(c.grid_import_today)) : null;
+    const load = c.today_load ? this._getNum(c.today_load) : null;
+    // Autoconsommation = part du PV consommée sur place (directe + stockée batterie) = (PV − injection) / PV
     const selfUsed  = exp === null ? null : Math.max(0, pv - exp);
-    const selfConso = (selfUsed !== null && pv > 0)   ? Math.min(100, selfUsed / pv * 100)   : null;
-    const selfProd  = (selfUsed !== null && load > 0) ? Math.min(100, selfUsed / load * 100) : null;
+    const selfConso = (selfUsed !== null && pv > 0) ? Math.min(100, selfUsed / pv * 100) : null;
+    // Autonomie (taux de couverture) = part de la conso NON soutirée au réseau = (conso − import) / conso.
+    // Tient compte de la batterie (sa décharge évite de l'import). L'ancienne formule (PV−injection)/conso
+    // comptait à tort l'énergie chargée en batterie comme déjà consommée → autonomie surévaluée.
+    const selfProd  = (load !== null && imp !== null && load > 0) ? Math.min(100, Math.max(0, load - imp) / load * 100) : null;
     this._setAutoBar('sfcSelfConsoBar', 'sfcSelfConsoVal', selfConso);
     this._setAutoBar('sfcSelfProdBar',  'sfcSelfProdVal',  selfProd);
   }
@@ -4359,6 +4476,79 @@ class SolarFlowCard extends HTMLElement {
     const cls = pct >= 70 ? 'good' : pct >= 40 ? 'mid' : 'low';   // + c'est haut, mieux c'est
     if (val) { val.textContent = Math.round(pct) + ' %'; val.className = 'sfc-health-val soh-' + cls; }
     if (bar) { bar.style.width = pct.toFixed(0) + '%'; bar.className = 'sfc-health-bar soh-' + cls + '-bg'; }
+  }
+
+  // ────────────────────────────────────────────────────────
+  //  BLOC BILAN & PERFORMANCE
+  // ────────────────────────────────────────────────────────
+  // Bilan énergétique du jour + note de l'installation. Utilise les entités présentes et
+  // s'adapte aux cas partiels (sans PV, sans batterie, sans import…) :
+  //   • Autoconsommation = (PV − injection) / PV
+  //   • Autonomie        = (conso − import) / conso   (la décharge batterie évite de l'import)
+  //   • Note /100        = moyenne des taux disponibles → lettre A→E + qualificatif
+  //   • Répartition Production (autoconso. dont stockée / injectée) et Consommation (solaire / batterie / réseau)
+  _updateBalance() {
+    const c = this._cfg;
+    if (c.show_balance === false) return;
+    const num = k => c[k] ? Math.max(0, this._getNum(c[k])) : null;
+    const pv = num('pv_today'), exp = num('grid_export_today'), imp = num('grid_import_today');
+    const load = num('today_load'), chg = num('batt_chg_today'), dis = num('batt_dis_today');
+    const fmt = v => v == null ? '—' : (v >= 1000 ? (v/1000).toFixed(2)+' MWh' : v.toFixed(2)+' kWh');
+
+    // Taux
+    const autoConso = (pv !== null && exp !== null && pv > 0) ? Math.min(100, Math.max(0, pv - exp) / pv * 100) : null;
+    const autonomy  = (load !== null && imp !== null && load > 0) ? Math.min(100, Math.max(0, load - imp) / load * 100) : null;
+    const acEl = this._el('sfcBalAutoConso'); if (acEl) acEl.textContent = autoConso !== null ? Math.round(autoConso)+' %' : '— %';
+    const auEl = this._el('sfcBalAutonomie'); if (auEl) auEl.textContent = autonomy  !== null ? Math.round(autonomy)+' %' : '— %';
+
+    // Note /100 = moyenne des taux disponibles → lettre + couleur + qualificatif
+    const parts = [autoConso, autonomy].filter(v => v !== null);
+    const score = parts.length ? Math.round(parts.reduce((a, b) => a + b, 0) / parts.length) : null;
+    const g = score === null ? ['—', '', '']
+            : score >= 80 ? ['A', 'bal_q_excellent', 'soh-good']
+            : score >= 65 ? ['B', 'bal_q_verygood',  'soh-good']
+            : score >= 50 ? ['C', 'bal_q_good',      'soh-mid']
+            : score >= 35 ? ['D', 'bal_q_average',   'soh-mid']
+            :               ['E', 'bal_q_low',       'soh-low'];
+    const gEl = this._el('sfcBalGrade'); if (gEl) gEl.className = 'sfc-bal-letter' + (g[2] ? ' ' + g[2] : '');
+    if (gEl) gEl.textContent = g[0];
+    const sEl = this._el('sfcBalScore'); if (sEl) sEl.textContent = score !== null ? score + '/100' : '—/100';
+    const qEl = this._el('sfcBalQual');  if (qEl) qEl.textContent = g[1] ? t(c, g[1]) : '';
+
+    // Répartition Production : autoconsommée (dont stockée batterie) + injectée
+    const prodRow = this._el('sfcBalProdRow');
+    if (prodRow) {
+      if (pv !== null && pv > 0) {
+        prodRow.style.display = '';
+        const tot = this._el('sfcBalProdTot'); if (tot) tot.textContent = fmt(pv);
+        const selfUsed = exp !== null ? Math.max(0, pv - exp) : null;
+        const segs = [];
+        if (selfUsed !== null) {
+          let s = `☀️ ${t(c,'bal_self')} ${fmt(selfUsed)}`;
+          if (chg !== null && chg > 0) s += ` <span class="sfc-bal-dim">(🔋 ${t(c,'bal_stored')} ${fmt(Math.min(chg, selfUsed))})</span>`;
+          segs.push(s);
+        }
+        if (exp !== null) segs.push(`↑ ${t(c,'bal_injected')} ${fmt(exp)}`);
+        const b = this._el('sfcBalProd'); if (b) b.innerHTML = segs.join(' · ');
+      } else prodRow.style.display = 'none';
+    }
+
+    // Répartition Consommation : solaire directe + batterie + réseau
+    const consoRow = this._el('sfcBalConsoRow');
+    if (consoRow) {
+      if (load !== null && load > 0) {
+        consoRow.style.display = '';
+        const tot = this._el('sfcBalConsoTot'); if (tot) tot.textContent = fmt(load);
+        const selfUsed = (pv !== null && exp !== null) ? Math.max(0, pv - exp) : null;
+        // Solaire directe = autoconsommé − stocké (l'énergie stockée revient via la décharge batterie)
+        const pvDirect = (selfUsed !== null && chg !== null) ? Math.max(0, selfUsed - chg) : selfUsed;
+        const segs = [];
+        if (pvDirect !== null) segs.push(`☀️ ${t(c,'bal_solar')} ${fmt(pvDirect)}`);
+        if (dis !== null) segs.push(`🔋 ${t(c,'bal_battery')} ${fmt(dis)}`);
+        if (imp !== null) segs.push(`🔌 ${t(c,'bal_grid')} ${fmt(imp)}`);
+        const b = this._el('sfcBalConso'); if (b) b.innerHTML = segs.join(' · ');
+      } else consoRow.style.display = 'none';
+    }
   }
 
   // ────────────────────────────────────────────────────────
@@ -5115,15 +5305,28 @@ class SolarFlowCard extends HTMLElement {
     // ── Labels et batterie SVG mode single (sfcSingleFlowSvg, coords 1536×1024) ──
     // Ces éléments n'existent qu'en mode single → les guards évitent les erreurs en mode séparé
 
-    // Chip réseau
+    // Sous-lignes secondaires de la scène (énergie du jour) — mode single, si activé
+    const secSc = c.show_scene_secondary === true;
+
+    // Chip réseau — sous-ligne : direction (défaut) OU import/export du jour (secondaire)
     const sgGridVal = this._el('sfcSGGridVal');
     if (sgGridVal) sgGridVal.textContent = this._fmt(Math.abs(gridW));
     const sgGridSub = this._el('sfcSGGridSub');
-    if (sgGridSub) sgGridSub.textContent = gridW > 50 ? t(c,'dir_import') : gridW < -50 ? t(c,'dir_export') : '—';
+    if (sgGridSub) {
+      if (secSc && (c.grid_import_today || c.grid_export_today)) {
+        const im = c.grid_import_today ? this._getNum(c.grid_import_today) : 0;
+        const ex = c.grid_export_today ? this._getNum(c.grid_export_today) : 0;
+        sgGridSub.textContent = `↓${im.toFixed(1)} ↑${ex.toFixed(1)} kWh`;
+      } else {
+        sgGridSub.textContent = gridW > 50 ? t(c,'dir_import') : gridW < -50 ? t(c,'dir_export') : '—';
+      }
+    }
 
-    // Chip maison
+    // Chip maison — sous-ligne (secondaire) : conso du jour
     const sgHomeVal = this._el('sfcSGHomeVal');
     if (sgHomeVal) sgHomeVal.textContent = this._fmt(homeW);
+    const sgHomeSub = this._el('sfcSGHomeSub');
+    if (sgHomeSub) sgHomeSub.textContent = (c.today_load ? todayLoad.toFixed(2) : '—') + ' kWh';
 
     // Chip batterie
     const sgBattVal = this._el('sfcSGBattVal');
@@ -5135,8 +5338,15 @@ class SolarFlowCard extends HTMLElement {
         sgBattVal.textContent = Math.round(battSoc) + '%';
       }
     }
+    // Chip batterie — sous-ligne : tension (défaut) OU charge/décharge du jour (secondaire)
     const sgBattSub = this._el('sfcSGBattSub');
-    if (sgBattSub) sgBattSub.textContent = battV ? battV.toFixed(1) + ' V' : '—';
+    if (sgBattSub) {
+      if (secSc && (c.batt_chg_today || c.batt_dis_today)) {
+        sgBattSub.textContent = `↑${(battChg||0).toFixed(1)} ↓${(battDis||0).toFixed(1)} kWh`;
+      } else {
+        sgBattSub.textContent = battV ? battV.toFixed(1) + ' V' : '—';
+      }
+    }
 
     // ── Batterie liquide SVG (mode single) ──
     const svSoc = this._el('sfcSVBattSoc');
@@ -5168,6 +5378,9 @@ class SolarFlowCard extends HTMLElement {
 
     // Autoconsommation / autoproduction
     this._updateAutoConso();
+
+    // Bilan & performance (note de l'installation)
+    this._updateBalance();
 
     // État de santé batterie
     this._updateHealth();
@@ -5309,6 +5522,18 @@ class SolarFlowCard extends HTMLElement {
           if (tempEl && c.router1_temp) {
             const temp = this._getNum(c.router1_temp);
             tempEl.textContent = temp ? '🌡 ' + temp.toFixed(1) + ' °C' : '🌡 — °C';
+          }
+          // Sous-ligne secondaire : énergie du jour (capteur si fourni, sinon estimation ~ de la carte)
+          const enEl = this._el('sfcSGSpaEnergy');
+          if (enEl) {
+            if (c.router1_energy) {
+              const k = this._getNum(c.router1_energy);
+              enEl.textContent = '∑ ' + (k < 10 ? k.toFixed(2) : k.toFixed(1)) + ' kWh';
+            } else if (this._rtEnergy && this._rtEnergy[1]) {
+              enEl.textContent = '∑ ~' + this._rtEnergy[1].kwh.toFixed(2) + ' kWh';
+            } else {
+              enEl.textContent = '∑ — kWh';
+            }
           }
         }
         if (rn === 2) {

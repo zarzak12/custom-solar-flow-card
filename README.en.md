@@ -7,7 +7,7 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -36,7 +36,8 @@ Solar Flow Card displays **all your energy flows** in real time on an immersive 
 - 💰 **Savings & ROI** — real-time delta calculation, dated ROI (start → landing), based on cumulative ÷ age
 - 🎨 **Two scene modes**: separate view (icons) or immersive scene (photorealistic 1536×1024)
 - 🩺 **Battery health (SOH)** with a colored bar and cycle estimation
-- 📈 **Self-consumption & self-sufficiency rates** with colored gauges
+- 📈 **Self-consumption & self-sufficiency rates** with colored gauges (self-sufficiency accounts for the battery: `(consumption − import) / consumption`)
+- 📊 **Balance & Performance** — installation grade (A→E /100) + daily breakdown: Production (self-used incl. stored / exported) and Consumption (direct solar / battery / grid). Adapts to the entities present (no PV, no battery…)
 - 🔎 **Adjustable sizes** via sliders: flow thickness, label size and value size
 - 🖥️ **Full-width mode** (fullscreen): the immersive scene fills the whole card width
 - 🔃 **Customizable section order**: reorder the blocks under the scene with ▲ / ▼
@@ -164,6 +165,12 @@ batt_soc: sensor.battery_soc
 
 > The **Consumption / Grid** block (expert tracking) shows: **instant Home & Grid** (± import/export), today's **totals** (Consumption, Import, Export) with **month/year** sub-lines, the **net grid balance** (import − export) and the **daily grid cost** (import × price). Each tile/sub-line appears only if its entity is set.
 > 👁️ **Per-tile visibility**: each Consumption tile has its own toggle (`show_conso_home/grid/day/import/export/net/cost`, on by default) → hide duplicates with the scene (e.g. instant Home/Grid already shown at the top).
+
+> 📊 **Balance & Performance block**: gives the installation a **grade** and the **daily energy balance**, from `pv_today`, `grid_import_today`, `grid_export_today`, `today_load`, `batt_chg_today`, `batt_dis_today`.
+> - **Self-consumption** = `(PV − export) / PV` · **Self-sufficiency** = `(consumption − import) / consumption` (battery discharge avoids import — correct even with a battery).
+> - **Grade /100** = average of the two available rates → letter **A** (≥80) · **B** (≥65) · **C** (≥50) · **D** (≥35) · **E** (<35).
+> - **Breakdown**: Production (self-used *incl. stored* / exported) and Consumption (direct solar / battery / grid).
+> - Auto-adapts: with no PV, no battery or no import sensor, it shows only what can be computed.
 
 ### Entities — Battery
 
@@ -615,10 +622,12 @@ show_total_pv:     true    # CO₂ avoided today tile (PV block)
 show_cells:        true    # Min/max cell voltages (Battery block)
 show_endurance:    true    # Estimated battery endurance (Battery block)
 show_autoconso:    true    # Self-consumption / self-sufficiency bars (PV block)
+show_balance:      true    # Balance & Performance block (grade + breakdown)
 show_health:       true    # Battery health block (SOH + cycles)
 show_savings:      true    # Savings & ROI block
 show_images:       true    # Images (false = emoji fallback)
 details_on_click:  true    # Click a zone → panel summarizing related entities
+show_scene_secondary: false # Single mode: today's energy as a sub-line on the scene chips
 
 # Per-tile visibility for the Consumption / Grid block (avoid scene duplicates)
 show_conso_home:   true    # Home (instant)
@@ -630,6 +639,8 @@ show_conso_net:    true    # Net grid balance
 show_conso_cost:   true    # Daily grid cost
 ```
 
+> 🔢 **3 (combinable) ways to show a zone's daily energy**: **pop-up** on click (`details_on_click`), thematic **block** at the bottom (Consumption / Battery / Routers), and **secondary info** on the scene (`show_scene_secondary`, single mode). In single mode the chip sub-lines then show: Grid → `↓import ↑export`, Home → consumption, Battery → `↑charge ↓discharge`, Spa → today's energy.
+
 ### Section order
 
 Reorder how the blocks under the scene are displayed, from the editor (**🔃 Sections order** section, ▲ / ▼ buttons) or in YAML via `section_order`:
@@ -639,6 +650,7 @@ section_order:
   - bars        # PV / PWR / BAT bars
   - pv          # PV / Solar (PV today, PV total, CO₂, self-consumption)
   - conso       # Consumption / Grid (today load, export)
+  - balance     # Balance & Performance (grade A→E, production/consumption breakdown)
   - battery     # Battery (mode, remaining, charge/discharge, cells, endurance)
   - health      # Battery health (SOH, capacity, cycles)
   - routers     # Routers (energy)
@@ -659,6 +671,7 @@ title_bars:    Power
 # The other blocks have a header → empty = default translated label
 title_pv:      PV / Solar         # default: "PV / Solar"
 title_conso:   Consumption / Grid # default: "Consumption / Grid"
+title_balance: Balance            # default: "Balance & Performance"
 title_battery: Battery            # default: "Battery"
 title_health:  Battery health     # default: "Battery health"
 title_routers: My routers         # default: "Routers"

@@ -7,7 +7,7 @@
 **🇫🇷 Français** · [🇬🇧 English](README.en.md)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Ouvrir dans Home Assistant et ajouter ce dépôt à HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -38,7 +38,8 @@ Solar Flow Card affiche en temps réel **tous vos flux d'énergie** sur une scè
 - 🔮 **Prévision de production** affichée en haut du ciel (Solcast / Forecast.Solar)
 - 🚗 **Véhicule électrique** avec flux bidirectionnel charge / V2H et SOC
 - 🩺 **État de santé batterie (SOH)** avec barre colorée et estimation des cycles
-- 📈 **Taux d'autoconsommation & autoproduction** avec jauges colorées
+- 📈 **Taux d'autoconsommation & autonomie** avec jauges colorées (l'autonomie tient compte de la batterie : `(conso − import) / conso`)
+- 📊 **Bilan & Performance** — note de l'installation (A→E /100) + répartition du jour : Production (autoconsommée dont stockée / injectée) et Consommation (solaire directe / batterie / réseau). S'adapte aux entités présentes (sans PV, sans batterie…)
 - 🔎 **Tailles ajustables** par curseurs : épaisseur des flux, taille des libellés et des valeurs
 - 🎨 **Deux modes de scène** : vue séparée (icônes) ou scène immersive (photo réaliste 1536×1024)
 - 🖥️ **Mode pleine largeur** (plein écran) : la scène immersive remplit toute la largeur de la carte
@@ -169,6 +170,12 @@ batt_soc: sensor.battery_soc
 
 > Le bloc **Conso / Réseau** (suivi expert) affiche : **Maison & Réseau instantanés** (± import/export), le **bilan du jour** (Conso, Import, Injection) avec sous-lignes **mois/année**, le **Bilan net réseau** (import − injection) et le **Coût réseau du jour** (import × prix). Chaque tuile/sous-ligne n'apparaît que si son entité est renseignée.
 > 👁️ **Visibilité par tuile** : chaque tuile du bloc Conso a son interrupteur (`show_conso_home/grid/day/import/export/net/cost`, défaut activé) → masque les redondances avec la scène (ex. Maison/Réseau instantanés déjà affichés en haut).
+
+> 📊 **Bloc Bilan & Performance** : donne une **note** à l'installation et le **bilan énergétique du jour**, à partir de `pv_today`, `grid_import_today`, `grid_export_today`, `today_load`, `batt_chg_today`, `batt_dis_today`.
+> - **Autoconsommation** = `(PV − injection) / PV` · **Autonomie** = `(conso − import) / conso` (la décharge batterie évite de l'import — calcul correct même avec batterie).
+> - **Note /100** = moyenne des deux taux disponibles → lettre **A** (≥80) · **B** (≥65) · **C** (≥50) · **D** (≥35) · **E** (<35).
+> - **Répartition** : Production (autoconsommée *dont stockée* / injectée) et Consommation (solaire directe / batterie / réseau).
+> - S'adapte automatiquement : sans PV, sans batterie ou sans capteur d'import, il n'affiche que ce qui est calculable.
 
 ### Entités — Batterie
 
@@ -618,11 +625,13 @@ show_bms_temp:     true    # Tuile Température BMS (bloc Batterie)
 show_total_pv:     true    # Tuile CO₂ évité du jour (bloc PV)
 show_cells:        true    # Tensions min/max cellules (bloc Batterie)
 show_endurance:    true    # Autonomie estimée (bloc Batterie)
-show_autoconso:    true    # Barres Autoconso / Autoprod (bloc PV)
+show_autoconso:    true    # Barres Autoconso / Autonomie (bloc PV)
+show_balance:      true    # Bloc Bilan & Performance (note + répartition)
 show_health:       true    # Bloc État de santé batterie (SOH + cycles)
 show_savings:      true    # Bloc Économies & ROI
 show_images:       true    # Images (false = fallback émojis)
 details_on_click:  true    # Clic sur une zone → panneau récap des entités liées
+show_scene_secondary: false # Mode single : énergie du jour en sous-ligne sur les chips de la scène
 
 # Visibilité fine des tuiles du bloc Conso / Réseau (anti-doublon avec la scène)
 show_conso_home:   true    # Maison instantanée
@@ -634,6 +643,8 @@ show_conso_net:    true    # Bilan net réseau
 show_conso_cost:   true    # Coût réseau du jour
 ```
 
+> 🔢 **3 façons (cumulables) d'afficher l'énergie du jour** d'une zone : **pop-up** au clic (`details_on_click`), **bloc** thématique en bas (Conso / Batterie / Routeurs), et **infos secondaires** sur la scène (`show_scene_secondary`, mode single). En mode single, les sous-lignes des chips affichent alors : Réseau → `↓import ↑injection`, Maison → conso, Batterie → `↑charge ↓décharge`, Spa → énergie du jour.
+
 ### Ordre des sections
 
 Réorganisez l'ordre d'affichage des blocs sous la scène depuis l'éditeur (section **🔃 Ordre des sections**, boutons ▲ / ▼) ou en YAML via `section_order` :
@@ -643,6 +654,7 @@ section_order:
   - bars        # Barres PV / PWR / BAT
   - pv          # PV / Solaire (PV jour, PV total, CO₂, autoconso/autoprod)
   - conso       # Conso / Réseau (conso jour, injection)
+  - balance     # Bilan & Performance (note A→E, répartition production/consommation)
   - battery     # Batterie (mode, restant, charge/décharge, cellules, autonomie)
   - health      # État de santé batterie (SOH, capacité, cycles)
   - routers     # Routeurs (énergie)
@@ -663,6 +675,7 @@ title_bars:    Puissances
 # Les autres blocs ont un en-tête → vide = libellé par défaut traduit
 title_pv:      PV / Solaire        # défaut : « PV / Solaire »
 title_conso:   Conso / Réseau      # défaut : « Conso / Réseau »
+title_balance: Bilan              # défaut : « Bilan & Performance »
 title_battery: Batterie            # défaut : « Batterie »
 title_health:  Santé batterie      # défaut : « État de santé batterie »
 title_routers: Mes routeurs        # défaut : « Routeurs »
