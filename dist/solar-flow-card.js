@@ -8,7 +8,7 @@
  */
 
 // ── Version — modifier uniquement ici ──────────────────────
-const VERSION = '1.2.2';
+const VERSION = '1.3.0';
 
 // ══════════════════════════════════════════════════════════
 //  SOMMAIRE / TABLE OF CONTENTS   (Ctrl-F le libellé « //  NOM »)
@@ -124,6 +124,12 @@ const DEFAULTS = {
   img_overlay2_label: '',
   show_images: true,
   scene_full_width: false,   // true = la scène single remplit toute la largeur (plein écran)
+  // ── Ciel & météo « canvas » (mode single uniquement) ──
+  // true  = rendu procédural canvas (dégradé aube/crépuscule continu, nuages au vent,
+  //         pluie/neige/grêle/brouillard/éclairs) dans la zone transparente de l'image.
+  // false = ancien rendu CSS (dégradé par paliers + nuages/pluie CSS).
+  sky_canvas:  true,
+  sky_quality: 'medium',     // 'low' | 'medium' | 'high' — densité des particules (pluie/neige/étoiles)
   longitude: '',
   pv_max_watts: 2500,
   batt_capacity_kwh: 2.4,
@@ -152,6 +158,11 @@ const DEFAULTS = {
   remaining: '',
   // ── Bilan & Performance (note de l'installation) ──
   show_balance:     true,
+  // Notification persistante quotidienne du bilan énergétique (résumé jour) — activable
+  // librement par le gestionnaire du dashboard. Nécessite que la carte soit affichée
+  // (onglet/tablette ouverte) à l'heure programmée pour se déclencher.
+  notif_balance_enabled: false,
+  notif_balance_time:    '23:59',   // heure de déclenchement HH:MM
   // ── État de santé batterie (SOH) ──
   show_health:      true,
   batt_soh:         '',   // entité SOH % directe (prioritaire si fournie)
@@ -478,6 +489,15 @@ const I18N = {
     ed_health:         '🩺 État de santé batterie',
     ed_show_health:    'Bloc état de santé',
     ed_show_balance:   'Bloc Bilan & Performance',
+    ed_notif_balance:         '🔔 Notification bilan quotidien',
+    ed_notif_balance_enabled: 'Notification persistante activée',
+    ed_notif_balance_time:    'Heure d\'envoi',
+    ed_notif_balance_info:    '💡 Envoie une notification persistante Home Assistant avec le bilan énergétique du jour, à l\'heure choisie. Nécessite que cette carte soit affichée dans un navigateur à ce moment-là (ex. tablette murale).',
+    notif_balance_line_pv:      'Production PV',
+    notif_balance_line_conso:   'Consommation',
+    notif_balance_line_import:  'Import réseau',
+    notif_balance_line_export:  'Injection réseau',
+    notif_balance_line_batt:    'Charge / Décharge batterie',
     ed_show_scene_secondary: 'Infos énergie sur la scène (mode single)',
     ed_batt_soh:       'Méthode A — Entité SOH (%) directe',
     ed_batt_full:      'Méthode B — Entité capacité totale réelle (kWh)',
@@ -562,6 +582,11 @@ const I18N = {
     ed_img_scene_mode_separate: 'Séparé (grid / house / battery)',
     ed_img_scene_mode_single: 'Unique (jour/nuit)',
     ed_scene_full_width:    'Pleine largeur (plein écran)',
+    ed_sky_canvas:          'Ciel & météo « canvas » (procédural)',
+    ed_sky_quality:         'Qualité des effets météo',
+    ed_sky_quality_low:     'Basse',
+    ed_sky_quality_medium:  'Moyenne',
+    ed_sky_quality_high:    'Haute',
     ed_img_scene_variant:   'Variante scène',
     ed_img_scene_variant_ev:'ESC + EV',
     ed_img_scene_variant_spa:'ESC + SPA',
@@ -798,6 +823,15 @@ const I18N = {
     ed_health:         '🩺 Battery health',
     ed_show_health:    'Health block',
     ed_show_balance:   'Balance & Performance block',
+    ed_notif_balance:         '🔔 Daily balance notification',
+    ed_notif_balance_enabled: 'Persistent notification enabled',
+    ed_notif_balance_time:    'Send time',
+    ed_notif_balance_info:    '💡 Sends a Home Assistant persistent notification with the daily energy balance, at the chosen time. Requires this card to be displayed in a browser at that moment (e.g. wall tablet).',
+    notif_balance_line_pv:      'PV production',
+    notif_balance_line_conso:   'Consumption',
+    notif_balance_line_import:  'Grid import',
+    notif_balance_line_export:  'Grid export',
+    notif_balance_line_batt:    'Battery charge / discharge',
     ed_show_scene_secondary: 'Energy info on the scene (single mode)',
     ed_batt_soh:       'Method A — Direct SOH entity (%)',
     ed_batt_full:      'Method B — Real total capacity entity (kWh)',
@@ -880,6 +914,11 @@ const I18N = {
     ed_img_scene_mode_separate: 'Separate (grid / house / battery)',
     ed_img_scene_mode_single: 'Single image (day/night)',
     ed_scene_full_width:    'Full width (fullscreen)',
+    ed_sky_canvas:          'Canvas sky & weather (procedural)',
+    ed_sky_quality:         'Weather effects quality',
+    ed_sky_quality_low:     'Low',
+    ed_sky_quality_medium:  'Medium',
+    ed_sky_quality_high:    'High',
     ed_img_scene_variant:   'Scene variant',
     ed_img_scene_variant_ev:'ESC + EV',
     ed_img_scene_variant_spa:'ESC + SPA',
@@ -1238,6 +1277,17 @@ const CARD_CSS = `
   }
   /* Ciel */
   .sfc-sky { position:absolute;inset:0;transition:background 20s linear; z-index: 0;}
+  /* Ciel/météo canvas (mode single) — bg derrière l'image (z:0), fg devant (z:6) */
+  .sfc-sky-canvas-bg { position:absolute; inset:0; z-index:0; pointer-events:none; }
+  .sfc-sky-canvas-fg { position:absolute; inset:0; z-index:6; pointer-events:none; }
+  /* Quand le canvas est actif, on masque les équivalents CSS pour éviter tout doublon */
+  .sfc-sky-canvas #sfcSky,
+  .sfc-sky-canvas #sfcStars,
+  .sfc-sky-canvas #sfcClouds,
+  .sfc-sky-canvas #sfcPartlyClouds,
+  .sfc-sky-canvas #sfcRain,
+  .sfc-sky-canvas #sfcSnow,
+  .sfc-sky-canvas #sfcLightningFx { display:none !important; }
   .sfc-stars { position:absolute;inset:0;pointer-events:none;transition:opacity 3s; z-index: 0;}
   .sfc-star { position:absolute;border-radius:50%;background:#fff;animation:sfc-twinkle 2s infinite alternate; }
   @keyframes sfc-twinkle { 0%{opacity:.1}100%{opacity:.95} }
@@ -1929,6 +1979,13 @@ const CARD_CSS = `
   .sfc-rt-ico-img { height:30px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5)); }
   .sfc-rt-name { font-size:calc(9px*var(--sfc-sl,1));letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:700; }
   .sfc-rt-day  { font-family:monospace;font-size:calc(15px*var(--sfc-sv,1));font-weight:700;color:var(--rt,#FFA040);text-shadow:0 0 6px currentColor;transition:opacity .3s; }
+  /* Énergie du jour — donnée secondaire mise en avant (pastille colorée) */
+  .sfc-rt-energy { font-family:monospace;font-size:calc(13px*var(--sfc-sv,1));font-weight:700;
+    color:var(--rt,#FFA040);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);
+    border-radius:8px;padding:3px 10px;margin-top:1px;line-height:1.2; }
+  .sfc-rt-energy small { display:block;font-size:calc(7.5px*var(--sfc-sl,1));color:var(--muted);
+    letter-spacing:1px;text-transform:uppercase;font-weight:700; }
+  /* Mois / Année / Total — donnée tertiaire discrète */
   .sfc-rt-sub  { font-family:monospace;font-size:calc(9px*var(--sfc-sv,1));color:var(--muted);line-height:1.5; }
 
   /* ── Véhicule électrique — section dédiée ── */
@@ -2197,11 +2254,13 @@ function buildCardHTML(cfg) {
     <!-- ═══════════════════════════════════════
          SCÈNE UNIFIÉE : ciel + soleil + énergie
     ════════════════════════════════════════════ -->
-    <div class="sfc-unified-scene ${c.img_scene_mode === 'single' && c.show_images !== false ? 'sfc-scene-mode-single-scene' : ''}" id="sfcUnifiedScene"
+    <div class="sfc-unified-scene ${c.img_scene_mode === 'single' && c.show_images !== false ? 'sfc-scene-mode-single-scene' : ''} ${c.img_scene_mode === 'single' && c.show_images !== false && c.sky_canvas !== false ? 'sfc-sky-canvas' : ''}" id="sfcUnifiedScene"
          style="${c.show_images === false ? 'height:355px' : (c.img_scene_mode === 'single' ? (c.scene_full_width ? 'aspect-ratio:1536/1200;width:100%' : 'aspect-ratio:11/10;max-height:490px') : 'height:355px')};">
 
       <!-- Fond ciel dynamique -->
       <div class="sfc-sky" id="sfcSky"></div>
+      ${c.img_scene_mode === 'single' && c.show_images !== false && c.sky_canvas !== false
+        ? `<canvas class="sfc-sky-canvas-bg" id="sfcSkyCanvasBg"></canvas>` : ''}
 
       <!-- Étoiles (nuit) -->
       <div class="sfc-stars" id="sfcStars" style="opacity:0;"></div>
@@ -2231,6 +2290,8 @@ function buildCardHTML(cfg) {
       <div class="sfc-weather-fx" id="sfcRain" style="display:none;"></div>
       <div class="sfc-weather-fx" id="sfcSnow" style="display:none;"></div>
       <div class="sfc-lightning-fx" id="sfcLightningFx" style="display:none;"></div>
+      ${c.img_scene_mode === 'single' && c.show_images !== false && c.sky_canvas !== false
+        ? `<canvas class="sfc-sky-canvas-fg" id="sfcSkyCanvasFg"></canvas>` : ''}
 
       <!-- Arc de trajectoire solaire -->
       <svg class="sfc-sun-arc-svg" viewBox="0 0 520 200" preserveAspectRatio="xMidYMid meet"
@@ -2766,6 +2827,18 @@ function buildCardHTML(cfg) {
         </div>
       </div>`}
 
+      <!-- Panneau détails (clic sur une zone) — placé DANS la scène pour s'afficher au niveau
+           de l'image (et non centré sur toute la carte, surtout sur mobile). -->
+      <div class="sfc-detail" id="sfcDetail">
+        <div class="sfc-detail-card">
+          <div class="sfc-detail-head">
+            <span class="sfc-det-title"></span>
+            <span class="sfc-det-close" id="sfcDetClose">✕</span>
+          </div>
+          <div class="sfc-det-body"></div>
+        </div>
+      </div>
+
     </div><!-- fin .sfc-unified-scene -->
 
     <!-- SECTIONS ORDONNABLES — l'ordre suit c.section_order (défaut = ordre ci-dessous) -->
@@ -3038,6 +3111,7 @@ function buildCardHTML(cfg) {
         ${icon}
         <div class="sfc-rt-name">${c['router'+n+'_label'] || ('Routeur '+n)}</div>
         <div class="sfc-rt-day" id="sfcRPwr${n}" style="color:${col}">0 W</div>
+        <div class="sfc-rt-energy" id="sfcRDay${n}" style="color:${col};display:none"></div>
         <div class="sfc-rt-sub" id="sfcREn${n}Sub"></div>
       </div>`;
       }).join('')}
@@ -3074,17 +3148,6 @@ function buildCardHTML(cfg) {
     })()}
 
     <div class="sfc-gap" style="height:10px;"></div>
-
-    <!-- Panneau détails (clic sur une zone) -->
-    <div class="sfc-detail" id="sfcDetail">
-      <div class="sfc-detail-card">
-        <div class="sfc-detail-head">
-          <span class="sfc-det-title"></span>
-          <span class="sfc-det-close" id="sfcDetClose">✕</span>
-        </div>
-        <div class="sfc-det-body"></div>
-      </div>
-    </div>
   </div>
   `;
 }
@@ -3153,6 +3216,16 @@ function buildEditorHTML(cfg) {
       </div>
       ${c.img_scene_mode === 'single' ? edToggle('scene_full_width', t(c,'ed_scene_full_width'), c) : ''}
       ${c.img_scene_mode === 'single' ? edToggle('show_scene_secondary', t(c,'ed_show_scene_secondary'), c) : ''}
+      ${c.img_scene_mode === 'single' ? edToggle('sky_canvas', t(c,'ed_sky_canvas'), c) : ''}
+      ${c.img_scene_mode === 'single' && c.sky_canvas !== false ? `
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_sky_quality')}</label>
+        <select class="sfc-ed-input" data-key="sky_quality">
+          <option value="low"${(c.sky_quality==='low'?' selected':'')}>${t(c,'ed_sky_quality_low')}</option>
+          <option value="medium"${((c.sky_quality||'medium')==='medium'?' selected':'')}>${t(c,'ed_sky_quality_medium')}</option>
+          <option value="high"${(c.sky_quality==='high'?' selected':'')}>${t(c,'ed_sky_quality_high')}</option>
+        </select>
+      </div>` : ''}
 
       ${c.img_scene_mode === 'separate' ? `
       ${edEntity('img_house',   t(c,'ed_img_house'),   '/local/solar-flow-card/img/house.png', c)}
@@ -3674,6 +3747,17 @@ function buildEditorHTML(cfg) {
       ${edToggle('details_on_click', t(c,'ed_details_on_click'), c)}
     `)}
 
+    <!-- SECTION: Notification bilan quotidien -->
+    ${edSection('notif_balance', t(c,'ed_notif_balance'), false, `
+      <div class="sfc-ed-info">${t(c,'ed_notif_balance_info')}</div>
+      ${edToggle('notif_balance_enabled', t(c,'ed_notif_balance_enabled'), c)}
+      ${c.notif_balance_enabled !== false ? `
+      <div class="sfc-ed-row">
+        <label class="sfc-ed-label">${t(c,'ed_notif_balance_time')}</label>
+        <input class="sfc-ed-input" type="time" data-key="notif_balance_time" value="${c.notif_balance_time || '23:59'}"/>
+      </div>` : ''}
+    `)}
+
     <!-- SECTION: Ordre des sections -->
     ${edSection('order', t(c,'ed_section_order'), false, `
       <div class="sfc-ed-info">${t(c,'ed_section_order_info')}</div>
@@ -3779,6 +3863,386 @@ function edRange(key, label, min, max, step, cfg) {
 }
 
 // ══════════════════════════════════════════════════════════
+//  SCENE RENDERER (canvas ciel + météo — mode single)
+// ══════════════════════════════════════════════════════════
+// Porté de « immersive-weather-dashboard » (src/rendering/scene-renderer.ts).
+// Deux canvas empilés dans la zone transparente de l'image de scène :
+//   • bg  (z:0, DERRIÈRE l'image)  → dégradé de ciel + nuages + étoiles
+//   • fg  (z:6, DEVANT l'image)    → pluie / averse / neige / grêle / brouillard / vent / éclairs
+// Le soleil/lune « emoji » + l'arc restent gérés par la carte (drawSun=false par défaut).
+
+const SFC_QUALITY_PRESETS = {
+  // `clouds` = nombre MAX de nuages (à 100% de couverture) ; le rendu en dessine une
+  // fraction proportionnelle à cloud_coverage (voir drawClouds).
+  low:    { rain: 50,  snow: 35,  hail: 25,  stars: 40,  clouds: 5 },
+  medium: { rain: 140, snow: 80,  hail: 60,  stars: 90,  clouds: 8 },
+  high:   { rain: 280, snow: 150, hail: 110, stars: 150, clouds: 11 },
+};
+
+// Points de dégradé jour/nuit (haut & bas) par catégorie météo — mélangés selon l'élévation solaire.
+const SFC_SKY_PALETTES = {
+  clear:           { dayTop:'#2f8ce0', dayBottom:'#bfe4ff', nightTop:'#050818', nightBottom:'#161a35' },
+  'partly-cloudy': { dayTop:'#4f9be0', dayBottom:'#bfe0f5', nightTop:'#0c1330', nightBottom:'#1c2650' },
+  cloudy:          { dayTop:'#8f9bb0', dayBottom:'#c3ccd8', nightTop:'#141b2c', nightBottom:'#232d42' },
+  fog:             { dayTop:'#c8d0d8', dayBottom:'#dfe4e8', nightTop:'#2b3440', nightBottom:'#3d4753' },
+  rain:            { dayTop:'#5b6b82', dayBottom:'#8a97a8', nightTop:'#0d1220', nightBottom:'#1c2436' },
+  pouring:         { dayTop:'#5b6b82', dayBottom:'#8a97a8', nightTop:'#0d1220', nightBottom:'#1c2436' },
+  snow:            { dayTop:'#aebbcc', dayBottom:'#e2e8f0', nightTop:'#1b2436', nightBottom:'#2e3850' },
+  'snowy-rainy':   { dayTop:'#8f9bb0', dayBottom:'#c3ccd8', nightTop:'#141b2c', nightBottom:'#232d42' },
+  hail:            { dayTop:'#8f9bb0', dayBottom:'#c3ccd8', nightTop:'#141b2c', nightBottom:'#232d42' },
+  thunderstorm:    { dayTop:'#4a5568', dayBottom:'#718096', nightTop:'#0b0f19', nightBottom:'#1a202c' },
+  windy:           { dayTop:'#2f8ce0', dayBottom:'#bfe4ff', nightTop:'#050818', nightBottom:'#161a35' },
+};
+
+// Intensité de la teinte « golden hour » qui transparaît à l'horizon (ciel dégagé = max).
+const SFC_SKY_CLEARNESS = {
+  clear:1, 'partly-cloudy':0.8, windy:0.9, snow:0.5, cloudy:0.4,
+  'snowy-rainy':0.35, hail:0.35, rain:0.3, pouring:0.25, fog:0.2, thunderstorm:0.15,
+};
+const SFC_GOLDEN_TOP = '#b0648a';      // rose crépusculaire au zénith
+const SFC_GOLDEN_HORIZON = '#ff7a3c';  // orange chaud près de l'horizon
+
+// Condition météo HA → catégorie de scène du renderer.
+const SFC_CONDITION_TO_SCENE = {
+  'clear-night':'clear', sunny:'clear', partlycloudy:'partly-cloudy', cloudy:'cloudy',
+  fog:'fog', rainy:'rain', pouring:'pouring', snowy:'snow', 'snowy-rainy':'snowy-rainy',
+  hail:'hail', lightning:'thunderstorm', 'lightning-rainy':'thunderstorm',
+  windy:'windy', 'windy-variant':'windy', exceptional:'cloudy',
+};
+function sfcConditionToScene(cond) {
+  if (!cond) return 'clear';
+  return SFC_CONDITION_TO_SCENE[cond] || 'cloudy';
+}
+
+function sfcClamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+// PRNG déterministe Mulberry32 — placement des particules stable d'une frame à l'autre.
+function sfcCreateRng(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function sfcRandomRange(rng, min, max) { return min + rng() * (max - min); }
+function sfcHexToRgb(hex) { const n = parseInt(hex.slice(1), 16); return [(n>>16)&255, (n>>8)&255, n&255]; }
+function sfcMixRgb(a, b, t) {
+  const ca = sfcHexToRgb(a), cb = sfcHexToRgb(b);
+  return [Math.round(ca[0]+(cb[0]-ca[0])*t), Math.round(ca[1]+(cb[1]-ca[1])*t), Math.round(ca[2]+(cb[2]-ca[2])*t)];
+}
+function sfcTintRgb(base, hex, t) {
+  const h = sfcHexToRgb(hex);
+  return [Math.round(base[0]+(h[0]-base[0])*t), Math.round(base[1]+(h[1]-base[1])*t), Math.round(base[2]+(h[2]-base[2])*t)];
+}
+function sfcRgbStr(c) { return 'rgb(' + c[0] + ', ' + c[1] + ', ' + c[2] + ')'; }
+function sfcRgbaStr(c, a) { return 'rgba(' + c[0] + ', ' + c[1] + ', ' + c[2] + ', ' + a + ')'; }
+
+const SFC_MAX_DPR = 2;
+
+class SfcSceneRenderer {
+  constructor(bgCanvas, fgCanvas) {
+    this.bgCanvas = bgCanvas;
+    this.fgCanvas = fgCanvas;
+    this.bgCtx = bgCanvas.getContext('2d');
+    this.fgCtx = fgCanvas.getContext('2d');
+    this.width = 0; this.height = 0; this.dpr = 1;
+    this.rafHandle = undefined; this.lastTimestamp = 0;
+    this.paused = false; this.elapsed = 0;
+    this.state = {
+      category: 'clear', isDay: true, quality: 'medium', intensity: 1,
+      windSpeedKmh: 0, windBearingDeg: 0, reducedMotion: false, cloudCoverage: 0,
+      sunElevation: 25, sunAzimuth: 180, drawSun: false,
+    };
+    this.rain = []; this.snow = []; this.hail = []; this.clouds = []; this.stars = []; this.windStreaks = [];
+    this.lightningTimer = 0; this.lightningFlash = 0;
+  }
+
+  resize(width, height, devicePixelRatio) {
+    if (!this.bgCtx || !this.fgCtx) return;
+    this.width = width; this.height = height;
+    this.dpr = sfcClamp(devicePixelRatio, 1, SFC_MAX_DPR);
+    for (const canvas of [this.bgCanvas, this.fgCanvas]) {
+      canvas.width = Math.round(width * this.dpr);
+      canvas.height = Math.round(height * this.dpr);
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+    }
+    this.bgCtx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    this.fgCtx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    this.regenerateParticles();
+    this.renderFrame(0);
+  }
+
+  setState(next) {
+    const qualityChanged = next.quality !== this.state.quality;
+    const categoryChanged = next.category !== this.state.category;
+    this.state = next;
+    if (qualityChanged || categoryChanged || this.stars.length === 0) this.regenerateParticles();
+    if (this.state.reducedMotion) { this.stop(); this.renderFrame(0); }
+    else if (!this.paused) this.start();
+  }
+
+  setPaused(paused) {
+    if (this.paused === paused) return;
+    this.paused = paused;
+    if (paused) this.stop();
+    else if (!this.state.reducedMotion) this.start();
+  }
+
+  start() {
+    if (this.rafHandle !== undefined || this.paused || this.state.reducedMotion) return;
+    this.lastTimestamp = performance.now();
+    const loop = (timestamp) => {
+      const dt = sfcClamp((timestamp - this.lastTimestamp) / 1000, 0, 0.1);
+      this.lastTimestamp = timestamp;
+      this.elapsed += dt;
+      this.renderFrame(dt);
+      this.rafHandle = requestAnimationFrame(loop);
+    };
+    this.rafHandle = requestAnimationFrame(loop);
+  }
+
+  stop() {
+    if (this.rafHandle !== undefined) { cancelAnimationFrame(this.rafHandle); this.rafHandle = undefined; }
+  }
+
+  dispose() { this.paused = true; this.stop(); }
+
+  regenerateParticles() {
+    const preset = SFC_QUALITY_PRESETS[this.state.quality] || SFC_QUALITY_PRESETS.medium;
+    const rng = sfcCreateRng(Math.round(this.width * 31 + this.height * 17) || 1);
+    const factor = sfcClamp(this.state.intensity, 0, 2);
+    this.stars = Array.from({ length: preset.stars }, () => ({
+      x: sfcRandomRange(rng, 0, this.width), y: sfcRandomRange(rng, 0, this.height * 0.6),
+      radius: sfcRandomRange(rng, 0.4, 1.6), phase: sfcRandomRange(rng, 0, Math.PI * 2),
+    }));
+    this.clouds = Array.from({ length: preset.clouds }, () => ({
+      x: sfcRandomRange(rng, -0.2 * this.width, this.width), y: sfcRandomRange(rng, this.height * 0.05, this.height * 0.4),
+      scale: sfcRandomRange(rng, 0.6, 1.6), speed: sfcRandomRange(rng, 4, 12), opacity: sfcRandomRange(rng, 0.35, 0.75),
+    }));
+    this.rain = Array.from({ length: Math.round(preset.rain * factor) }, () => ({
+      x: sfcRandomRange(rng, 0, this.width), y: sfcRandomRange(rng, 0, this.height),
+      length: sfcRandomRange(rng, 10, 22), speed: sfcRandomRange(rng, 500, 900), opacity: sfcRandomRange(rng, 0.25, 0.6),
+    }));
+    this.snow = Array.from({ length: Math.round(preset.snow * factor) }, () => ({
+      x: sfcRandomRange(rng, 0, this.width), y: sfcRandomRange(rng, 0, this.height),
+      radius: sfcRandomRange(rng, 1.5, 4), speed: sfcRandomRange(rng, 30, 90),
+      driftPhase: sfcRandomRange(rng, 0, Math.PI * 2), driftSpeed: sfcRandomRange(rng, 0.5, 1.5),
+    }));
+    this.hail = Array.from({ length: Math.round(preset.hail * factor) }, () => ({
+      x: sfcRandomRange(rng, 0, this.width), y: sfcRandomRange(rng, 0, this.height),
+      radius: sfcRandomRange(rng, 2, 4), speed: sfcRandomRange(rng, 400, 700),
+    }));
+    this.windStreaks = Array.from({ length: Math.round(30 * factor) }, () => ({
+      x: sfcRandomRange(rng, 0, this.width), y: sfcRandomRange(rng, 0, this.height),
+      length: sfcRandomRange(rng, 20, 60), speed: sfcRandomRange(rng, 200, 420), opacity: sfcRandomRange(rng, 0.1, 0.3),
+    }));
+  }
+
+  renderFrame(dt) {
+    if (this.width === 0 || this.height === 0 || !this.bgCtx || !this.fgCtx) return;
+    this.bgCtx.clearRect(0, 0, this.width, this.height);
+    this.fgCtx.clearRect(0, 0, this.width, this.height);
+    this.drawSky();
+    this.drawCelestial();
+    this.drawClouds(dt);
+    this.drawPrecipitationAndAtmosphere(dt);
+    this.drawLightning(dt);
+  }
+
+  drawSky() {
+    const ctx = this.bgCtx;
+    const cols = this.skyColors();
+    const gradient = ctx.createLinearGradient(0, 0, 0, this.height);
+    gradient.addColorStop(0, cols[0]);
+    gradient.addColorStop(1, cols[1]);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, this.width, this.height);
+  }
+
+  // Mélange les palettes nuit/jour sur la fenêtre de crépuscule civil (±6°) puis superpose
+  // une teinte « golden hour » qui culmine au passage du soleil à l'horizon (aube/crépuscule).
+  skyColors() {
+    const category = this.state.category;
+    const elev = this.state.sunElevation;
+    const palette = SFC_SKY_PALETTES[category] || SFC_SKY_PALETTES.clear;
+    const dayness = sfcClamp((elev + 6) / 12, 0, 1);
+    let top = sfcMixRgb(palette.nightTop, palette.dayTop, dayness);
+    let bottom = sfcMixRgb(palette.nightBottom, palette.dayBottom, dayness);
+    const clear = SFC_SKY_CLEARNESS[category] !== undefined ? SFC_SKY_CLEARNESS[category] : 1;
+    const golden = sfcClamp(1 - Math.abs(elev) / 8, 0, 1) * clear;
+    if (golden > 0) {
+      top = sfcTintRgb(top, SFC_GOLDEN_TOP, golden * 0.5);
+      bottom = sfcTintRgb(bottom, SFC_GOLDEN_HORIZON, golden * 0.9);
+    }
+    return [sfcRgbStr(top), sfcRgbStr(bottom)];
+  }
+
+  drawCelestial() {
+    const s = this.state;
+    if (s.category === 'thunderstorm' || s.category === 'fog' || s.category === 'pouring') return;
+    const ctx = this.bgCtx;
+    if (s.isDay) {
+      // Disque solaire canvas désactivé par défaut : la carte garde son soleil « emoji » + arc.
+      if (!s.drawSun) return;
+      const radius = Math.min(this.width, this.height) * 0.07;
+      const el = sfcClamp(s.sunElevation, 0, 90);
+      const bodyX = this.width * sfcClamp((s.sunAzimuth - 45) / 270, 0, 1);
+      const bodyY = this.height * (0.62 - sfcClamp(el / 60, 0, 1) * 0.46);
+      const warm = sfcClamp(1 - el / 12, 0, 1);
+      const glowRgb = sfcMixRgb('#fff4d6', '#ff9a4a', warm);
+      const sunRgb = sfcMixRgb('#fff6d8', '#ff8a3c', warm);
+      const glow = ctx.createRadialGradient(bodyX, bodyY, 0, bodyX, bodyY, radius * 4);
+      glow.addColorStop(0, sfcRgbaStr(glowRgb, 0.9));
+      glow.addColorStop(1, sfcRgbaStr(glowRgb, 0));
+      ctx.fillStyle = glow; ctx.fillRect(0, 0, this.width, this.height);
+      ctx.beginPath(); ctx.fillStyle = sfcRgbStr(sunRgb);
+      ctx.arc(bodyX, bodyY, radius, 0, Math.PI * 2); ctx.fill();
+    } else if (s.category !== 'cloudy' && s.category !== 'snowy-rainy') {
+      // Nuit dégagée : étoiles scintillantes (la lune « emoji » reste gérée par la carte).
+      for (const star of this.stars) {
+        const twinkle = 0.5 + 0.5 * Math.sin(this.elapsed * 2 + star.phase);
+        ctx.globalAlpha = sfcClamp(twinkle, 0.2, 1) * (1 - s.cloudCoverage / 150);
+        ctx.beginPath(); ctx.fillStyle = '#ffffff';
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  drawClouds(dt) {
+    const cat = this.state.category;
+    if (cat === 'clear') return;
+    const ctx = this.bgCtx;
+    const windFactor = 1 + sfcClamp(this.state.windSpeedKmh, 0, 60) / 60;
+    // Nombre de nuages dessinés = fraction du pool proportionnelle à la couverture nuageuse
+    // (attribut cloud_coverage 0-100 de l'entité weather, sinon estimé depuis la condition).
+    // Plancher pour les ciels nettement couverts afin de garder un ciel plein.
+    let cov = sfcClamp((this.state.cloudCoverage || 0) / 100, 0, 1);
+    if (cat === 'cloudy' || cat === 'rain' || cat === 'pouring' || cat === 'snow'
+        || cat === 'snowy-rainy' || cat === 'hail' || cat === 'thunderstorm' || cat === 'fog') {
+      cov = Math.max(cov, 0.75);
+    }
+    const visible = Math.max(cat === 'partly-cloudy' ? 1 : 0, Math.round(this.clouds.length * cov));
+    for (let i = 0; i < this.clouds.length; i++) {
+      const cloud = this.clouds[i];
+      if (!this.state.reducedMotion) {
+        cloud.x += cloud.speed * windFactor * dt;
+        if (cloud.x > this.width + 150) cloud.x = -150;
+      }
+      if (i >= visible) continue;   // au-delà du quota de couverture → non dessiné
+      const puffRadius = 46 * cloud.scale;
+      const gradient = ctx.createRadialGradient(cloud.x, cloud.y, 0, cloud.x, cloud.y, puffRadius * 2.2);
+      gradient.addColorStop(0, 'rgba(230, 234, 240, ' + cloud.opacity + ')');
+      gradient.addColorStop(1, 'rgba(230, 234, 240, 0)');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.ellipse(cloud.x, cloud.y, puffRadius * 2.2, puffRadius * 1.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  drawPrecipitationAndAtmosphere(dt) {
+    const cat = this.state.category;
+    const ctx = this.fgCtx;
+    const windAngle = ((this.state.windBearingDeg + 180) * Math.PI) / 180;
+    const windDrift = Math.sin(windAngle) * sfcClamp(this.state.windSpeedKmh, 0, 80) * 1.5;
+
+    if (cat === 'rain' || cat === 'pouring' || cat === 'snowy-rainy' || cat === 'thunderstorm') {
+      ctx.strokeStyle = 'rgba(190, 210, 235, 0.55)';
+      ctx.lineWidth = cat === 'pouring' ? 1.6 : 1;
+      for (const drop of this.rain) {
+        if (!this.state.reducedMotion) {
+          drop.y += drop.speed * dt;
+          drop.x += windDrift * dt * 0.4;
+          if (drop.y > this.height) { drop.y = -20; drop.x = Math.random() * this.width; }
+          if (drop.x > this.width) drop.x = 0;
+          if (drop.x < 0) drop.x = this.width;
+        }
+        ctx.globalAlpha = drop.opacity;
+        ctx.beginPath();
+        ctx.moveTo(drop.x, drop.y);
+        ctx.lineTo(drop.x - windDrift * 0.02, drop.y + drop.length);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    if (cat === 'snow' || cat === 'snowy-rainy') {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      for (const flake of this.snow) {
+        if (!this.state.reducedMotion) {
+          flake.y += flake.speed * dt;
+          flake.x += Math.sin(this.elapsed * flake.driftSpeed + flake.driftPhase) * 20 * dt + windDrift * dt * 0.2;
+          if (flake.y > this.height) { flake.y = -10; flake.x = Math.random() * this.width; }
+        }
+        ctx.beginPath();
+        ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    if (cat === 'hail') {
+      ctx.fillStyle = 'rgba(220, 230, 240, 0.9)';
+      for (const stone of this.hail) {
+        if (!this.state.reducedMotion) {
+          stone.y += stone.speed * dt;
+          if (stone.y > this.height) { stone.y = -10; stone.x = Math.random() * this.width; }
+        }
+        ctx.beginPath();
+        ctx.arc(stone.x, stone.y, stone.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    if (cat === 'fog') {
+      for (let i = 0; i < 3; i += 1) {
+        const offset = (this.elapsed * (8 + i * 4)) % (this.width + 300);
+        const gradient = ctx.createLinearGradient(offset - 300, 0, offset, 0);
+        gradient.addColorStop(0, 'rgba(230, 235, 240, 0)');
+        gradient.addColorStop(0.5, 'rgba(230, 235, 240, ' + (0.18 - i * 0.04) + ')');
+        gradient.addColorStop(1, 'rgba(230, 235, 240, 0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, this.height * (0.4 + i * 0.15), this.width, this.height * 0.35);
+      }
+    }
+
+    if (cat === 'windy') {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      ctx.lineWidth = 1;
+      for (const streak of this.windStreaks) {
+        if (!this.state.reducedMotion) {
+          streak.x += streak.speed * dt;
+          if (streak.x > this.width + 60) streak.x = -60;
+        }
+        ctx.globalAlpha = streak.opacity;
+        ctx.beginPath();
+        ctx.moveTo(streak.x, streak.y);
+        ctx.lineTo(streak.x + streak.length, streak.y + streak.length * 0.08);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  drawLightning(dt) {
+    if (this.state.category !== 'thunderstorm') { this.lightningFlash = 0; return; }
+    if (!this.state.reducedMotion) {
+      this.lightningTimer -= dt;
+      if (this.lightningTimer <= 0) { this.lightningTimer = sfcRandomRange(Math.random, 2.5, 7); this.lightningFlash = 1; }
+      if (this.lightningFlash > 0) this.lightningFlash = sfcClamp(this.lightningFlash - dt * 2.5, 0, 1);
+    }
+    if (this.lightningFlash > 0) {
+      const ctx = this.fgCtx;
+      ctx.fillStyle = 'rgba(255, 255, 255, ' + (this.lightningFlash * 0.45) + ')';
+      ctx.fillRect(0, 0, this.width, this.height);
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════
 //  SOLAR FLOW CARD ELEMENT
 // ══════════════════════════════════════════════════════════
 class SolarFlowCard extends HTMLElement {
@@ -3801,6 +4265,7 @@ class SolarFlowCard extends HTMLElement {
     this._savLastExp = null;
     this._rainAnim = null;
     this._snowAnim = null;
+    this._notifBalanceSentDay = null;
   }
 
   // Setter HA : à chaque mise à jour de l'objet hass, rafraîchit toute la carte.
@@ -3843,6 +4308,93 @@ class SolarFlowCard extends HTMLElement {
     this._createStars();
     this._loadGSAP();
     this._attachDetail();
+    this._initSceneRenderer();
+  }
+
+  // ────────────────────────────────────────────────────────
+  //  CIEL/MÉTÉO CANVAS (mode single) — cycle de vie du SfcSceneRenderer
+  // ────────────────────────────────────────────────────────
+  // (Re)crée le renderer canvas + ses observers (taille / visibilité) si le mode single
+  // « canvas » est actif. Sans effet dans les autres modes (aucun canvas rendu dans le DOM).
+  _initSceneRenderer() {
+    this._disposeSceneRenderer();
+    const c = this._cfg || {};
+    if (!(c.img_scene_mode === 'single' && c.show_images !== false && c.sky_canvas !== false)) return;
+    const bg = this._el('sfcSkyCanvasBg');
+    const fg = this._el('sfcSkyCanvasFg');
+    const scene = this._el('sfcUnifiedScene');
+    if (!bg || !fg || !scene) return;
+    try { this._sceneRenderer = new SfcSceneRenderer(bg, fg); }
+    catch (e) { this._sceneRenderer = null; return; }
+
+    const applySize = () => {
+      const r = scene.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) this._sceneRenderer.resize(r.width, r.height, window.devicePixelRatio || 1);
+    };
+    applySize();
+    if (typeof ResizeObserver !== 'undefined') {
+      this._sceneResizeObs = new ResizeObserver(() => applySize());
+      this._sceneResizeObs.observe(scene);
+    }
+    if (typeof IntersectionObserver !== 'undefined') {
+      this._sceneIntersectObs = new IntersectionObserver((entries) => {
+        const vis = entries[0] ? entries[0].isIntersecting : true;
+        if (this._sceneRenderer) this._sceneRenderer.setPaused(!vis || document.hidden);
+      }, { threshold: 0.01 });
+      this._sceneIntersectObs.observe(scene);
+    }
+    // État initial (élévation/azimut/météo) puis démarrage de la boucle.
+    this._updateSun();
+    this._sceneRenderer.start();
+  }
+
+  // Arrête et libère le renderer canvas + ses observers.
+  _disposeSceneRenderer() {
+    if (this._sceneResizeObs)    { this._sceneResizeObs.disconnect();    this._sceneResizeObs = null; }
+    if (this._sceneIntersectObs) { this._sceneIntersectObs.disconnect(); this._sceneIntersectObs = null; }
+    if (this._sceneRenderer)     { this._sceneRenderer.dispose();        this._sceneRenderer = null; }
+  }
+
+  // Pousse l'état courant (catégorie météo, jour/nuit, soleil, vent, couverture) au renderer.
+  // Alimenté par _updateSun() ; le vent/couverture viennent des attributs de l'entité weather.
+  _updateSceneRenderer(elevation, azimuth) {
+    if (!this._sceneRenderer) return;
+    const c = this._cfg;
+    const cond = this._getState(c.weather) || '';
+    const wi = getWeather(cond);
+    const wSt = c.weather ? this._hass?.states[c.weather] : null;
+    const wAttr = (wSt && wSt.attributes) ? wSt.attributes : {};
+
+    // Vent → km/h (unité lue sur l'entité, repli sur l'unité système, sinon km/h supposé).
+    let windKmh = parseFloat(wAttr.wind_speed);
+    if (!isFinite(windKmh)) windKmh = 0;
+    const wUnit = String(wAttr.wind_speed_unit || this._hass?.config?.unit_system?.wind_speed || 'km/h').toLowerCase();
+    if (wUnit.includes('m/s')) windKmh *= 3.6;
+    else if (wUnit.includes('mph')) windKmh *= 1.60934;
+    else if (wUnit.includes('kn')) windKmh *= 1.852;   // nœuds
+    let windBearing = parseFloat(wAttr.wind_bearing);
+    if (!isFinite(windBearing)) windBearing = 0;
+
+    // Couverture nuageuse : attribut cloud_coverage (0-100) sinon estimation depuis la condition.
+    let cloudCover = parseFloat(wAttr.cloud_coverage);
+    if (!isFinite(cloudCover)) cloudCover = (wi.cloud || 0) * 100;
+
+    const reduced = (typeof window.matchMedia === 'function')
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    this._sceneRenderer.setState({
+      category: sfcConditionToScene(cond),
+      isDay: elevation >= -3,
+      quality: (['low', 'medium', 'high'].includes(c.sky_quality) ? c.sky_quality : 'medium'),
+      intensity: 1,
+      windSpeedKmh: windKmh,
+      windBearingDeg: windBearing,
+      reducedMotion: !!reduced,
+      cloudCoverage: cloudCover,
+      sunElevation: elevation,
+      sunAzimuth: azimuth,
+      drawSun: false,
+    });
   }
 
   // ────────────────────────────────────────────────────────
@@ -4549,6 +5101,59 @@ class SolarFlowCard extends HTMLElement {
         const b = this._el('sfcBalConso'); if (b) b.innerHTML = segs.join(' · ');
       } else consoRow.style.display = 'none';
     }
+
+    // Notification persistante quotidienne (si activée) — même données que le bloc affiché.
+    this._maybeSendBalanceNotification({ pv, exp, imp, load, chg, dis, autoConso, autonomy, score, grade: g[0] });
+  }
+
+  // ────────────────────────────────────────────────────────
+  //  NOTIFICATION PERSISTANTE — BILAN QUOTIDIEN
+  // ────────────────────────────────────────────────────────
+  // Envoie une notification persistante HA (persistent_notification.create) avec le bilan du
+  // jour, à l'heure configurée (`notif_balance_time`), une seule fois par jour. Contrôlé par
+  // le toggle `notif_balance_enabled` (à la main du gestionnaire du dashboard). Ne se déclenche
+  // que si cette carte est effectivement affichée dans un navigateur à cet instant précis.
+  _maybeSendBalanceNotification(d) {
+    const c = this._cfg;
+    if (!c.notif_balance_enabled || !this._hass || typeof this._hass.callService !== 'function') return;
+
+    const timeStr = String(c.notif_balance_time || '23:59');
+    const m = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+    const targetH = m ? parseInt(m[1], 10) : 23;
+    const targetM = m ? parseInt(m[2], 10) : 59;
+    const now = new Date();
+    if (now.getHours() !== targetH || now.getMinutes() !== targetM) return;
+
+    // Garde-fou anti-doublon : une seule notif par jour, persistée pour survivre à un reload.
+    const dayKey = now.toDateString();
+    const storageKey = 'sfc_notif_balance_' + (c.title || 'default');
+    if (this._notifBalanceSentDay === dayKey) return;
+    try {
+      if (localStorage.getItem(storageKey) === dayKey) { this._notifBalanceSentDay = dayKey; return; }
+    } catch (e) { /* localStorage indispo → repli sur le flag mémoire seul */ }
+
+    const fmt = v => v == null ? '—' : v.toFixed(2) + ' kWh';
+    const lines = [];
+    if (d.pv   !== null) lines.push(`☀️ ${t(c,'notif_balance_line_pv')} : ${fmt(d.pv)}`);
+    if (d.load !== null) lines.push(`🏠 ${t(c,'notif_balance_line_conso')} : ${fmt(d.load)}`);
+    if (d.imp  !== null) lines.push(`🔌 ${t(c,'notif_balance_line_import')} : ${fmt(d.imp)}`);
+    if (d.exp  !== null) lines.push(`↑ ${t(c,'notif_balance_line_export')} : ${fmt(d.exp)}`);
+    if (d.chg  !== null || d.dis !== null) lines.push(`🔋 ${t(c,'notif_balance_line_batt')} : ${fmt(d.chg)} / ${fmt(d.dis)}`);
+    if (d.autoConso !== null) lines.push(`${t(c,'lbl_selfconso')} : ${Math.round(d.autoConso)} %`);
+    if (d.autonomy  !== null) lines.push(`${t(c,'lbl_selfprod')} : ${Math.round(d.autonomy)} %`);
+    if (d.score !== null) lines.push(`${t(c,'bal_note')} : ${d.grade} (${d.score}/100)`);
+
+    const title   = `${t(c,'section_balance')} — ${now.toLocaleDateString(c.language === 'en' ? 'en-GB' : 'fr-FR')}`;
+    const message = lines.length ? lines.join('\n') : '—';
+
+    this._hass.callService('persistent_notification', 'create', {
+      title,
+      message,
+      notification_id: 'sfc_bilan_' + String(c.title || 'default').replace(/[^a-z0-9]+/gi, '_').toLowerCase(),
+    });
+
+    this._notifBalanceSentDay = dayKey;
+    try { localStorage.setItem(storageKey, dayKey); } catch (e) { /* ignore */ }
   }
 
   // ────────────────────────────────────────────────────────
@@ -4916,6 +5521,7 @@ class SolarFlowCard extends HTMLElement {
     if (this._svgBubbleTls) { this._svgBubbleTls.forEach(t => t.kill()); this._svgBubbleTls = null; }
     if (this._battWaveTick && window.gsap) { gsap.ticker.remove(this._battWaveTick); this._battWaveTick = null; }
     if (this._waveTweens) { this._waveTweens.forEach(t => t.kill()); this._waveTweens = null; }
+    this._disposeSceneRenderer();
   }
 
   // Reconnexion (édition dashboard, scroll virtualisé) : relance timer et tweens si nécessaire.
@@ -4923,6 +5529,7 @@ class SolarFlowCard extends HTMLElement {
     // Restaurer les animations si la carte est reconnectée (édition dashboard, scroll virtualisé…)
     if (!this._cfg || !Object.keys(this._cfg).length) return;
     if (!this._sunTimer) this._startSunTimer();
+    if (!this._sceneRenderer) this._initSceneRenderer();
     if (window.gsap && this._battSVGAnimReady && !this._battWaveTick) {
       if (!this._waveTweens) this._initWaveTweens();   // recréer les tweens des points
       this._battWaveTick = () => this._drawBattWaves();
@@ -5596,15 +6203,27 @@ class SolarFlowCard extends HTMLElement {
       });
     };
     activeRouters.forEach(n => {
+      // Énergie du JOUR — donnée secondaire mise en avant (pastille). Capteur si fourni,
+      // sinon estimation '~' calculée par la carte.
+      const dayEl = this._el('sfcRDay' + n);
+      if (dayEl) {
+        let dayTxt = null;
+        if (hasState(c['router' + n + '_energy'])) {
+          dayTxt = fmtKwh(this._getNum(c['router' + n + '_energy']));
+        } else if (this._rtEnergy && this._rtEnergy[n]) {
+          dayTxt = '~' + fmtKwh(this._rtEnergy[n].kwh);
+        }
+        if (dayTxt !== null) {
+          dayEl.innerHTML = `<small>${t(c, 'rt_day')}</small>${dayTxt}`;
+          dayEl.style.display = '';
+        } else {
+          dayEl.style.display = 'none';
+        }
+      }
+      // Mois / Année / Total — donnée tertiaire discrète
       const subEl = this._el('sfcREn' + n + 'Sub');
       if (subEl) {
         const parts = [];
-        if (hasState(c['router' + n + '_energy'])) {
-          parts.push(t(c, 'rt_day') + ' ' + fmtKwh(this._getNum(c['router' + n + '_energy'])));
-        } else if (this._rtEnergy && this._rtEnergy[n]) {
-          // énergie du jour calculée par la carte (~ = estimation côté navigateur)
-          parts.push(t(c, 'rt_day') + ' ~' + fmtKwh(this._rtEnergy[n].kwh));
-        }
         if (hasState(c['router' + n + '_energy_month'])) parts.push(t(c, 'rt_month') + ' ' + fmtKwh(this._getNum(c['router' + n + '_energy_month'])));
         if (hasState(c['router' + n + '_energy_year']))  parts.push(t(c, 'rt_year')  + ' ' + fmtKwh(this._getNum(c['router' + n + '_energy_year'])));
         if (hasState(c['router' + n + '_energy_total'])) parts.push(t(c, 'rt_total') + ' ' + fmtKwh(this._getNum(c['router' + n + '_energy_total'])));
@@ -5857,6 +6476,9 @@ class SolarFlowCard extends HTMLElement {
 
     const stl = this._el('sfcSunTime');
     if (stl) stl.textContent = now.toLocaleTimeString(c.language==='en'?'en-GB':'fr-FR',{hour:'2-digit',minute:'2-digit'}) + ' · ' + Math.round(elevation) + '°';
+
+    // Ciel/météo canvas (mode single) — pousse l'état courant au renderer.
+    this._updateSceneRenderer(elevation, azimuth);
   }
 
   // Effets météo : pluie, neige, foudre (génère les particules + planifie les flashs d'orage).
@@ -6018,7 +6640,7 @@ class SolarFlowCardEditor extends HTMLElement {
     return [
       d.img_scene_mode, d.img_scene_variant, d.batt_bar_mode, d.pwr_mode,
       d.price_mode, !!d.price_entity, !!d.export_paid, !!d.endurance_entity,
-      d.savings_mode,
+      d.savings_mode, !!d.notif_balance_enabled,
     ].join('|');
   }
 

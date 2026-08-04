@@ -4,3 +4,11 @@
 
 # Copies locales / artefacts de test (ex. fichiers sauvegardés par le navigateur)
 dist/domotique.derz.fr/
+
+# IDE
+.idea/
+
+# Aperçus météo générés localement (régénérés via preview/weather/generate.sh)
+# On versionne le harnais (generate.sh + render.html), pas les images ni le renderer extrait.
+preview/weather/*.png
+preview/weather/renderer.js

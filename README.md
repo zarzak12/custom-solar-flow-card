@@ -7,7 +7,7 @@
 **🇫🇷 Français** · [🇬🇧 English](README.en.md)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Ouvrir dans Home Assistant et ajouter ce dépôt à HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -29,6 +29,7 @@ Solar Flow Card affiche en temps réel **tous vos flux d'énergie** sur une scè
 - ⚡ **Flux animés** entre production PV, réseau, maison, batterie et routeurs solaires (GSAP)
 - 🔋 **Batterie liquide** avec physique élastique GSAP, bulles de charge ascendantes et halo coloré
 - 🌦️ **Météo dynamique** — ciel bleu → partiellement nuageux → couvert → pluie → neige → orage avec effets de particules
+- 🌌 **Ciel « canvas » procédural** (mode single) — dégradé aube/crépuscule continu selon l'élévation solaire réelle + golden hour, nuages dérivant au vent, étoiles, pluie/neige/grêle/brouillard/éclairs, dans la zone transparente de l'image
 - 🧱 **Affichage en blocs thématiques** — PV / Conso-Réseau / Batterie / Santé batterie / Routeurs / Économies / EV : chaque bloc réordonnable, masquable et titrable ; les tuiles **s'ajustent automatiquement à la largeur** (3 par ligne max, la dernière ligne s'étire : 2 tuiles → 50 %, 1 → 100 %)
 - 🏠 **Suivi conso « expert »** — instantané + bilan jour/mois/année + bilan net réseau + coût du jour, avec visibilité par tuile (anti-doublon)
 - 👆 **Détails au clic** — cliquer une zone (Réseau, Maison, Batterie, PV, routeur, EV) ouvre un panneau récapitulant **toutes les entités liées** (configurées sur la carte). Activable via `details_on_click` (défaut activé).
@@ -176,6 +177,7 @@ batt_soc: sensor.battery_soc
 > - **Note /100** = moyenne des deux taux disponibles → lettre **A** (≥80) · **B** (≥65) · **C** (≥50) · **D** (≥35) · **E** (<35).
 > - **Répartition** : Production (autoconsommée *dont stockée* / injectée) et Consommation (solaire directe / batterie / réseau).
 > - S'adapte automatiquement : sans PV, sans batterie ou sans capteur d'import, il n'affiche que ce qui est calculable.
+> - 🔔 **Notification persistante quotidienne** (optionnelle) : `notif_balance_enabled: true` + `notif_balance_time: '23:59'` envoient une notification persistante Home Assistant avec le bilan du jour (production, conso, import/injection, batterie, autoconso/autonomie, note). Activable/désactivable librement par le gestionnaire dans l'éditeur (section **🔔 Notification bilan quotidien**). ⚠️ Nécessite que cette carte soit affichée dans un navigateur (ex. tablette murale) à l'heure programmée.
 
 ### Entités — Batterie
 
@@ -316,6 +318,8 @@ scene_full_width: false     # true = scène pleine largeur (plein écran)
 |---|---|
 | `img_scene_mode` | `separate` ou `single` |
 | `scene_full_width` | `false` (défaut) ou `true` — la scène single remplit toute la largeur de la carte (idéal mur/tablette plein écran) |
+| `sky_canvas` | `true` (défaut) ou `false` — **ciel & météo « canvas »** (voir ci-dessous). `false` = ancien rendu CSS |
+| `sky_quality` | `low` / `medium` (défaut) / `high` — densité des particules (pluie, neige, étoiles) |
 | `img_scene_variant` | `esc_ev` (voiture électrique) ou `esc_spa` (spa/jacuzzi) |
 | `img_scene_day` | URL de l'image de jour |
 | `img_scene_night` | URL de l'image de nuit |
@@ -323,6 +327,17 @@ scene_full_width: false     # true = scène pleine largeur (plein écran)
 | `img_scene_night_ev` | Image de nuit variante EV |
 | `img_scene_day_spa` | Image de jour variante Spa |
 | `img_scene_night_spa` | Image de nuit variante Spa |
+
+### 🌌 Ciel & météo « canvas » (mode single)
+
+En mode single, la **zone de ciel transparente** de l'image est remplie par un **moteur de rendu procédural en canvas** (deux calques : ciel derrière l'image, précipitations devant) :
+
+- **Dégradé de ciel continu** mélangé en temps réel selon l'**élévation solaire réelle** (transition aube/crépuscule fluide) + **teinte golden-hour** chaude qui monte à l'horizon au lever/coucher.
+- **Nuages procéduraux** qui dérivent selon la **vitesse et la direction du vent** (attributs `wind_speed` / `wind_bearing` de l'entité `weather`) ; leur **nombre et leur opacité** suivent la **couverture nuageuse** (`cloud_coverage`, ex. `68` → ciel bien rempli). Sans cet attribut, la densité est estimée depuis la condition.
+- **Étoiles scintillantes** la nuit.
+- **Précipitations** rendues devant la scène : pluie / averse / neige / grêle, **traînées de vent**, **nappes de brouillard** animées et **éclairs** d'orage.
+
+> Aucune entité supplémentaire n'est requise : tout est piloté par l'entité `weather` déjà configurée et par la position du soleil (latitude/longitude ou entités `sun_*`). Le rendu respecte `prefers-reduced-motion` et se met en pause hors écran. Repli automatique sur le rendu CSS via `sky_canvas: false`.
 
 ---
 

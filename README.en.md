@@ -7,7 +7,7 @@
 [🇫🇷 Français](README.md) · **🇬🇧 English**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 [![Open your Home Assistant instance and add this repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)][install]
@@ -29,6 +29,7 @@ Solar Flow Card displays **all your energy flows** in real time on an immersive 
 - ⚡ **Animated flows** between PV production, grid, home, battery and solar routers (GSAP)
 - 🔋 **Liquid battery** with elastic GSAP physics, rising charge bubbles and a colored halo
 - 🌦️ **Dynamic weather** — blue sky → partly cloudy → overcast → rain → snow → storm, with particle effects
+- 🌌 **Procedural canvas sky** (single mode) — continuous dawn/dusk gradient from real sun elevation + golden hour, wind-driven clouds, stars, rain/snow/hail/fog/lightning, inside the image's transparent sky area
 - 🧱 **Thematic block layout** — PV / Consumption-Grid / Battery / Battery health / Routers / Savings / EV: each block reorderable, hideable and titleable; tiles **auto-fit the width** (max 3 per row, the last row stretches: 2 tiles → 50%, 1 → 100%)
 - 🏠 **"Expert" consumption tracking** — instant + day/month/year totals + net grid balance + daily cost, with per-tile visibility (no duplicates)
 - 👆 **Click for details** — clicking a zone (Grid, Home, Battery, PV, router, EV) opens a panel summarizing **all related entities** (configured on the card). Toggle via `details_on_click` (on by default).
@@ -171,6 +172,7 @@ batt_soc: sensor.battery_soc
 > - **Grade /100** = average of the two available rates → letter **A** (≥80) · **B** (≥65) · **C** (≥50) · **D** (≥35) · **E** (<35).
 > - **Breakdown**: Production (self-used *incl. stored* / exported) and Consumption (direct solar / battery / grid).
 > - Auto-adapts: with no PV, no battery or no import sensor, it shows only what can be computed.
+> - 🔔 **Daily persistent notification** (optional): `notif_balance_enabled: true` + `notif_balance_time: '23:59'` send a Home Assistant persistent notification with the daily balance (production, consumption, import/export, battery, self-consumption/self-sufficiency, grade). Freely toggled by the dashboard owner in the editor (**🔔 Daily balance notification** section). ⚠️ Requires this card to be displayed in a browser (e.g. wall tablet) at the scheduled time.
 
 ### Entities — Battery
 
@@ -311,6 +313,8 @@ scene_full_width: false     # true = full-width scene (fullscreen)
 |---|---|
 | `img_scene_mode` | `separate` or `single` |
 | `scene_full_width` | `false` (default) or `true` — the single scene fills the whole card width (ideal for wall/tablet fullscreen) |
+| `sky_canvas` | `true` (default) or `false` — **canvas sky & weather** (see below). `false` = legacy CSS rendering |
+| `sky_quality` | `low` / `medium` (default) / `high` — particle density (rain, snow, stars) |
 | `img_scene_variant` | `esc_ev` (electric vehicle) or `esc_spa` (spa/jacuzzi) |
 | `img_scene_day` | URL of the day image |
 | `img_scene_night` | URL of the night image |
@@ -318,6 +322,17 @@ scene_full_width: false     # true = full-width scene (fullscreen)
 | `img_scene_night_ev` | Night image, EV variant |
 | `img_scene_day_spa` | Day image, Spa variant |
 | `img_scene_night_spa` | Night image, Spa variant |
+
+### 🌌 Canvas sky & weather (single mode)
+
+In single mode, the **transparent sky area** of the image is filled by a **procedural canvas renderer** (two layers: sky behind the image, precipitation in front):
+
+- **Continuous sky gradient** blended in real time from the **actual sun elevation** (smooth dawn/dusk transition) + a warm **golden-hour tint** rising at the horizon at sunrise/sunset.
+- **Procedural clouds** drifting with **wind speed and bearing** (`wind_speed` / `wind_bearing` attributes of the `weather` entity); their **count and opacity** follow the **cloud coverage** (`cloud_coverage`, e.g. `68` → a well-filled sky). Without that attribute, density is estimated from the condition.
+- **Twinkling stars** at night.
+- **Precipitation** drawn in front of the scene: rain / pouring / snow / hail, **wind streaks**, animated **fog** banks and thunderstorm **lightning**.
+
+> No extra entities required: everything is driven by the already-configured `weather` entity and the sun position (latitude/longitude or `sun_*` entities). The renderer honors `prefers-reduced-motion` and pauses off-screen. Fall back to CSS rendering with `sky_canvas: false`.
 
 ---
 

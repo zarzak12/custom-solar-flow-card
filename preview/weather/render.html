@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin:0; height:100%; background:#060d1a; overflow:hidden; }
+  .scene { position:relative; width:100vw; height:100vh; overflow:hidden; background:#060d1a; }
+  .sfc-sky-canvas-bg { position:absolute; inset:0; z-index:0; pointer-events:none; }
+  .house-image { position:absolute; inset:0; width:100%; height:100%;
+                 object-fit:contain; object-position:bottom center; z-index:2; pointer-events:none; }
+  .sfc-sky-canvas-fg { position:absolute; inset:0; z-index:6; pointer-events:none; }
+</style>
+</head>
+<body>
+  <div class="scene" id="scene">
+    <canvas class="sfc-sky-canvas-bg" id="bg"></canvas>
+    <img class="house-image" id="house" alt="">
+    <canvas class="sfc-sky-canvas-fg" id="fg"></canvas>
+  </div>
+  <script src="renderer.js"></script>
+  <script>
+    const q = new URLSearchParams(location.search);
+    const cond    = q.get('cond') || 'sunny';
+    const elev    = parseFloat(q.get('elev') ?? '25');
+    const az      = parseFloat(q.get('az') ?? '150');
+    const quality = q.get('quality') || 'high';
+    const wind    = parseFloat(q.get('wind') ?? '15');
+    const cover   = parseFloat(q.get('cover') ?? '40');
+    const flash   = q.get('flash') === '1';
+    const imgKey  = q.get('img') || 'grid';
+
+    const IMG = {
+      'grid':      '../../dist/img/house-grid.png',
+      'night':     '../../dist/img/house-night.png',
+      'spa':       '../../dist/img/house-spa.png',
+      'spa-night': '../../dist/img/house-spa-night.png',
+    };
+    document.getElementById('house').src = IMG[imgKey] || IMG.grid;
+
+    const w = window.innerWidth, h = window.innerHeight;
+    const r = new window.SfcSceneRenderer(document.getElementById('bg'), document.getElementById('fg'));
+    r.resize(w, h, 1);
+    r.setState({
+      category: window.sfcConditionToScene(cond),
+      isDay: elev >= -3,
+      quality: quality,
+      intensity: 1,
+      windSpeedKmh: wind,
+      windBearingDeg: az,
+      reducedMotion: false,
+      cloudCoverage: cover,
+      sunElevation: elev,
+      sunAzimuth: az,
+      drawSun: false,
+    });
+    r.start();
+    // Pour les captures d'orage : maintient un éclair visible au moment du screenshot.
+    if (flash) setInterval(() => { r.lightningFlash = 0.85; }, 30);
+    window.__ready = true;
+  </script>
+</body>
+</html>
