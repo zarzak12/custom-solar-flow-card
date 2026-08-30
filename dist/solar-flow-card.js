@@ -4407,7 +4407,20 @@ class SolarFlowCard extends HTMLElement {
       root.addEventListener('click', (e) => {
         if (this._cfg.details_on_click === false) return;
         const el = e.target.closest && e.target.closest('[data-detail]');
-        if (el) { e.stopPropagation(); this._openDetail(el.dataset.detail); }
+        if (el) {
+          e.stopPropagation();
+          // Si une option nav_<zone> est définie dans le YAML, le clic navigue vers
+          // cette vue du dashboard au lieu d'ouvrir le panneau de détails interne.
+          // Zones possibles : nav_pv, nav_grid, nav_home, nav_battery, nav_ev, nav_router1..4
+          // Option absente -> comportement d'origine strictement inchangé.
+          const navPath = this._cfg['nav_' + el.dataset.detail];
+          if (navPath) {
+            history.pushState(null, '', navPath);
+            window.dispatchEvent(new Event('location-changed', { bubbles: true, composed: true }));
+            return;
+          }
+          this._openDetail(el.dataset.detail);
+        }
       });
     }
     const close = this._el('sfcDetClose');
