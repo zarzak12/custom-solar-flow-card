@@ -680,6 +680,34 @@ nav_router1: /lovelace/routeurs    # idem nav_router2, nav_router3, nav_router4
 - La valeur est un chemin de dashboard (ex. `/lovelace/0`, `/lovelace-maison/energie`).
 - ⚠️ Nécessite `details_on_click: true` (valeur par défaut) : si les détails au clic sont désactivés, la navigation l'est aussi.
 
+### Ajustements de la scène single (hauteur, badge Maison, badge Routeur 3)
+
+Trois options **YAML** pour adapter la scène `single` à un écran ou à une image particulière. **Option absente → comportement inchangé.**
+
+```yaml
+# Hauteur de la scène : elle est dimensionnée par sa hauteur (et non par la largeur),
+# donc elle tient dans l'écran quel que soit l'appareil (tablette 16/10, mur…).
+scene_max_height: calc(100vh - 95px)   # toute valeur CSS : 480px, 70vh, calc(…)
+
+# Badge MAISON déplaçable (pixels de l'image de fond, viewBox 1536x1024)
+home_x: 653      # centre horizontal (défaut 720)
+home_y: 330      # bord haut du cadre (défaut 387)
+
+# Badge ROUTEUR 3 libre : placé n'importe où sur l'image (ex. un poêle, une piscine…)
+router3_enabled: true
+router3_label: Poêle
+router3_power: sensor.poele_puissance
+router3_x: 560            # centre horizontal — définir router3_x ou router3_y active le badge
+router3_y: 600            # bord haut du cadre
+router3_color: '#FFA040'  # couleur de la valeur (défaut #FFA040)
+router3_temp: sensor.poele_temperature   # optionnel : ajoute une ligne de température
+router3_hide_power: true  # optionnel : n'affiche que la température (appareil qui ne consomme pas le solaire)
+```
+
+- `scene_max_height` prend le pas sur `scene_full_width`. La valeur `calc(100vh - Npx)`, où N est la hauteur de ce qui précède la scène (barre de navigation + bandeau de la carte), donne une scène qui remplit exactement le bas de l'écran.
+- En scène single, seuls `router1` et `router2` ont un badge, à une position fixe. Le badge libre du routeur 3 n'est dessiné **que si `router3_x` ou `router3_y` est défini** : les configurations existantes ne changent pas.
+- Le badge Routeur 3 est cliquable (`details_on_click`, `nav_router3`) et dessiné au-dessus du badge Maison s'ils se chevauchent.
+
 ### Ordre des sections
 
 Réorganisez l'ordre d'affichage des blocs sous la scène depuis l'éditeur (section **🔃 Ordre des sections**, boutons ▲ / ▼) ou en YAML via `section_order` :

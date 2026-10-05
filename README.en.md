@@ -676,6 +676,34 @@ nav_router1: /lovelace/routers    # same for nav_router2, nav_router3, nav_route
 - The value is a dashboard path (e.g. `/lovelace/0`, `/my-dashboard/energy`).
 - ⚠️ Requires `details_on_click: true` (the default): if click-to-details is disabled, navigation is disabled too.
 
+### Single-scene adjustments (height, Home badge, Router 3 badge)
+
+Three **YAML** options to fit the `single` scene to a given screen or image. **Option absent → unchanged behaviour.**
+
+```yaml
+# Scene height: the scene is sized by its height (not its width),
+# so it always fits the screen whatever the device (16:10 tablet, wall panel…).
+scene_max_height: calc(100vh - 95px)   # any CSS value: 480px, 70vh, calc(…)
+
+# Movable HOME badge (background image pixels, viewBox 1536x1024)
+home_x: 653      # horizontal centre (default 720)
+home_y: 330      # top edge of the box (default 387)
+
+# Free ROUTER 3 badge: place it anywhere on the image (e.g. a stove, a pool…)
+router3_enabled: true
+router3_label: Stove
+router3_power: sensor.stove_power
+router3_x: 560            # horizontal centre — setting router3_x or router3_y enables the badge
+router3_y: 600            # top edge of the box
+router3_color: '#FFA040'  # value colour (default #FFA040)
+router3_temp: sensor.stove_temperature   # optional: adds a temperature line
+router3_hide_power: true  # optional: show the temperature only (device that does not use solar)
+```
+
+- `scene_max_height` takes precedence over `scene_full_width`. `calc(100vh - Npx)`, where N is the height of everything above the scene (navigation bar + card header), makes the scene fill the bottom of the screen exactly.
+- In the single scene, only `router1` and `router2` have a badge, at a fixed position. The free Router 3 badge is drawn **only if `router3_x` or `router3_y` is set**, so existing configurations do not change.
+- The Router 3 badge is clickable (`details_on_click`, `nav_router3`) and drawn above the Home badge when they overlap.
+
 ### Section order
 
 Reorder how the blocks under the scene are displayed, from the editor (**🔃 Sections order** section, ▲ / ▼ buttons) or in YAML via `section_order`:

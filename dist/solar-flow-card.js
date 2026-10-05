@@ -2544,6 +2544,22 @@ function buildCardHTML(cfg) {
   // Mode single : sous-lignes d'énergie du jour sur les chips de la scène
   const secSc = c.show_scene_secondary === true;
 
+  // Badge libre du routeur 3 en mode scène single (opt-in : dessiné seulement si
+  // router3_x ou router3_y est défini). En scène unifiée, seuls router1 et router2 ont un
+  // badge, à des positions fixes ; ce badge permet de placer un 3e appareil n'importe où
+  // sur l'image. Repère = pixels de l'image de fond (viewBox 1536x1024).
+  // router3_x = centre horizontal · router3_y = bord HAUT du cadre visible.
+  const r3free = c.router3_enabled && (c.router3_x != null || c.router3_y != null);
+  const r3x = Number(c.router3_x) || 560;
+  const r3y = Number(c.router3_y) || 600;
+  // router3_hide_power: true → masque la ligne de watts (appareil dont seule la température
+  // a du sens, ex. un poêle). La température prend alors la place de la valeur, en grand.
+  const r3pwr = c.router3_hide_power !== true;
+  const r3h   = (c.router3_temp && r3pwr) ? 142 : 108;
+  // Badge MAISON déplaçable via home_x / home_y. Défauts = position d'origine (720 / 387).
+  const hx = Number(c.home_x) || 720;
+  const hy = Number(c.home_y) || 387;
+
   return `
   <div class="sfc-root ${c.details_on_click !== false ? 'sfc-clickable' : ''}" id="sfcRoot" style="
     --sfc-solar:${c.color_solar};
@@ -2576,7 +2592,7 @@ function buildCardHTML(cfg) {
          SCÈNE UNIFIÉE : ciel + soleil + énergie
     ════════════════════════════════════════════ -->
     <div class="sfc-unified-scene ${c.img_scene_mode === 'single' && c.show_images !== false ? 'sfc-scene-mode-single-scene' : ''} ${c.img_scene_mode === 'single' && c.show_images !== false && c.sky_canvas !== false ? 'sfc-sky-canvas' : ''}" id="sfcUnifiedScene"
-         style="${c.show_images === false ? 'height:355px' : (c.img_scene_mode === 'single' ? (c.scene_full_width ? 'aspect-ratio:1536/1200;width:100%' : 'aspect-ratio:11/10;max-height:490px') : 'height:355px')};">
+         style="${c.show_images === false ? 'height:355px' : (c.img_scene_mode === 'single' ? (c.scene_max_height ? /* scene_max_height : la scène est dimensionnée par sa HAUTEUR (ex. 'calc(100vh - 95px)'), donc elle tient dans l'écran quel que soit l'appareil. Avec width:100%, la hauteur vaut largeur/1.28 et déborde en bas sur un écran 16/10 (tablette 1280x800), ce qui coupe RÉSEAU/BATTERIE. */ ('aspect-ratio:1536/1200;height:' + c.scene_max_height + ';width:auto;max-width:100%;margin:0 auto') : (c.scene_full_width ? 'aspect-ratio:1536/1200;width:100%' : 'aspect-ratio:11/10;max-height:490px')) : 'height:355px')};">
 
       <!-- Fond ciel dynamique -->
       <div class="sfc-sky" id="sfcSky"></div>
@@ -2934,17 +2950,17 @@ function buildCardHTML(cfg) {
           <text id="sfcSGGridSub" text-anchor="middle" x="210" y="962"
             style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));fill:rgba(232,244,253,0.6)">—</text>
 
-          <!-- Maison — center x=720 -->
-          <rect x="577" y="387" width="286" height="${secSc ? '150' : '108'}" rx="9"
+          <!-- Maison — position réglable via home_x / home_y (défauts 720 / 387) -->
+          <rect x="${hx - 143}" y="${hy}" width="286" height="${secSc ? '150' : '108'}" rx="9"
             fill="rgba(6,13,26,0.70)" stroke="rgba(255,107,107,0.20)" stroke-width="1.5"/>
-          <rect x="557" y="342" width="326" height="198" fill="transparent" data-detail="home" style="pointer-events:all;cursor:pointer"/>
-          <text text-anchor="middle" x="720" y="418"
+          <rect x="${hx - 163}" y="${hy - 45}" width="326" height="198" fill="transparent" data-detail="home" style="pointer-events:all;cursor:pointer"/>
+          <text text-anchor="middle" x="${hx}" y="${hy + 31}"
             style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
                    fill:rgba(232,244,253,0.55)">${t(c,'node_home').toUpperCase()}</text>
-          <text id="sfcSGHomeVal" text-anchor="middle" x="720" y="475"
+          <text id="sfcSGHomeVal" text-anchor="middle" x="${hx}" y="${hy + 88}"
             style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
                    fill:var(--sfc-home,#FF6B6B);filter:drop-shadow(0 0 4px var(--sfc-home,#FF6B6B))">0 W</text>
-          ${secSc ? `<text id="sfcSGHomeSub" text-anchor="middle" x="720" y="517"
+          ${secSc ? `<text id="sfcSGHomeSub" text-anchor="middle" x="${hx}" y="${hy + 130}"
             style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));fill:rgba(232,244,253,0.6)">—</text>` : ''}
 
           <!-- Batterie — center x=1414 -->
@@ -2959,6 +2975,30 @@ function buildCardHTML(cfg) {
                    fill:var(--sfc-batt,#69FF47);filter:drop-shadow(0 0 4px var(--sfc-batt,#69FF47))">—</text>
           <text id="sfcSGBattSub" text-anchor="middle" x="1414" y="813"
             style="font-family:monospace;font-size:calc(34px*var(--sfc-sv,1));fill:rgba(232,244,253,0.6)">—</text>
+
+          <!-- Routeur 3 — badge LIBRE, placé par router3_x / router3_y (opt-in).
+               ⚠️ Dessiné en dernier à dessein : sa zone cliquable peut chevaucher celle de
+               MAISON. En SVG, le dernier élément dessiné capte le clic, donc un clic sur ce
+               badge ouvre bien le routeur 3 et pas la maison. -->
+          ${r3free ? `
+          <rect x="${r3x - 130}" y="${r3y}" width="260" height="${r3h}" rx="9"
+            fill="rgba(6,13,26,0.70)" stroke="rgba(255,160,64,0.25)" stroke-width="1.5"/>
+          <rect x="${r3x - 145}" y="${r3y - 18}" width="290" height="${r3h + 110}"
+            fill="transparent" data-detail="router3" style="pointer-events:all;cursor:pointer"/>
+          <text text-anchor="middle" x="${r3x}" y="${r3y + 31}"
+            style="font-family:monospace;font-size:calc(30px*var(--sfc-sl,1));font-weight:700;letter-spacing:3px;
+                   fill:rgba(232,244,253,0.55)">${(c.router3_label||'ROUTEUR 3').toUpperCase()}</text>
+          ${r3pwr ? `
+          <text id="sfcSGR3Val" text-anchor="middle" x="${r3x}" y="${r3y + (c.router3_temp ? 76 : 88)}"
+            style="font-family:monospace;font-size:calc(46px*var(--sfc-sv,1));font-weight:700;
+                   fill:${c.router3_color||'#FFA040'};filter:drop-shadow(0 0 4px ${c.router3_color||'#FFA040'})">0 W</text>
+          ` : ''}
+          ${c.router3_temp ? `
+          <text id="sfcSGR3Temp" text-anchor="middle" x="${r3x}" y="${r3y + (r3pwr ? 124 : 84)}"
+            style="font-family:monospace;font-size:calc(${r3pwr ? 34 : 44}px*var(--sfc-sv,1));font-weight:${r3pwr ? 600 : 700};
+                   fill:#7ecfff;filter:drop-shadow(0 0 3px rgba(126,207,255,0.5))">🌡 — °C</text>
+          ` : ''}
+          ` : ''}
         </svg>
         <img class="sfc-scene-image" id="sfcSceneImg"
           src="${(c[`img_scene_day_${(c.img_scene_variant||'esc_ev').replace(/^esc_/, '')}`] || c.img_scene_day || '')}"
@@ -6492,7 +6532,15 @@ class SolarFlowCard extends HTMLElement {
           this._setFlowActive(['sfcLECS_s','sfcLECSTailLong_s','sfcLECSTailMid_s','sfcLECSGlow_s'], active);
           const el = this._el('sfcSGECSVal'); if (el) el.textContent = fmt(w);
         }
-        // rn === 3 : pas de path dédié en single (EV géré séparément via ev_enabled)
+        // rn === 3 : badge libre (pas de path de flux dédié en single)
+        if (rn === 3) {
+          const el3 = this._el('sfcSGR3Val'); if (el3) el3.textContent = fmt(w);
+          const t3 = this._el('sfcSGR3Temp');
+          if (t3 && c.router3_temp) {
+            const temp3 = this._getNum(c.router3_temp);
+            t3.textContent = temp3 ? '🌡 ' + temp3.toFixed(1) + ' °C' : '🌡 — °C';
+          }
+        }
       }
     });
 
