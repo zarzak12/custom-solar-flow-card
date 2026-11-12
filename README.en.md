@@ -322,6 +322,24 @@ scene_full_width: false     # true = full-width scene (fullscreen)
 | `img_scene_night_ev` | Night image, EV variant |
 | `img_scene_day_spa` | Day image, Spa variant |
 | `img_scene_night_spa` | Night image, Spa variant |
+| `img_scene_seasons` | Images per season: `winter` / `spring` / `summer` / `autumn`, each with `day` and `night` (see below) |
+| `scene_season` | Force a season (`winter`, `spring`, `summer`, `autumn`) |
+| `scene_season_entity` | Entity giving the season, e.g. `sensor.season` (Season integration) |
+
+### 🍂 Seasonal images (single mode)
+
+The scene can switch images on its own as the seasons change. Season used, in order: `scene_season` (forced), otherwise the state of `scene_season_entity`, otherwise the month (winter Dec-Feb, spring Mar-May, summer Jun-Aug, autumn Sep-Nov, shifted by 6 months in the southern hemisphere based on latitude). A season missing from the list keeps the usual images (`img_scene_day` / `img_scene_night` and variants).
+
+```yaml
+img_scene_seasons:
+  winter:
+    day: /local/scenes/house_winter_day.png
+    night: /local/scenes/house_winter_night.png
+  autumn:
+    day: /local/scenes/house_autumn_day.png
+    night: /local/scenes/house_autumn_night.png
+scene_season_entity: sensor.season   # optional
+```
 
 ### 🌌 Canvas sky & weather (single mode)
 

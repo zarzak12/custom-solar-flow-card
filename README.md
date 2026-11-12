@@ -327,6 +327,24 @@ scene_full_width: false     # true = scène pleine largeur (plein écran)
 | `img_scene_night_ev` | Image de nuit variante EV |
 | `img_scene_day_spa` | Image de jour variante Spa |
 | `img_scene_night_spa` | Image de nuit variante Spa |
+| `img_scene_seasons` | Images par saison : `winter` / `spring` / `summer` / `autumn`, chacune avec `day` et `night` (voir ci-dessous) |
+| `scene_season` | Force une saison (`winter`, `spring`, `summer`, `autumn`) |
+| `scene_season_entity` | Entité qui donne la saison, ex. `sensor.season` (intégration Season) |
+
+### 🍂 Images selon la saison (mode single)
+
+La scène peut changer d'image toute seule au fil des saisons. Saison retenue, dans l'ordre : `scene_season` (forcée), sinon l'état de `scene_season_entity`, sinon le mois (hiver déc-fév, printemps mars-mai, été juin-août, automne sept-nov, décalé de 6 mois dans l'hémisphère sud d'après la latitude). Une saison absente de la liste garde les images habituelles (`img_scene_day` / `img_scene_night` et variantes).
+
+```yaml
+img_scene_seasons:
+  winter:
+    day: /local/scenes/maison_hiver_jour.png
+    night: /local/scenes/maison_hiver_nuit.png
+  autumn:
+    day: /local/scenes/maison_automne_jour.png
+    night: /local/scenes/maison_automne_nuit.png
+scene_season_entity: sensor.season   # facultatif
+```
 
 ### 🌌 Ciel & météo « canvas » (mode single)
 

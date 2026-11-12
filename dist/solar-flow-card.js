@@ -5088,6 +5088,28 @@ class SolarFlowCard extends HTMLElement {
     return stops[stops.length - 1][1].join(',');
   }
 
+  // Image de la scène selon la saison (img_scene_seasons: { winter|spring|summer|autumn: { day, night } }).
+  // Saison retenue : scene_season (forcée), sinon l'état de scene_season_entity (intégration Season),
+  // sinon le mois : hiver déc-fév, printemps mars-mai, été juin-août, automne sept-nov
+  // (décalé de 6 mois dans l'hémisphère sud : latitude de la carte, sinon celle de Home Assistant).
+  // Saison absente de la liste → images habituelles.
+  _seasonImages() {
+    const c = this._cfg || {};
+    const map = c.img_scene_seasons;
+    if (!map || typeof map !== 'object') return null;
+    const names = ['winter', 'spring', 'summer', 'autumn'];
+    let s = String(c.scene_season || '').toLowerCase();
+    if (!names.includes(s) && c.scene_season_entity) s = String(this._getState(c.scene_season_entity) || '').toLowerCase();
+    if (!names.includes(s)) {
+      let i = Math.floor(((new Date().getMonth() + 1) % 12) / 3);   // déc-fév 0 · mars-mai 1 · juin-août 2 · sept-nov 3
+      const lat = c.latitude != null && c.latitude !== '' ? Number(c.latitude) : Number(this._hass?.config?.latitude);
+      if (lat < 0) i = (i + 2) % 4;
+      s = names[i];
+    }
+    const e = map[s];
+    return e && typeof e === 'object' ? e : null;
+  }
+
   // Dessine 3 vagues (points oscillants via tweens GSAP) sur la surface du liquide
   _drawBattWaves() {
     const fill = this._el('sfcSVBattFill');
@@ -6793,8 +6815,9 @@ class SolarFlowCard extends HTMLElement {
     const sceneImg = this._el('sfcSceneImg');
     if (sceneImg) {
       const variantKey = (c.img_scene_variant || 'esc_ev').replace(/^esc_/, '');
-      const dayImg = c[`img_scene_day_${variantKey}`] || c.img_scene_day;
-      const nightImg = c[`img_scene_night_${variantKey}`] || c.img_scene_night;
+      const seasonImg = this._seasonImages();
+      const dayImg = (seasonImg && seasonImg.day) || c[`img_scene_day_${variantKey}`] || c.img_scene_day;
+      const nightImg = (seasonImg && seasonImg.night) || c[`img_scene_night_${variantKey}`] || c.img_scene_night;
       const sceneSrc = isNight ? (nightImg || dayImg) : (dayImg || nightImg);
       if (sceneSrc) {
         sceneImg.src = sceneSrc;
